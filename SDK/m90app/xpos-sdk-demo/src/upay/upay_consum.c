@@ -4,7 +4,7 @@
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
 
-
+#include "network.h"
 
 #define APP_TRACE(...) 
 #define APP_TRACE_BUFF_LOG(...) 
@@ -169,6 +169,42 @@ void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 
 }
 
+void sendAndReceiveDemoRequest(int iSsl, int port)
+{
+	char request[0x1024] = {0};
+	char response[0x1024] = {0};
+	NetWorkParameters param = {0};
+
+	char msg[] = "Hello world";
+	param.port = port;
+
+	int index = 0;
+	int msgl = strlen(msg);
+
+	index += sprintf(request + index , "GET %s HTTP/1.1\r\n", "/");
+	index += sprintf(request + index , "HOST: %s:%d\r\n" , "www.baidu.com", 443 /*param.port*/);//www.baidu.com
+	index += sprintf(request + index , "Connection: Keep-Alive\r\n");
+	index += sprintf(request + index , "Content-Length: %d\r\n", msgl);
+	index += sprintf(request + index , "Content-Type: text/plain;charset=UTF-8\r\n");	
+	index += sprintf(request + index , "\r\n");
+
+	index += sprintf(request + index , "%s", msg);
+
+	printf("Request :%s\n", request);
+
+	param.isSsl = iSsl;
+	sprintf(param.host, "%s", "www.baidu.com");
+	printf("After printing host : %s\n", param.host);
+	param.packetSize = strlen(request);
+	sprintf(param.packet, "%s", request);
+
+	if (sendAndRecvDataSsl(&param) == SEND_RECEIVE_SUCCESSFUL)
+	{
+		gui_messagebox_show("RESPONSE" , param.response, "" , "Exit" , 0);
+	}
+
+}
+
 void m_DispOffPin(int Count)	
 {
 	if (Count == 0)
@@ -306,6 +342,8 @@ int upay_consum( void )
 	gui_messagebox_show("track2", card_out->track2 , "" , "ok" , 0);
 	gui_messagebox_show("pan", card_out->pan , "" , "ok" , 0);
 	gui_messagebox_show("expdate", card_out->exp_data , "" , "ok" , 0);
+
+	printf("This is card expiry date : %s\n", card_out->exp_data);
 
 	strcpy(card_info.amt, card_in->amt);
 	strcpy(card_info.title, card_in->title);

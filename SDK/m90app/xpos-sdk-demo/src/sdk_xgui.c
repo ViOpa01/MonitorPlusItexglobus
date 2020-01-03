@@ -7,12 +7,17 @@
 #include "libapi_xpos/inc/libapi_security.h"
 #include "libapi_xpos/inc/libapi_emv.h"
 
+#include "util.h"
+#include "network.h"
+
 #define APP_VER "V1.1.2"
 #define LOGOIMG "xxxx\\logo2.bmp"
 
 
 
 #define MAIN_MENU_PAGE	"main"
+#define SUPERVISION		"supervision"
+#define MAINTAINANCE	"maintanance"
 
 
 
@@ -22,6 +27,8 @@
 static  const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE ,	"Sale",			""},
+	{MAIN_MENU_PAGE ,	"My Plain",		""},
+	{MAIN_MENU_PAGE ,	"My Ssl",		""},
 	{MAIN_MENU_PAGE ,	"CodePay",		""},
 	{MAIN_MENU_PAGE ,	"Version",		""},
 	{MAIN_MENU_PAGE ,	"Test",			""},
@@ -54,9 +61,34 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	
 	{"Others",		"View AID",		""},
 	{"Others",		"View CAPK",	""},
+
+	{SUPERVISION ,	"Reprint", 		 ""},
+	{SUPERVISION ,	"EOD",			 ""},
+	{SUPERVISION ,	"Network",	     ""},
+	{SUPERVISION ,	"Download Logo", ""},
+	{SUPERVISION ,	"About", 		 ""},
+
+	{"Reprint",	"Today",  	""},
+	{"Reprint",	"By Date",	""},
+	{"Reprint",	"By RRN",	""},
+	
+
+	{"EOD", "All Trans",	""},
+	{"EOD",	"Purchase",		""},
+	{"EOD",	"CashBack",	    ""},
+	{"EOD",	"PreAuth",		""},
+	{"EOD",	"Completion",	""},
+	{"EOD",	"Cash Advance",	""},
+    {"EOD", "Refund",       ""},
+	{"EOD", "Reversal",     ""},
+
+	{MAINTAINANCE ,	"Prep Terminal", ""},
+	{MAINTAINANCE ,	"Get Parameter", ""},
+	{MAINTAINANCE ,	"Call Home",	 ""},
+	{MAINTAINANCE ,	"Acct Selection", ""},
+	{MAINTAINANCE ,	"Trans Type",    ""},
+	{MAINTAINANCE ,	"Notification ID", ""},
 };
-
-
 
 int sdk_power_proc_page(void *pval)
 {
@@ -96,7 +128,7 @@ static void ShowString()
 				gui_text_out_ex(0, GUI_LINE_TOP(2), "\xD8\xAA\xD8\xB1\xD8\xAD\xD9\x8A\xD8\xA8");
 				gui_text_out_ex(0, GUI_LINE_TOP(3), "\xED\x99\x98\xEC\x98\x81\xED\x95\xA9\xEB\x8B\x88\xEB\x8B\xA4");
 				gui_text_out_ex(0, GUI_LINE_TOP(4), "\xD8\xAE\xD9\x88\xD8\xB4\x20\xD8\xA2\xD9\x85\xD8\xAF\xDB\x8C\xD8\xAF");
-				//gui_text_out_ex(0, GUI_LINE_TOP(5), "�ا֧ݧѧߧߧ���");
+				//gui_text_out_ex(0, GUI_LINE_TOP(5), "�ا֧ݧѧߧߧ���");
 				gui_end_batch_paint();
 			}
 			else if (pmsg.message_id == GUI_KEYPRESS){		// Handling key messages
@@ -110,6 +142,42 @@ static void ShowString()
 			gui_proc_default_msg(&pmsg);				//  Let the system handle some common messages
 		}
 	}
+}
+
+void aboutTerminal(void )
+{
+	int key = UUTIL_TIMEOUT;
+
+	while ( key != GUI_KEY_QUIT ) {
+		//TODO: Start your application
+		char data[32]={0};
+		gui_begin_batch_paint();
+		gui_clear_dc();
+		if(key == UUTIL_TIMEOUT) 
+		{
+			sprintf(data,"Terminal SN:");
+		}
+		
+		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(1), data);
+
+		getTerminalSn(data);	
+		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(2), data);
+		sprintf(data,"TID:");	
+		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(3), data);
+		// I can Print the Terminal ID here
+		gui_end_batch_paint();
+
+		key = Util_WaitKey(1);
+
+		switch(key){
+			case GUI_KEY_QUIT:
+				break;
+			default:
+				break;
+		}
+		
+	}
+
 }
 
 
@@ -194,10 +262,20 @@ static int _menu_proc(char *pid)
 	else if (strcmp(pid, "M1 Test") == 0)
 	{
 		sdk_M1test();
+	} else if (strcmp(pid, "About") == 0)
+	{
+		aboutTerminal();
+	} else if (strcmp(pid, "My Plain") == 0)
+	{
+		sendAndReceiveDemoRequest(0, 80);
+
+	} else if (strcmp(pid, "My Ssl") == 0)
+	{
+		sendAndReceiveDemoRequest(1, 443);
+		
 	}
 	return 0;
 }
-
 
 void get_yyyymmdd_str(char *buff)
 {
@@ -278,10 +356,18 @@ void sdk_main_page()
 				if (pmsg.wparam == GUI_KEY_OK || pmsg.wparam == GUI_KEY_QUIT){
 					gui_main_menu_show(MAIN_MENU_PAGE , 0);	
 					gui_post_message(GUI_GUIPAINT, 0 , 0);
-				}
-				else if ( pmsg.wparam == GUI_KEY_1 )
+
+				} else if ( pmsg.wparam == GUI_KEY_1 )
 				{
 					sdk_simple_page();
+					gui_post_message(GUI_GUIPAINT, 0 , 0);
+
+				} else if (pmsg.wparam == GUI_KEY_F1){
+					gui_main_menu_show(SUPERVISION , 0);	
+					gui_post_message(GUI_GUIPAINT, 0 , 0);
+
+				} else if (pmsg.wparam == GUI_KEY_F2){
+					gui_main_menu_show(MAINTAINANCE , 0);	
 					gui_post_message(GUI_GUIPAINT, 0 , 0);
 				}
 			}
@@ -297,5 +383,3 @@ void sdk_main_page()
 		}
 	}
 }
-
-

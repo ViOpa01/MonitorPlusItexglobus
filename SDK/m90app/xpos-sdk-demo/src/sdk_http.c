@@ -329,8 +329,13 @@ static void http_test()
 	printf("connect server ret= %d,%s:%d\r\n" , ret , ip , port);
 
 	if(ret == 0){
-		comm_sock_send(sock , (unsigned char *)buff ,  strlen(buff));	// 		Send http request
+		printf("Request >>>> : \n%s\n", buff);
+
+		ret = comm_sock_send(sock , (unsigned char *)buff ,  strlen(buff));	// 		Send http request
+		printf("comm sock send ret : %d\n", ret);
+
 		ret = http_recv(sock, recv, 1024, 30000);		// Receive http response
+		printf("http recv ret : %d\n", ret);
 		if (ret > 0)
 		{
 			sprintf(buff, "recv buff:%s", recv);
