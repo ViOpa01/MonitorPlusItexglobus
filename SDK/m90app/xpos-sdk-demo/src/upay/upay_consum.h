@@ -2,4 +2,4 @@
 
 int upay_consum(void);
 int tt_upay_consum(void);
-void sendAndReceiveDemoRequest(int iSsl, int port);
+void sendAndReceiveDemoRequest(const int iSsl, const int port);

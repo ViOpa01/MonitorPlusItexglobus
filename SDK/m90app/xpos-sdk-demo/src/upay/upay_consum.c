@@ -100,7 +100,7 @@ void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 
 	APP_TRACE( "TestDownloadAID" );
 	memset(TerminalApps,0x00,sizeof(TERMINALAPPLIST));	
-	TerminalApps->bTermAppCount = 21;//AID length
+	TerminalApps->bTermAppCount = 22;//AID length
 	memcpy(TerminalApps->TermApp[0].AID, "\xA0\x00\x00\x00\x01\x10\x10", 7);//AID
 	TerminalApps->TermApp[0].AID_Length = 7;
 	memcpy(TerminalApps->TermApp[1].AID, "\xA0\x00\x00\x00\x03\x10\x10", 7);
@@ -143,7 +143,9 @@ void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 	TerminalApps->TermApp[19].AID_Length = 8;
 	memcpy(TerminalApps->TermApp[20].AID, "\xA0\x00\x00\x03\x33\x01\x01", 7);
 	TerminalApps->TermApp[20].AID_Length = 7;
-	for(i=0; i<21; i++)
+	memcpy(TerminalApps->TermApp[21].AID, "\xA0\x00\x00\x03\x71\x00\x01", 7);
+	TerminalApps->TermApp[21].AID_Length = 7;
+	for(i=0; i < 22; i++)
 	{
 		TerminalApps->TermApp[i].bTerminalPriority = 0x03;	//Terminal priority
 		TerminalApps->TermApp[i].bMaxTargetPercentageInt = 0x00;/*Offset randomly selected maximum target percentage*/
@@ -170,34 +172,28 @@ void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 
 }
 
-void sendAndReceiveDemoRequest(int iSsl, int port)
+void sendAndReceiveDemoRequest(const int iSsl, const int port)
 {
-	char request[0x1024] = {0};
-	char response[0x1024] = {0};
 	NetWorkParameters param = {0};
 
 	char msg[] = "Hello world";
 	param.port = port;
+	param.packetSize = 0;
 
-	int index = 0;
+
 	int msgl = strlen(msg);
 
-	index += sprintf(request + index , "GET %s HTTP/1.1\r\n", "/");
-	index += sprintf(request + index , "HOST: %s:%d\r\n" , "www.baidu.com", 443 /*param.port*/);//www.baidu.com
-	index += sprintf(request + index , "Connection: Keep-Alive\r\n");
-	index += sprintf(request + index , "Content-Length: %d\r\n", msgl);
-	index += sprintf(request + index , "Content-Type: text/plain;charset=UTF-8\r\n");	
-	index += sprintf(request + index , "\r\n");
+	param.packetSize += sprintf(&param.packet[param.packetSize], "GET %s HTTP/1.1\r\n", "/");
+	param.packetSize += sprintf(&param.packet[param.packetSize], "HOST: %s:%d\r\n" , "www.baidu.com", 443 /*param.port*/);//www.baidu.com
+	param.packetSize += sprintf(&param.packet[param.packetSize], "Connection: Keep-Alive\r\n");
+	param.packetSize += sprintf(&param.packet[param.packetSize], "Content-Length: %d\r\n", msgl);
+	param.packetSize += sprintf(&param.packet[param.packetSize], "Content-Type: text/plain;charset=UTF-8\r\n");	
+	param.packetSize += sprintf(&param.packet[param.packetSize], "\r\n");
 
-	index += sprintf(request + index , "%s", msg);
-
-	printf("Request :%s\n", request);
+	param.packetSize += sprintf(&param.packet[param.packetSize], "%s", msg);
 
 	param.isSsl = iSsl;
 	sprintf(param.host, "%s", "www.baidu.com");
-	printf("After printing host : %s\n", param.host);
-	param.packetSize = strlen(request);
-	sprintf(param.packet, "%s", request);
 
 	if (sendAndRecvDataSsl(&param) == SEND_RECEIVE_SUCCESSFUL)
 	{
