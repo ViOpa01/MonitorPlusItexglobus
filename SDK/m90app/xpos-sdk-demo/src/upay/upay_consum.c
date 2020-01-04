@@ -3,7 +3,7 @@
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
-#include "libitex/Test.h"
+#include "libitex/Nibss8583SelfTest.h"
 
 
 
@@ -200,7 +200,7 @@ int upay_consum( void )
 	// 	CAPUBLICKEY pkKey={0};
 
 	APP_TRACE( "upay_consum" );
-	testLib(stdout);
+	nibss8583SelfTest();
 
 	card_in=(st_read_card_in *)malloc(sizeof(st_read_card_in));
 	memset(card_in,0x00,sizeof(st_read_card_in));
