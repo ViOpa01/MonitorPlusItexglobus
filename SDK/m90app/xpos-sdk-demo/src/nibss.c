@@ -125,6 +125,10 @@ static int getParams(NetworkManagement *networkMangement)
 
     result = extractNetworkManagmentResponse(networkMangement, response, result);
 
+    if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime)) {
+        printf("Error syncing device with Nibss time");
+    }
+
     return result;
 }
 
