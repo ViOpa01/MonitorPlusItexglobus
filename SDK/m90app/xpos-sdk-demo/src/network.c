@@ -272,7 +272,7 @@ enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
 
 	printf("-------------------------------Receiving from the server----------------------------\n");
 
-	ret = socket_recv(COMM_SOCK, netParam->response, 4098 /*netParam->responseSize*/, 30000, netParam->isSsl);  // check for len very well
+	ret = socket_recv(COMM_SOCK, netParam->response,  sizeof(netParam->response), 30000, netParam->isSsl);  // check for len very well
     netParam->responseSize = ret;   // getting the response length
 
 	if(ret > 0) 
