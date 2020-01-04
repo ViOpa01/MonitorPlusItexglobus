@@ -9,10 +9,13 @@
 
 #include "util.h"
 #include "network.h"
+#include "menu_list.h"
 
 #define APP_VER "V1.1.2"
 #define LOGOIMG "xxxx\\logo2.bmp"
 
+
+#include "nibss.h"
 
 
 #define MAIN_MENU_PAGE	"main"
@@ -26,7 +29,7 @@
 // and the second parameter is set when the name is duplicated.
 static  const st_gui_menu_item_def _menu_def[] = {
 
-	{MAIN_MENU_PAGE ,	"Sale",			""},
+	{MAIN_MENU_PAGE ,	UI_PURCHASE,	""},
 	{MAIN_MENU_PAGE ,	"My Plain",		""},
 	{MAIN_MENU_PAGE ,	"My Ssl",		""},
 	{MAIN_MENU_PAGE ,	"CodePay",		""},
@@ -62,32 +65,32 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{"Others",		"View AID",		""},
 	{"Others",		"View CAPK",	""},
 
-	{SUPERVISION ,	"Reprint", 		 ""},
-	{SUPERVISION ,	"EOD",			 ""},
-	{SUPERVISION ,	"Network",	     ""},
-	{SUPERVISION ,	"Download Logo", ""},
-	{SUPERVISION ,	"About", 		 ""},
+	{SUPERVISION ,	UI_REPRINT, 	""},
+	{SUPERVISION ,	UI_EOD,			 ""},
+	{SUPERVISION ,	UI_NETWORK,	     ""},
+	{SUPERVISION ,	UI_DOWNLOAD_LOGO, ""},
+	{SUPERVISION ,	UI_ABOUT, 		 ""},
 
-	{"Reprint",	"Today",  	""},
-	{"Reprint",	"By Date",	""},
-	{"Reprint",	"By RRN",	""},
+	{UI_REPRINT,	UI_REPRINT_TODAY,  	""},
+	{UI_REPRINT,	UI_REPRINT_BY_DATE,	""},
+	{UI_REPRINT,	UI_REPRINT_BY_RRN,	""},
 	
 
-	{"EOD", "All Trans",	""},
-	{"EOD",	"Purchase",		""},
-	{"EOD",	"CashBack",	    ""},
-	{"EOD",	"PreAuth",		""},
-	{"EOD",	"Completion",	""},
-	{"EOD",	"Cash Advance",	""},
-    {"EOD", "Refund",       ""},
-	{"EOD", "Reversal",     ""},
+	{UI_EOD, 	UI_EOD_ALL_TRANS,	""},
+	{UI_EOD,	UI_EOD_PURCHASE,	""},
+	{UI_EOD,	UI_EOD_CASHBACK,	""},
+	{UI_EOD,	UI_EOD_PREAUTH,		""},
+	{UI_EOD,	UI_EOD_COMPLETION,	""},
+	{UI_EOD,	UI_EOD_CASHADVANCE,	""},
+    {UI_EOD, 	UI_EOD_REFUND,      ""},
+	{UI_EOD, 	UI_EOD_REVERSAL,    ""},
 
-	{MAINTAINANCE ,	"Prep Terminal", ""},
-	{MAINTAINANCE ,	"Get Parameter", ""},
-	{MAINTAINANCE ,	"Call Home",	 ""},
-	{MAINTAINANCE ,	"Acct Selection", ""},
-	{MAINTAINANCE ,	"Trans Type",    ""},
-	{MAINTAINANCE ,	"Notification ID", ""},
+	{MAINTAINANCE ,	UI_PREP_TERMINAL,	 ""},
+	{MAINTAINANCE ,	UI_GET_PARAMETER,	 ""},
+	{MAINTAINANCE ,	UI_CALL_HOME,	 	 ""},
+	{MAINTAINANCE ,	UI_ACCNT_SELECTION,  ""},
+	{MAINTAINANCE ,	UI_TRANS_TYPE,   	 ""},
+	{MAINTAINANCE ,	UI_NOTIF_ID, 		 ""},
 };
 
 int sdk_power_proc_page(void *pval)
@@ -191,7 +194,7 @@ static int _menu_proc(char *pid)
 	int pos = 0;
 	char msg[256];
 
-	 if (strcmp(pid , "Sale") == 0){
+	 if (strcmp(pid , UI_PURCHASE) == 0){
 		upay_consum();
 	}
 	else if (strcmp(pid , "Version") == 0){
@@ -262,7 +265,7 @@ static int _menu_proc(char *pid)
 	else if (strcmp(pid, "M1 Test") == 0)
 	{
 		sdk_M1test();
-	} else if (strcmp(pid, "About") == 0)
+	} else if (strcmp(pid, UI_ABOUT) == 0)
 	{
 		aboutTerminal();
 	} else if (strcmp(pid, "My Plain") == 0)
@@ -273,6 +276,8 @@ static int _menu_proc(char *pid)
 	{
 		sendAndReceiveDemoRequest(1, 443);
 		
+	} else if(!strcmp(pid, "Prep Terminal")) {
+		handshake();
 	}
 	return 0;
 }

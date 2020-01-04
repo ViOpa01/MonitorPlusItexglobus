@@ -59,7 +59,7 @@ int upay_print_proc( st_card_info *card_info )
 	upay_print_line("DATE/TIME:", "2018-03-02 10:11:06");
 
 	UPrint_Str("AMOUNT", 1, 1, 1);
-	UPrint_Str("RMB ", 2, 1, 0);	
+	UPrint_Str("NGN ", 2, 1, 0);	
 	amt = ATOLL((const char *)card_info->amt);
 	sprintf(samt, "%0.2f", amt/100.00);
 	UPrint_Str(samt, 2, 1, 1);
