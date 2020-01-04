@@ -10,9 +10,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-//internal
+//MoreFun
 #include "libapi_xpos/inc/libapi_system.h"
 #include "sdk_xgui.h"
+#include "libapi_xpos/inc/libapi_security.h"
 
 //Itex
 #include "nibss.h"
@@ -21,7 +22,6 @@
 #include "Nibss8583.h"
 
 #define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
-
 
 static void getDateTime(char *yyyymmddhhmmss)
 {
@@ -125,7 +125,8 @@ static int getParams(NetworkManagement *networkMangement)
 
     result = extractNetworkManagmentResponse(networkMangement, response, result);
 
-    if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime)) {
+    if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
+    {
         printf("Error syncing device with Nibss time");
     }
 
@@ -150,6 +151,43 @@ static int sCallHome(NetworkManagement *networkMangement)
     result = extractNetworkManagmentResponse(networkMangement, response, result);
 
     return result;
+}
+
+static short injectKeys(const NetworkManagement *networkMangement, const int gid)
+{
+    char kvc[8]; //kvc is Key plaintext encryption eight 0x00
+
+    memset(kvc, 0x00, sizeof(kvc));
+    mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, networkMangement->masterKey.clearKeyBcd, kvc);
+
+    if (strcmp(kvc, networkMangement->masterKey.checkValue))
+    { //This will never happen.
+        //TODO: Display error on Pos screen and wait for 8 seconds.
+        printf("Master key check value failed.");
+        return -1;
+    }
+
+    memset(kvc, 0x00, sizeof(kvc));
+    mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, networkMangement->pinKey.encryptedKeyBcd, kvc);
+
+    if (strcmp(kvc, networkMangement->pinKey.checkValue))
+    { //This will never happen.
+        //TODO: Display error on Pos screen and wait for 8 seconds.
+        printf("Pinkey key check value failed.");
+        return -2;
+    }
+
+    memset(kvc, 0x00, sizeof(kvc));
+    mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, networkMangement->sessionKey.encryptedKeyBcd, kvc);
+
+    if (strcmp(kvc, networkMangement->sessionKey.checkValue))
+    { //This will never happen.
+        //TODO: Display error on Pos screen and wait for 8 seconds.
+        printf("Session key check value failed.");
+        return -3;
+    }
+
+    return 0;
 }
 
 short handshake(void)
@@ -203,6 +241,11 @@ short handshake(void)
     if (i == maxRetry)
         return -4;
 
+    if (injectKeys(&networkMangement, 0))
+    {
+        return -5;
+    }
+
     addCallHomeData(&networkMangement);
 
     for (i = 0; i < maxRetry; i++)
@@ -210,4 +253,6 @@ short handshake(void)
         if (!sCallHome(&networkMangement))
             break;
     }
+
+    return 0;
 }
