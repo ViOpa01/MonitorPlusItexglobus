@@ -3,7 +3,7 @@
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
-#include "libitex/Nibss8583SelfTest.h"
+#include "Nibss8583SelfTest.h"
 
 #include "network.h"
 

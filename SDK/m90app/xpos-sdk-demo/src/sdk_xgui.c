@@ -14,6 +14,8 @@
 #define LOGOIMG "xxxx\\logo2.bmp"
 
 
+#include "nibss.h"
+
 
 #define MAIN_MENU_PAGE	"main"
 #define SUPERVISION		"supervision"
@@ -191,6 +193,8 @@ static int _menu_proc(char *pid)
 	int pos = 0;
 	char msg[256];
 
+	printf("Pid -> %s\n", pid);
+
 	 if (strcmp(pid , "Sale") == 0){
 		upay_consum();
 	}
@@ -273,6 +277,8 @@ static int _menu_proc(char *pid)
 	{
 		sendAndReceiveDemoRequest(1, 443);
 		
+	} else if(!strcmp(pid, "Prep Terminal")) {
+		handshake();
 	}
 	return 0;
 }
