@@ -1,6 +1,6 @@
 
 
-#¿âÂ·¾¶
+#ï¿½ï¿½Â·ï¿½ï¿½
 LIB_PATH=	$(OUTPUT_PATH) \
 			$(LINUX_PLAT_COMPONENT_LINUX)/platform/libec20 \
 			$(QL_EXP_LDLIBS) \
@@ -11,13 +11,13 @@ STD_LIB=dsi_netctrl dsutils qmiservices qmi_cci \
 QL_LIB=ql_at ql_common_api ql_peripheral ql_qcmap_client
 
 		
-#Á´½Ó¿â
+#ï¿½ï¿½ï¿½Ó¿ï¿½
 APP_LIB=apppub atc vcps rupay quics paypass dpas amex emv emvpub entry emvapi api_xpos net power producttest pub rpc switchcheck tms ucosii xgui \
-    pthread  mf_driver mbedtls wifi json
+    pthread  mf_driver mbedtls wifi json nibss8583
     
 LINK_LIB= $(APP_LIB) $(QL_LIB) $(STD_LIB)
 
-#includeÄ¿Â¼Â·¾¶
+#includeÄ¿Â¼Â·ï¿½ï¿½
 INC_PATH=$(LINUX_PLAT_COMPONENT_LINUX) \
 			$(LINUX_PLAT_COMPONENT_LINUX)/EntryPoint/lib_emvpub/inc \
 			$(LINUX_PLAT_COMPONENT_LINUX)/platform/inc \
@@ -27,6 +27,6 @@ INC_PATH=$(LINUX_PLAT_COMPONENT_LINUX) \
 			$(LINUX_PLAT_COMPONENT_LINUX)/apppub/inc \
 
 
-#sourceÎÄ¼þÁÐ±íurceÎÄ¼þÁÐ±í
+#sourceï¿½Ä¼ï¿½ï¿½Ð±ï¿½urceï¿½Ä¼ï¿½ï¿½Ð±ï¿½
 SRC_DIRS := $(shell find $(PROJECT_PATH)/src -maxdepth 5 -type d)
 SRC_LIST := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))

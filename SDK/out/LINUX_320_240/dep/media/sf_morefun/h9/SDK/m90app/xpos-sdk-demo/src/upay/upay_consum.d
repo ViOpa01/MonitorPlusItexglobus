@@ -8,4 +8,5 @@
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../libapi_xpos/inc/libapi_emv.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../libapi_xpos/inc/def.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../libapi_xpos/inc/libapi_pub.h \
+ /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../libitex/Test.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/network.h
