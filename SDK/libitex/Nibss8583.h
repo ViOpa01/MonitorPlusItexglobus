@@ -1,7 +1,7 @@
 /**
- * File: Nibss8583.h
+ * File: Nibss8583Generic.h
  * ------------------------
- * Defines a new interface for nibss iso 8583
+ * Defines a new interface for building Nibss Iso8583 packets.
  * @author Opeyemi Ajani.
  */
 
@@ -73,7 +73,6 @@ extern "C"
         CHIP_MODE,
         MAGSTRIPE_MODE,
         FALLBACK_MODE,
-        UNKNOWN_MODE,
 
     };
 
@@ -209,6 +208,17 @@ extern "C"
         char clearPtadKey[33];
 
     } NetworkManagement;
+
+    enum CommsStatus
+    {
+        SEND_RECEIVE_SUCCESSFUL,
+        CONNECTION_FAILED,
+        SENDING_FAILED,
+        RECEIVING_FAILED,
+
+        MANUAL_REVERSAL_NEEDED,
+        AUTO_REVERSAL_SUCCESSUL,
+    };
 
     int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
     int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);

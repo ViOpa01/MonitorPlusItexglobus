@@ -16,4 +16,5 @@
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../libapi_xpos/inc/libapi_util.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/network.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/menu_list.h \
- /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/nibss.h
+ /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/nibss.h \
+ /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/Nibss8583.h

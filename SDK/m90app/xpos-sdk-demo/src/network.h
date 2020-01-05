@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _NETWORK_INCLUDED
+#define _NETWORK_INCLUDED
 
 enum CommsStatus {
    
@@ -26,3 +27,7 @@ typedef struct
 
 
 enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam);
+
+#endif 
+
+

@@ -10,18 +10,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-//internal
+//MoreFun
 #include "libapi_xpos/inc/libapi_system.h"
 #include "sdk_xgui.h"
+#include "libapi_xpos/inc/libapi_security.h"
+#include "libapi_xpos/inc/libapi_file.h"
 
 //Itex
 #include "nibss.h"
 
-//shared
-#include "Nibss8583.h"
-
 #define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
-
+#define MERCHANT_FILE "MerchantParams.dat"
+#define SESSION_KEY_FILE "SessionKey.dat"
 
 static void getDateTime(char *yyyymmddhhmmss)
 {
@@ -42,6 +42,79 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->deviceModel, "H9", sizeof(networkMangement->deviceModel));
     strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Verifone\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
+}
+
+static int inSaveParameters(const void *parameters, const char *filename, const int recordSize)
+{
+    int ret = 0;
+    int fp;
+
+    ret = UFile_OpenCreate(filename, FILE_PRIVATE, FILE_CREAT, &fp, recordSize); //File open / create
+
+    if (ret != UFILE_SUCCESS)
+    {
+        gui_messagebox_show("FileTest", "File open or create fail", "", "confirm", 0);
+        return ret;
+    }
+
+    UFile_Write(fp, (char *)parameters, recordSize);
+    UFile_Close(fp);
+
+    return UFILE_SUCCESS;
+}
+
+static int inGetParameters(void *parameters, const char *filename, const int recordSize)
+{
+    int ret = 0;
+    int fp;
+
+    ret = UFile_OpenCreate(filename, FILE_PRIVATE, FILE_RDONLY, &fp, recordSize); //File open / create
+
+    if (ret != UFILE_SUCCESS)
+    {
+        gui_messagebox_show("FileTest", "File open or create fail", "", "confirm", 0);
+        return ret;
+    }
+
+    UFile_Lseek(fp, 0, 0); // seek 0
+    memset((char *) parameters, 0x00, recordSize);
+    UFile_Read(fp, (char *)parameters, recordSize);
+    UFile_Close(fp);
+
+    return UFILE_SUCCESS;
+}
+
+
+int getSessionKey(char sessionKey[33])
+{
+    int result = -1;
+    NetworkKey sessionKeyStruct;
+
+    result = inGetParameters(&sessionKeyStruct, SESSION_KEY_FILE, sizeof(NetworkKey));
+
+    if (!result) {
+        strncpy(sessionKey, sessionKeyStruct.clearKey, 32);
+    }
+
+    return result;
+}
+
+int getParameters(MerchantParameters *merchantParameters)
+{
+    int result = -1;
+
+    result = inGetParameters(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters));
+
+    return result;
+}
+
+int saveParameters(const MerchantParameters *merchantParameters)
+{
+    int result = -1;
+
+    result = inSaveParameters(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters));
+
+    return result;
 }
 
 static int getTmk(NetworkManagement *networkMangement)
@@ -65,6 +138,15 @@ static int getTmk(NetworkManagement *networkMangement)
     return result;
 }
 
+static int saveSessionKey(const NetworkKey * sessionKey)
+{
+     int result = -1;
+
+    result = inSaveParameters(sessionKey, SESSION_KEY_FILE, sizeof(NetworkKey));
+
+    return result;
+}
+
 static int getTsk(NetworkManagement *networkMangement)
 {
     int result = -1;
@@ -82,6 +164,10 @@ static int getTsk(NetworkManagement *networkMangement)
     //TODO: Send packet to host,  get response, return negative number on error.
 
     result = extractNetworkManagmentResponse(networkMangement, response, result);
+
+    if (!result) {
+        saveSessionKey(&networkMangement->sessionKey);
+    }
 
     return result;
 }
@@ -125,7 +211,8 @@ static int getParams(NetworkManagement *networkMangement)
 
     result = extractNetworkManagmentResponse(networkMangement, response, result);
 
-    if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime)) {
+    if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
+    {
         printf("Error syncing device with Nibss time");
     }
 
@@ -152,7 +239,44 @@ static int sCallHome(NetworkManagement *networkMangement)
     return result;
 }
 
-short handshake(void)
+static short injectKeys(const NetworkManagement *networkMangement, const int gid)
+{
+    char kvc[8]; //kvc is Key plaintext encryption eight 0x00
+
+    memset(kvc, 0x00, sizeof(kvc));
+    mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, networkMangement->masterKey.clearKeyBcd, kvc);
+
+    if (strcmp(kvc, networkMangement->masterKey.checkValue))
+    { //This will never happen.
+        //TODO: Display error on Pos screen and wait for 8 seconds.
+        printf("Master key check value failed.");
+        return -1;
+    }
+
+    memset(kvc, 0x00, sizeof(kvc));
+    mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, networkMangement->pinKey.encryptedKeyBcd, kvc);
+
+    if (strcmp(kvc, networkMangement->pinKey.checkValue))
+    { //This will never happen.
+        //TODO: Display error on Pos screen and wait for 8 seconds.
+        printf("Pinkey key check value failed.");
+        return -2;
+    }
+
+    memset(kvc, 0x00, sizeof(kvc));
+    mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, networkMangement->sessionKey.encryptedKeyBcd, kvc);
+
+    if (strcmp(kvc, networkMangement->sessionKey.checkValue))
+    { //This will never happen.
+        //TODO: Display error on Pos screen and wait for 8 seconds.
+        printf("Session key check value failed.");
+        return -3;
+    }
+
+    return 0;
+}
+
+short uiHandshake(void)
 {
     NetworkManagement networkMangement;
     int maxRetry = 2;
@@ -203,6 +327,11 @@ short handshake(void)
     if (i == maxRetry)
         return -4;
 
+    if (injectKeys(&networkMangement, 0))
+    {
+        return -5;
+    }
+
     addCallHomeData(&networkMangement);
 
     for (i = 0; i < maxRetry; i++)
@@ -210,4 +339,9 @@ short handshake(void)
         if (!sCallHome(&networkMangement))
             break;
     }
+
+    saveParameters(&networkMangement.merchantParameters);
+
+    return 0;
 }
+
