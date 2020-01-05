@@ -73,6 +73,7 @@ extern "C"
         CHIP_MODE,
         MAGSTRIPE_MODE,
         FALLBACK_MODE,
+        UNKNOWN_MODE,
 
     };
 

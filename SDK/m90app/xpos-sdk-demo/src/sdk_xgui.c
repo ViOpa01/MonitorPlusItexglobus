@@ -278,7 +278,7 @@ static int _menu_proc(char *pid)
 		sendAndReceiveDemoRequest(1, 443);
 		
 	} else if(!strcmp(pid, "Prep Terminal")) {
-		if (handshake()) {
+		if (uiHandshake()) {
 			//TODO: display prepping failed on screen
 		}
 	}

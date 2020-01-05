@@ -21,6 +21,7 @@
 
 #define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
 #define MERCHANT_FILE "MerchantParams.dat"
+#define SESSION_KEY_FILE "SessionKey.dat"
 
 static void getDateTime(char *yyyymmddhhmmss)
 {
@@ -43,12 +44,10 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
 }
 
-static int inSaveParameters(const MerchantParameters *merchantParameters, const char *filename)
+static int inSaveParameters(const void *parameters, const char *filename, const int recordSize)
 {
     int ret = 0;
     int fp;
-
-    const int recordSize = sizeof(MerchantParameters);
 
     ret = UFile_OpenCreate(filename, FILE_PRIVATE, FILE_CREAT, &fp, recordSize); //File open / create
 
@@ -58,18 +57,16 @@ static int inSaveParameters(const MerchantParameters *merchantParameters, const 
         return ret;
     }
 
-    UFile_Write(fp, (char *)merchantParameters, recordSize);
+    UFile_Write(fp, (char *)parameters, recordSize);
     UFile_Close(fp);
 
     return UFILE_SUCCESS;
 }
 
-static int inGetParameters(MerchantParameters *merchantParameters, const char *filename)
+static int inGetParameters(void *parameters, const char *filename, const int recordSize)
 {
     int ret = 0;
     int fp;
-
-    const int recordSize = sizeof(MerchantParameters);
 
     ret = UFile_OpenCreate(filename, FILE_PRIVATE, FILE_RDONLY, &fp, recordSize); //File open / create
 
@@ -80,18 +77,33 @@ static int inGetParameters(MerchantParameters *merchantParameters, const char *f
     }
 
     UFile_Lseek(fp, 0, 0); // seek 0
-    memset(merchantParameters, 0x00, recordSize);
-    UFile_Read(fp, (char *)merchantParameters, recordSize);
+    memset((char *) parameters, 0x00, recordSize);
+    UFile_Read(fp, (char *)parameters, recordSize);
     UFile_Close(fp);
 
     return UFILE_SUCCESS;
+}
+
+
+int getSessionKey(char sessionKey[33])
+{
+    int result = -1;
+    NetworkKey sessionKeyStruct;
+
+    result = inGetParameters(&sessionKeyStruct, SESSION_KEY_FILE, sizeof(NetworkKey));
+
+    if (!result) {
+        strncpy(sessionKey, sessionKeyStruct.clearKey, 32);
+    }
+
+    return result;
 }
 
 int getParameters(MerchantParameters *merchantParameters)
 {
     int result = -1;
 
-    result = inGetParameters(merchantParameters, MERCHANT_FILE);
+    result = inGetParameters(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters));
 
     return result;
 }
@@ -100,7 +112,7 @@ int saveParameters(const MerchantParameters *merchantParameters)
 {
     int result = -1;
 
-    result = inSaveParameters(merchantParameters, MERCHANT_FILE);
+    result = inSaveParameters(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters));
 
     return result;
 }
@@ -126,6 +138,15 @@ static int getTmk(NetworkManagement *networkMangement)
     return result;
 }
 
+static int saveSessionKey(const NetworkKey * sessionKey)
+{
+     int result = -1;
+
+    result = inSaveParameters(sessionKey, SESSION_KEY_FILE, sizeof(NetworkKey));
+
+    return result;
+}
+
 static int getTsk(NetworkManagement *networkMangement)
 {
     int result = -1;
@@ -143,6 +164,10 @@ static int getTsk(NetworkManagement *networkMangement)
     //TODO: Send packet to host,  get response, return negative number on error.
 
     result = extractNetworkManagmentResponse(networkMangement, response, result);
+
+    if (!result) {
+        saveSessionKey(&networkMangement->sessionKey);
+    }
 
     return result;
 }
@@ -251,7 +276,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     return 0;
 }
 
-short handshake(void)
+short uiHandshake(void)
 {
     NetworkManagement networkMangement;
     int maxRetry = 2;

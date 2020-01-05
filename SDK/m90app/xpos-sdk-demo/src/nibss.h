@@ -16,9 +16,12 @@ extern "C"
 
 #include "Nibss8583.h"
 
-short handshake(void);
+short uiHandshake(void);
+
+
 int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);
+int getSessionKey(char sessionKey[33]);
 
 
 #ifdef __cplusplus
