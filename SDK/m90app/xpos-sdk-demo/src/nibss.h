@@ -14,7 +14,12 @@ extern "C"
 #ifndef _ITEX_NIBSS_INCLUDED
 #define _ITEX_NIBSS_INCLUDED
 
+#include "Nibss8583.h"
+
 short handshake(void);
+int getParameters(MerchantParameters * merchantParameters);
+int saveParameters(const MerchantParameters * merchantParameters);
+
 
 #ifdef __cplusplus
 }

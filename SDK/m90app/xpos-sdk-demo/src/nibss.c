@@ -14,14 +14,13 @@
 #include "libapi_xpos/inc/libapi_system.h"
 #include "sdk_xgui.h"
 #include "libapi_xpos/inc/libapi_security.h"
+#include "libapi_xpos/inc/libapi_file.h"
 
 //Itex
 #include "nibss.h"
 
-//shared
-#include "Nibss8583.h"
-
 #define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
+#define MERCHANT_FILE "MerchantParams.dat"
 
 static void getDateTime(char *yyyymmddhhmmss)
 {
@@ -42,6 +41,68 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->deviceModel, "H9", sizeof(networkMangement->deviceModel));
     strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Verifone\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
+}
+
+static int inSaveParameters(const MerchantParameters *merchantParameters, const char *filename)
+{
+    int ret = 0;
+    int fp;
+
+    const int recordSize = sizeof(MerchantParameters);
+
+    ret = UFile_OpenCreate(filename, FILE_PRIVATE, FILE_CREAT, &fp, recordSize); //File open / create
+
+    if (ret != UFILE_SUCCESS)
+    {
+        gui_messagebox_show("FileTest", "File open or create fail", "", "confirm", 0);
+        return ret;
+    }
+
+    UFile_Write(fp, (char *)merchantParameters, recordSize);
+    UFile_Close(fp);
+
+    return UFILE_SUCCESS;
+}
+
+static int inGetParameters(MerchantParameters *merchantParameters, const char *filename)
+{
+    int ret = 0;
+    int fp;
+
+    const int recordSize = sizeof(MerchantParameters);
+
+    ret = UFile_OpenCreate(filename, FILE_PRIVATE, FILE_RDONLY, &fp, recordSize); //File open / create
+
+    if (ret != UFILE_SUCCESS)
+    {
+        gui_messagebox_show("FileTest", "File open or create fail", "", "confirm", 0);
+        return ret;
+    }
+
+    UFile_Lseek(fp, 0, 0); // seek 0
+    memset(merchantParameters, 0x00, recordSize);
+    UFile_Read(fp, (char *)merchantParameters, recordSize);
+    UFile_Close(fp);
+
+    return UFILE_SUCCESS;
+}
+
+int getParameters(MerchantParameters *merchantParameters)
+{
+    int result = -1;
+
+    result = inGetParameters(merchantParameters, MERCHANT_FILE);
+
+    return result;
+}
+
+int saveParameters(const MerchantParameters *merchantParameters)
+{
+    int result = -1;
+
+    result = inSaveParameters(merchantParameters, MERCHANT_FILE);
+
+    return result;
 }
 
 static int getTmk(NetworkManagement *networkMangement)
@@ -254,5 +315,8 @@ short handshake(void)
             break;
     }
 
+    saveParameters(&networkMangement.merchantParameters);
+
     return 0;
 }
+

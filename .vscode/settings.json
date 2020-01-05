@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "libapi_file.h": "c",
+        "nibss8583.h": "c"
+    }
+}
