@@ -23,13 +23,20 @@
 #define MAINTAINANCE	"maintanance"
 
 
-
 // Define the menu array, the first parameter is the name of the parent menu, 
 // the second parameter is the name of the current menu,
 // and the second parameter is set when the name is duplicated.
 static  const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE ,	UI_PURCHASE,	""},
+    {MAIN_MENU_PAGE ,	UI_CASHBACK,	""},
+	{MAIN_MENU_PAGE ,	UI_PREAUTH,	    ""},
+	{MAIN_MENU_PAGE ,	UI_COMPLETION,	""},
+	{MAIN_MENU_PAGE ,	UI_REVERSAL,	""},
+	{MAIN_MENU_PAGE ,	UI_REFUND,	""},
+	{MAIN_MENU_PAGE ,	UI_CASHADVANCE,	""},
+	{MAIN_MENU_PAGE ,	UI_BALANCE,	""},
+
 	{MAIN_MENU_PAGE ,	"My Plain",		""},
 	{MAIN_MENU_PAGE ,	"My Ssl",		""},
 	{MAIN_MENU_PAGE ,	"CodePay",		""},
@@ -183,6 +190,30 @@ void aboutTerminal(void )
 
 }
 
+static short eftHandler(const char * pid)
+{
+	 if (strcmp(pid , UI_PURCHASE) == 0){
+		 eftTrans(EFT_PURCHASE);
+	} else if(strcmp(pid , UI_CASHBACK) == 0) {
+		eftTrans(EFT_CASHBACK);
+	} else if(strcmp(pid , UI_PREAUTH) == 0) {
+		eftTrans(EFT_PREAUTH);
+	} else if(strcmp(pid , UI_COMPLETION) == 0) {
+		eftTrans(EFT_COMPLETION);
+	}else if(strcmp(pid , UI_REVERSAL) == 0) {
+		eftTrans(EFT_REVERSAL);
+	}else if(strcmp(pid , UI_REFUND) == 0) {
+		eftTrans(EFT_REFUND);
+	}else if(strcmp(pid , UI_CASHADVANCE) == 0) {
+		eftTrans(EFT_CASHADVANCE);
+	}else if(strcmp(pid , UI_BALANCE) == 0) {
+		eftTrans(EFT_BALANCE);
+	} else {
+		return -1;
+	}
+
+	return 0;
+}
 
 // The menu callback function, as long as all the menu operations of this function are registered, 
 // this function will be called, and the selected menu name will be returned. 
@@ -194,10 +225,9 @@ static int _menu_proc(char *pid)
 	int pos = 0;
 	char msg[256];
 
-	 if (strcmp(pid , UI_PURCHASE) == 0){
-		upay_consum();
-	}
-	else if (strcmp(pid , "Version") == 0){
+	if (!eftHandler(pid)){
+		return 0;
+	}else if (strcmp(pid , "Version") == 0){
 		sprintf(msg , "app:%s\r\n", APP_VER);
 		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
 		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());

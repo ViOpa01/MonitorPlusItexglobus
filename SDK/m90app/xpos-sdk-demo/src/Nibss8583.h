@@ -142,6 +142,8 @@ extern "C"
         char currencyCode[5];
         char pinData[17];
         char iccData[511];
+        unsigned char iccDataBcd[256];
+        unsigned int iccDataBcdLen;
         char echoData[256];
         short isFallback;
         char secondaryMessageHashValue[64];

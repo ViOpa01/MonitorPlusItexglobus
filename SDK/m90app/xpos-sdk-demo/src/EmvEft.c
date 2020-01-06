@@ -310,7 +310,12 @@ static short orginalDataRequired(const enum TransType transType)
 
 void getRrn(char rrn[13])
 {
+	char yyyymmddhhmmss[15] = {'\0'};
+
 	//TODO: create rrn
+	Sys_GetDateTime(yyyymmddhhmmss);
+	strncpy(rrn, &yyyymmddhhmmss[2], 12);
+	rrn[12] = 0;
 }
 
 void eftTrans(const enum TransType transType)
@@ -386,9 +391,6 @@ int performEft(Eft * eft)
 	card_in->pin_timeover=60000;
 	strcpy(card_in->title, title);
 	strcpy(card_in->card_page_msg, "Please insert/swipe");//Swipe interface prompt information, a line of 20 characters, up to two lines, automatic branch.
-
-
-	
 
 	if (accountTypeRequired(eft->transType)) {
 		eft->fromAccount = getAccountType();
@@ -483,8 +485,8 @@ int performEft(Eft * eft)
 
 	
 	if (card_out->ic_data_len) {
-		//TODO: copy icc data
-		   // strncpy(eft->iccData, card_out->ic_data, card_out->ic_data_len);
+		eft->iccDataBcdLen = card_out->ic_data_len;
+		memcpy(eft->iccDataBcd, eft->iccDataBcd, eft->iccDataBcdLen);
 	}
 
 	if (card_out->pin_len) {

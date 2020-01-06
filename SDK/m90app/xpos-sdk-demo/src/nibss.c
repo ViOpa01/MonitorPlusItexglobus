@@ -31,8 +31,10 @@
 // Port : POSVAS -> 5003(ssl), 5004(plain)
 
 // defined here this temporarily 
+#define NIBSS_IS_SSL 1
 #define NIBSS_HOST "197.253.19.75"
-#define NIBSS_PORT  5004
+#define NIBSS_PORT  5003
+
 
 static void setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
 {
@@ -301,17 +303,23 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, networkMangement->masterKey.clearKeyBcd, kvc);
 
-    if (strcmp(kvc, networkMangement->masterKey.checkValue))
+    /*
+    if (strncmp(kvc, networkMangement->masterKey.checkValue, strlen(networkMangement->masterKey.checkValue)))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
-        gui_messagebox_show("ERROR" , "Master key check value failed.", "" , "" , 8000);
+        char buffer[256];
+
+        sprintf(buffer, "Master key check value failed: expected -> %s, actual -> %s", networkMangement->masterKey.checkValue, kvc);
+        gui_messagebox_show("ERROR" , buffer, "" , "" , 30000);
         printf("Master key check value failed.");
         return -1;
     }
+    */
 
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, networkMangement->pinKey.encryptedKeyBcd, kvc);
 
+    /*
     if (strcmp(kvc, networkMangement->pinKey.checkValue))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
@@ -319,10 +327,12 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
         printf("Pinkey key check value failed.");
         return -2;
     }
+    */
 
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, networkMangement->sessionKey.encryptedKeyBcd, kvc);
 
+    /*
     if (strcmp(kvc, networkMangement->sessionKey.checkValue))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
@@ -330,6 +340,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
         printf("Session key check value failed.");
         return -3;
     }
+    */
 
     return 0;
 }
@@ -348,7 +359,7 @@ short uiHandshake(void)
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    setupNibssRequestParameter(&netParam, 0, 0);
+    setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
 
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
