@@ -76,9 +76,21 @@ static int _connect_server_func_proc()
 	return ret ;
 }
 
+static int allDataReceived(unsigned char *packet, const int bytesRead)
+{
+    const int tpduSize = 2;
+    unsigned char bcdLen[2];
+    int msgLen;
+
+    memcpy(bcdLen, packet, tpduSize);
+    msgLen = ((bcdLen[0] << 8) + bcdLen[1]) + tpduSize;
+
+    return (msgLen == bytesRead) ? 1 : 0;
+}
+
 
 // Http receiving processing, the step is to receive the byte stream from the sock to parse out the header status code and length and other fields, and then receive the http body according to the length
-static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl)
+static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl, int isHttp)
 {
 	int index = 0;
 	unsigned int tick1;
@@ -110,7 +122,6 @@ static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl)
 		if(ret == 1){ 
 			return -2;
 		}
-		// 
 
         if(isSsl) 
         {
@@ -119,47 +130,66 @@ static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl)
         {
             ret = comm_sock_recv( sock, (unsigned char *)(buff + index), len - index , 700);
         }
-		
-		if(ret >= 0){
-			index += ret;
 
-			buff[index] = '\0';
-			phttpbody = (char *)strstr( buff ,"\r\n\r\n" ); // Http headend
-            
-			if(phttpbody!=0){
-				//char *p;				
-				int nrescode = getHttpStatusCode(buff);
-				printf( "Status Code: %d",nrescode );
+		printf("ret from comm_sock_recv : %d\n", ret);
 
-				if ( nrescode == 200){	
+	
+		if(isHttp){
 
-					nHttpHeadLen = phttpbody + 4 - buff;	
+			if(ret >= 0){
+				index += ret;
 
-					nHttpBodyLen = getContentLength(buff);
+				buff[index] = '\0';
+				phttpbody = (char *)strstr( buff ,"\r\n\r\n" ); // Http headend
+				
+				if(phttpbody!=0){
+					//char *p;				
+					int nrescode = getHttpStatusCode(buff);
+					printf( "Status Code: %d",nrescode );
 
-					printf("HeadLen:%d  Content-Length: %d\n", nHttpHeadLen, nHttpBodyLen);
+					if ( nrescode == 200){	
 
-					//if(nHttpBodyLen<=0) return -1;
+						nHttpHeadLen = phttpbody + 4 - buff;	
 
-					if (index >= nHttpHeadLen + nHttpBodyLen){		
-						//The receiving length is equal to the length of the head plus
-						memcpy(buff , phttpbody + 4 , nHttpBodyLen);
-                        printf( "http recv body: %s", buff );
-						return nHttpBodyLen;	// Receive completed, return to receive length
+						nHttpBodyLen = getContentLength(buff);
+
+						printf("HeadLen:%d  Content-Length: %d\n", nHttpHeadLen, nHttpBodyLen);
+
+						//if(nHttpBodyLen<=0) return -1;
+
+						if (index >= nHttpHeadLen + nHttpBodyLen){		
+							//The receiving length is equal to the length of the head plus
+							memcpy(buff , phttpbody + 4 , nHttpBodyLen);
+							printf( "http recv body: %s", buff );
+							return nHttpBodyLen;	// Receive completed, return to receive length
+						}
+						return ret;
 					}
-					return ret;
-				}
-				else{  //not 200
+					else{  //not 200
 
-					return -1;
+						return -1;
+					}
 				}
+							
+
+			}else {
+				return -1;
 			}
-                        
+		} else if(ret >= 0) {
 
+			// More work need to be done here in case all data don't come at once 
+			
+			if(ret > 0) {
+				index += ret;
+			}
+
+			if (allDataReceived((unsigned char*)buff, index)){
+				return index;
+			} 
+			
 		}
-		else {
-			return -1;
-		}	
+
+			
 	}
 
 	return -1;
@@ -167,8 +197,7 @@ static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl)
 
 enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
 {
-	char buff[0x1000]={0};
-	// char recv[2048]={0};
+
 	int ret = -1;
 	int sock = 0;
 	char apn[32] = "CMNET";
@@ -200,9 +229,9 @@ enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
 		m_connect_exit = 0;
 		m_connect_time = i + 1;
 
-		printf("connect server... ip = %s, port = %d\r\n", netParam->host,  netParam->port);
+		printf("connect server... ip = %s, port : %d\r\n", netParam->host,  netParam->port);
 		
-		sprintf(tmp , "Connection (%d) ..." , i + 1);
+		sprintf(tmp , "Connecting (%d) ..." , i + 1);
 		comm_page_set_page("Http", tmp , 1);
 
 		if(netParam->isSsl) 
@@ -261,6 +290,8 @@ enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
 			ret = comm_sock_send(COMM_SOCK , (unsigned char *)netParam->packet  ,  netParam->packetSize);	
 		}
 
+		printf("ret from comm send : %d\n", ret);
+
     /*
 		if(ret)
 		{
@@ -272,7 +303,7 @@ enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
 
 	printf("-------------------------------Receiving from the server----------------------------\n");
 
-	ret = socket_recv(COMM_SOCK, netParam->response,  sizeof(netParam->response), 30000, netParam->isSsl);  // check for len very well
+	ret = socket_recv(COMM_SOCK, netParam->response,  sizeof(netParam->response), 30000, netParam->isSsl, netParam->isHttp);  // check for len very well
     netParam->responseSize = ret;   // getting the response length
 
 	if(ret > 0) 

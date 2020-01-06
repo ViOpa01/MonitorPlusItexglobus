@@ -193,6 +193,7 @@ void sendAndReceiveDemoRequest(const int iSsl, const int port)
 	param.packetSize += sprintf(&param.packet[param.packetSize], "%s", msg);
 
 	param.isSsl = iSsl;
+	param.isHttp = 1;
 	sprintf(param.host, "%s", "www.baidu.com");
 
 	if (sendAndRecvDataSsl(&param) == SEND_RECEIVE_SUCCESSFUL)

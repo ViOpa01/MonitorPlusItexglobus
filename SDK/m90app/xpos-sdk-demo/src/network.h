@@ -1,6 +1,8 @@
 #ifndef _NETWORK_INCLUDED
 #define _NETWORK_INCLUDED
 
+//#include "Nibss8583.h"
+
 enum CommsStatus {
    
     SEND_RECEIVE_SUCCESSFUL,
@@ -23,6 +25,7 @@ typedef struct
     unsigned char host[64];
     int port;
     int isSsl;
+    int isHttp;
 } NetWorkParameters;
 
 

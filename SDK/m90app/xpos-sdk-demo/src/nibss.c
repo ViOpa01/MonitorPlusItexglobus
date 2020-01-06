@@ -18,10 +18,31 @@
 
 //Itex
 #include "nibss.h"
+#include "network.h"
+#include "util.h"
 
 #define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
 #define MERCHANT_FILE "MerchantParams.dat"
 #define SESSION_KEY_FILE "SessionKey.dat"
+
+// 197.253.19.75 live
+// 197.253.19.78 tests
+// Port : EPMS -> 5001(ssl), 5000 (plain)
+// Port : POSVAS -> 5003(ssl), 5004(plain)
+
+// defined here this temporarily 
+#define NIBSS_HOST "197.253.19.75"
+#define NIBSS_PORT  5004
+
+static void setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
+{
+
+    strncpy(netParam->host, NIBSS_HOST, strlen(NIBSS_HOST));
+    netParam->port = NIBSS_PORT;
+    netParam->isSsl = isSsl;
+    netParam->isHttp = isHttp;
+
+}
 
 static void getDateTime(char *yyyymmddhhmmss)
 {
@@ -117,11 +138,13 @@ int saveParameters(const MerchantParameters *merchantParameters)
     return result;
 }
 
-static int getTmk(NetworkManagement *networkMangement)
+static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netParam)
 {
     int result = -1;
     unsigned char packet[256];
     unsigned char response[512];
+
+    // setupNibssRequestParameter(&netParam, 0, 0);
 
     networkMangement->type = MASTER_KEY;
 
@@ -133,7 +156,15 @@ static int getTmk(NetworkManagement *networkMangement)
 
     //TODO: Send packet to host,  get response, return negative number on error.
 
-    result = extractNetworkManagmentResponse(networkMangement, response, result);
+    netParam->packetSize = result;
+    memcpy(netParam->packet, packet, result);
+    sendAndRecvDataSsl(netParam);
+
+    printf("Master key response: \n%s\n", &netParam->response[2]);
+
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
+
+    printf("********\n");   // Log to know where issue is
 
     return result;
 }
@@ -147,11 +178,11 @@ static int saveSessionKey(const NetworkKey * sessionKey)
     return result;
 }
 
-static int getTsk(NetworkManagement *networkMangement)
+static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netParam)
 {
     int result = -1;
     unsigned char packet[256];
-    unsigned char response[512];
+    unsigned char response[512];    // Will later remove it
 
     networkMangement->type = SESSION_KEY;
 
@@ -163,7 +194,13 @@ static int getTsk(NetworkManagement *networkMangement)
 
     //TODO: Send packet to host,  get response, return negative number on error.
 
-    result = extractNetworkManagmentResponse(networkMangement, response, result);
+    netParam->packetSize = result;
+    memcpy(netParam->packet, packet, result);
+    sendAndRecvDataSsl(netParam);
+
+    printf("Session key response: \n%s\n", &netParam->response[2]);
+
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
 
     if (!result) {
         saveSessionKey(&networkMangement->sessionKey);
@@ -172,7 +209,7 @@ static int getTsk(NetworkManagement *networkMangement)
     return result;
 }
 
-static int getTpk(NetworkManagement *networkMangement)
+static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netParam)
 {
     int result = -1;
     unsigned char packet[256];
@@ -188,12 +225,18 @@ static int getTpk(NetworkManagement *networkMangement)
 
     //TODO: Send packet to host,  get response, return negative number on error.
 
-    result = extractNetworkManagmentResponse(networkMangement, response, result);
+    netParam->packetSize = result;
+    memcpy(netParam->packet, packet, result);
+    sendAndRecvDataSsl(netParam);
+
+    printf("Pin key response: \n%s\n", &netParam->response[2]);
+
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response, result);
 
     return result;
 }
 
-static int getParams(NetworkManagement *networkMangement)
+static int getParams(NetworkManagement *networkMangement, NetWorkParameters *netParam)
 {
     int result = -1;
     unsigned char packet[256];
@@ -209,7 +252,13 @@ static int getParams(NetworkManagement *networkMangement)
 
     //TODO: Send packet to host,  get response, return negative number on error.
 
-    result = extractNetworkManagmentResponse(networkMangement, response, result);
+    netParam->packetSize = result;
+    memcpy(netParam->packet, packet, result);
+    sendAndRecvDataSsl(netParam);
+
+    printf("Parameter key response: \n%s\n", &netParam->response[2]);
+
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response, result);
 
     if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
     {
@@ -219,7 +268,7 @@ static int getParams(NetworkManagement *networkMangement)
     return result;
 }
 
-static int sCallHome(NetworkManagement *networkMangement)
+static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *netParam)
 {
     int result = -1;
     unsigned char packet[256];
@@ -234,7 +283,13 @@ static int sCallHome(NetworkManagement *networkMangement)
 
     //TODO: Send packet to host,  get response, return negative number on error.
 
-    result = extractNetworkManagmentResponse(networkMangement, response, result);
+    netParam->packetSize = result;
+    memcpy(netParam->packet, packet, result);
+    sendAndRecvDataSsl(netParam);
+
+    printf("Parameter key response: \n%s\n", &netParam->response[2]);
+
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
 
     return result;
 }
@@ -249,6 +304,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     if (strcmp(kvc, networkMangement->masterKey.checkValue))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
+        gui_messagebox_show("ERROR" , "Master key check value failed.", "" , "" , 8000);
         printf("Master key check value failed.");
         return -1;
     }
@@ -259,6 +315,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     if (strcmp(kvc, networkMangement->pinKey.checkValue))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
+        gui_messagebox_show("ERROR" , "Pin key check value failed.", "" , "" , 8000);
         printf("Pinkey key check value failed.");
         return -2;
     }
@@ -269,6 +326,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     if (strcmp(kvc, networkMangement->sessionKey.checkValue))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
+        gui_messagebox_show("ERROR" , "Session key check value failed.", "" , "" , 8000);
         printf("Session key check value failed.");
         return -3;
     }
@@ -279,6 +337,8 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
 short uiHandshake(void)
 {
     NetworkManagement networkMangement;
+    NetWorkParameters netParam = {0};
+    char terminalSerialNumber[22] = {'\0'};
     int maxRetry = 2;
     int i;
 
@@ -288,27 +348,32 @@ short uiHandshake(void)
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
+    setupNibssRequestParameter(&netParam, 0, 0);
+
+    gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
     {
-        if (!getTmk(&networkMangement))
+        if (!getTmk(&networkMangement, &netParam))
             break;
     }
 
     if (i == maxRetry)
         return -1;
 
+    gui_messagebox_show("MESSAGE" , "...Session...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
     {
-        if (!getTsk(&networkMangement))
+        if (!getTsk(&networkMangement, &netParam))
             break;
     }
 
     if (i == maxRetry)
         return -2;
 
+    gui_messagebox_show("MESSAGE" , "...Pin...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
     {
-        if (!getTpk(&networkMangement))
+        if (!getTpk(&networkMangement, &netParam))
             break;
     }
 
@@ -316,11 +381,13 @@ short uiHandshake(void)
         return -3;
 
     //TODO: Get device serial number at runtime
-    strncpy(networkMangement.serialNumber, "346-231-236", sizeof(networkMangement.serialNumber));
+    getTerminalSn(terminalSerialNumber);
+    strncpy(networkMangement.serialNumber, terminalSerialNumber/*"346-231-236"*/, sizeof(networkMangement.serialNumber));
 
+    gui_messagebox_show("MESSAGE" , "...Parameter...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
     {
-        if (!getParams(&networkMangement))
+        if (!getParams(&networkMangement, &netParam))
             break;
     }
 
@@ -334,9 +401,10 @@ short uiHandshake(void)
 
     addCallHomeData(&networkMangement);
 
+    gui_messagebox_show("MESSAGE" , "...Call Home...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
     {
-        if (!sCallHome(&networkMangement))
+        if (!sCallHome(&networkMangement, &netParam))
             break;
     }
 

@@ -278,6 +278,7 @@ static int _menu_proc(char *pid)
 		
 	} else if(!strcmp(pid, "Prep Terminal")) {
 		if (uiHandshake()) {
+			gui_messagebox_show("ERROR" , "Prepping failed.", "" , "" , 3000);
 			//TODO: display prepping failed on screen
 		}
 	}
