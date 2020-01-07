@@ -141,6 +141,9 @@ extern "C"
         char merchantName[41];
         char currencyCode[5];
         char pinData[17];
+        unsigned char pinDataBcd[16];
+	    int pinDataBcdLen;
+
         char iccData[511];
         unsigned char iccDataBcd[256];
         unsigned int iccDataBcdLen;
@@ -211,6 +214,11 @@ extern "C"
         char clearPtadKey[33];
 
     } NetworkManagement;
+
+    
+
+    unsigned int transTypeToCode(const enum TransType transType);
+    char * transTypeToTitle(const enum TransType transType);
 
     int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
     int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);
