@@ -32,6 +32,9 @@ extern "C"
         unsigned char iccData[511];
         unsigned short iccDataLen;
 
+        unsigned char iccDataBcd[256];
+        unsigned short iccDataBcdLen;
+
         unsigned char Info_Included_Data[1];
     } HostType;
 
@@ -152,6 +155,9 @@ extern "C"
         char secondaryMessageHashValue[64];
         short batchNumber;
         short sequenceNumber;
+
+
+        char message[256];
 
         enum ReversalReason reversalReason;
         char originalMti[5];

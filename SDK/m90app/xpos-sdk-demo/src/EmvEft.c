@@ -5,6 +5,7 @@
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
+#include "network.h"
 
 #include "EmvEft.h"
 
@@ -255,6 +256,44 @@ static void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParam
 	strncpy(eft->currencyCode, merchantParameters->currencyCode, sizeof(eft->currencyCode));
 }
 
+static short autoReversal(Eft *eft)
+{
+	int result = -1;
+	unsigned char response[2048];
+	enum CommsStatus commsStatus = CONNECTION_FAILED;
+	const int maxTry = 3;
+	int i;
+	struct HostType hostType;
+
+	for (i = 0; i < maxTry; i++)
+	{
+		//TODO: Send packet to host, return commsStatus
+		if (commsStatus == SEND_RECEIVE_SUCCESSFUL)
+			break;
+	}
+
+	if (i == maxTry)
+		return -1;
+
+	//TODO: populate respose
+
+	if (result = getEftOnlineResponse(&hostType, eft, response, sizeof(response)))
+	{
+		return -2;
+	}
+
+	if (strncmp(eft->responseCode, "00", 2))
+	{
+
+		//TODO Error: display eft->responseDesc on the screen.
+		return -3;
+	}
+
+	//no need to handle hostType for reversal, not sure.
+
+	return 0;
+}
+
 static enum AccountType getAccountType(void)
 {
 	//TODO: Display a menu to prompt for account type and return any of the following respectively.
@@ -313,10 +352,11 @@ void getRrn(char rrn[13])
 
 static short getOriginalDataFromDb(Eft *eft)
 {
-	//TODO: Use eft->rrn to get old data and populate the struct e.g original rrn, original date time, original mti, original amount etc.
+	//TODO: Use eft->rrn to get old data and populate the struct
 	strncpy(eft->originalMti, "0200", sizeof(eft->originalMti)); //The mti of the equivalent(original) purchase transaction.
 	strncpy(eft->forwardingInstitutionIdCode, "557694", sizeof(eft->forwardingInstitutionIdCode));
 	strncpy(eft->originalYyyymmddhhmmss, "20191220123231", sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
+	strncpy(eft->authorizationCode, "", sizeof(eft->authorizationCode));
 
 	return 0; //Success																						   //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
 }
@@ -414,10 +454,78 @@ static long long getAmount(Eft *eft, const char *title)
 	return amount;
 }
 
+short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus)
+{
+	switch (commsStatus)
+	{
+	case CONNECTION_FAILED:
+		sprintf(eft->message, "%s", "Connection Failed!");
+		return -1;
+
+	case SENDING_FAILED:
+		sprintf(eft->message, "%s", "Sending Failed");
+		return -2;
+
+	case RECEIVING_FAILED:
+		sprintf(eft->message, "%s", autoReversal(eft) ? "Manual Reversal Adviced(1)" : "Trans Reversed");
+		return -3;
+
+	default:
+		sprintf(eft->message, "%s", "Unknown Comms Response"); //TODO: Should not happen
+		return -4;
+	}
+}
+
+static int processPacketOnline(Eft *eft, struct HostType *hostType, unsigned char *packet, const int size)
+{
+	int result = -1;
+	unsigned char response[2048];
+	enum CommsStatus commsStatus = CONNECTION_FAILED;
+
+	//TODO: Send packet to host, return commsStatus, and populate response
+
+	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
+	{
+		return handleFailedComms(eft, commsStatus);
+	}
+
+	if (result = getEftOnlineResponse(&hostType, eft, response, sizeof(response)))
+	{
+		//Shouldn't happen
+		printf("Critical Error");
+		if (autoReversal(eft))
+		{
+			sprintf(eft->message, "%s", "Manual Reversal Adviced(2)");
+		}
+		return -7;
+	}
+
+	return 0;
+}
+
+static int iccUpdate(const Eft *eft, const struct HostType *hostType)
+{
+	int result = -1;
+	int onlineResult = 1;
+	//TODO: Icc data update
+
+	//TODO: The function below will only work on the latest sdk
+	//result = emv_online_resp_proc(onlineResult, eft->responseCode, hostType->iccDataBcd, hostType->iccDataBcdLen);
+	if (result != EMVAPI_RET_TC)
+	{
+		return result;
+	}
+
+	return result;
+}
+
 int performEft(Eft *eft, const char *title)
 {
 	int ret;
 	long long namt = 0;
+	int result = -1;
+	unsigned char packet[2048];
+	struct HostType hostType;
 
 	st_read_card_in *card_in = 0;
 	st_read_card_out *card_out = 0;
@@ -558,7 +666,7 @@ int performEft(Eft *eft, const char *title)
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
 	strncpy(eft->cardSequenceNumber, card_out->pan_sn, sizeof(eft->cardSequenceNumber));
-	//this would have been populate if original data elements are required.
+
 	if (!orginalDataRequired(&eft))
 	{
 		Sys_GetDateTime(eft->yyyymmddhhmmss);
@@ -582,5 +690,30 @@ int performEft(Eft *eft, const char *title)
 	//TODO: print receipt from DB
 	//upay_print_proc(&card_info);	//TODO:		// Printout
 
-	return 0;
+	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
+	{
+		free(card_in);
+		free(card_out);
+		return -3;
+	}
+
+	result = processPacketOnline(eft, &hostType, packet, sizeof(packet));
+
+	free(card_in);
+	free(card_out);
+
+	if (!result) //Successfull
+	{
+		if (result = iccUpdate(eft, &hostType))
+		{
+			sprintf(eft->message, "%s", autoReversal(eft) ? "Reversal Adviced(ICC)" : "Trans Reversed(ICC)");
+		}
+
+		result = -6;
+	}
+
+	//TODO: save transactions
+	//TODO: print eft receipt
+
+	return result;
 }
