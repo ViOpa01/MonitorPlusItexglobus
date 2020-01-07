@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "network.h"
 #include "util.h"
 #include "sdk_http.h"
@@ -128,10 +130,12 @@ static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl, i
             ret = comm_ssl_recv( sock, (unsigned char *)(buff + index), len - index );
         } else 
         {
-            ret = comm_sock_recv( sock, (unsigned char *)(buff + index), len - index , 700);
+            ret = comm_sock_recv( sock, (unsigned char *)(buff + index), len - index , 1000);
         }
 
 		printf("ret from comm_sock_recv : %d\n", ret);
+
+		if(ret) return ret;		// Temporarily
 
 	
 		if(isHttp){
@@ -306,14 +310,15 @@ enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
 	ret = socket_recv(COMM_SOCK, netParam->response,  sizeof(netParam->response), 30000, netParam->isSsl, netParam->isHttp);  // check for len very well
     netParam->responseSize = ret;   // getting the response length
 
+
 	if(ret > 0) 
 	{
-		printf("Receive legth : %d\n", ret);
+		printf("Receive legth : %d\n", strlen(netParam->response));
 		printf("recv buff: %s\n", netParam->response);	
 
 	} else {
 		printf("No response received\n");
-		gui_messagebox_show("RESPONSE" , "No Response received", "" , "Exit" , 0);
+		gui_messagebox_show("RESPONSE" , "No Response received", "" , "" , 2000);
 		return RECEIVING_FAILED;
 	}
 

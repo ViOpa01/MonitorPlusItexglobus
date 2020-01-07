@@ -7,21 +7,17 @@
 #include "libapi_xpos/inc/libapi_security.h"
 #include "libapi_xpos/inc/libapi_emv.h"
 
+#include "appInfo.h"
 #include "util.h"
 #include "network.h"
 #include "menu_list.h"
+#include "merchant.h"
 
-#define APP_VER "V1.1.2"
 #define LOGOIMG "xxxx\\logo2.bmp"
 
 
 #include "nibss.h"
-
-
-#define MAIN_MENU_PAGE	"main"
-#define SUPERVISION		"supervision"
-#define MAINTAINANCE	"maintanance"
-
+#include "Nibss8583.h"
 
 
 // Define the menu array, the first parameter is the name of the parent menu, 
@@ -147,7 +143,7 @@ static void ShowString()
 	}
 }
 
-void aboutTerminal(void )
+void aboutTerminal(char *tid )
 {
 	int key = UUTIL_TIMEOUT;
 
@@ -167,6 +163,8 @@ void aboutTerminal(void )
 		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(2), data);
 		sprintf(data,"TID:");	
 		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(3), data);
+		//sprintf(data, "%s", mParam.tid);	
+		gui_text_out((gui_get_width() - gui_get_text_width(tid)) / 2, GUI_LINE_TOP(4), tid);
 		// I can Print the Terminal ID here
 		gui_end_batch_paint();
 
@@ -267,7 +265,12 @@ static int _menu_proc(char *pid)
 		sdk_M1test();
 	} else if (strcmp(pid, UI_ABOUT) == 0)
 	{
-		aboutTerminal();
+		writeMyName();
+		//getMerchantDetails();
+		MerchantData mParam = {0};
+		runGetMerchantParameter(&mParam, 1);
+		aboutTerminal(mParam.tid);
+
 	} else if (strcmp(pid, "My Plain") == 0)
 	{
 		sendAndReceiveDemoRequest(0, 80);

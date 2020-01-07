@@ -209,7 +209,24 @@ extern "C"
         char clearPtadKey[33];
 
     } NetworkManagement;
+/*
+    typedef struct MerchantData
+    {
+        char address[80];
+        char rrn[13];
+        int status;
+        char stamp_label[12];
+        int stamp_duty_threshold;
+        int stamp_duty;
+        char nibss_platform[12];    // POSVAS, EPMS
+        char nibss_ip[22];
+        int  nibss_port;
+        char port_type[12];
+        char tid[14];
+        char phone_no[14];
 
+    } MerchantData;
+*/
     int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
     int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);
     int extractNetworkManagmentResponse(NetworkManagement *networkMangement, const char *response, const int size);

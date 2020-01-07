@@ -11,10 +11,12 @@
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../libapi_xpos/inc/libapi_emv.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../emvapi/inc/emv_api.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../pub/pub.h \
+ /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/appInfo.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/util.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/../../../libapi_xpos/inc/libapi_system.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../libapi_xpos/inc/libapi_util.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/network.h \
  /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/menu_list.h \
- /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/nibss.h \
- /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/Nibss8583.h
+ /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/merchant.h \
+ /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/Nibss8583.h \
+ /media/sf_morefun/h9/SDK/m90app/xpos-sdk-demo/../../m90app/xpos-sdk-demo/src/nibss.h

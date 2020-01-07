@@ -1,6 +1,8 @@
 #include "libapi_xpos/inc/libapi_system.h"
 #include "sdk_xgui.h"
 
+// #include "merchant.h"
+
 
 
 
@@ -15,6 +17,7 @@ void app_main()
 #ifndef WIN32
 void main(){
 	app_main();
+
 }
 #endif
 
