@@ -40,7 +40,7 @@ static void getMerchantDetails(char *buffer)
     netParam.packetSize = 0;
     getTerminalSn(terminalSn);
 
-    sprintf(path, "tams/eftpos/devinterface/transactionadvice.php?action=TAMS_WEBAPI&termID=%s&posUID=%s&ver=%s%s&model=%s&control=TamsSecurity", DEFAULT_TID, "346231236" /*terminalSn*/, APP_NAME, APP_VER, APP_MODEL);
+    sprintf(path, "tams/eftpos/devinterface/transactionadvice.php?action=TAMS_WEBAPI&termID=%s&posUID=%s&ver=%s%s&model=%s&control=TamsSecurity", DEFAULT_TID, terminalSn, APP_NAME, APP_VER, APP_MODEL);
     
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "GET /%s\r\n", path);
  	netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d", netParam.host, netParam.port);
@@ -185,8 +185,13 @@ int readMerchantData(MerchantData* merchant)
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone;
    
     char buffer[1024] = {'\0'};
+    int ret = -1;
 
-    getRecord((void *)buffer, MERCHANT_DETAIL_FILE, sizeof(buffer), 0);
+    if(ret = getRecord((void *)buffer, MERCHANT_DETAIL_FILE, sizeof(buffer), 0))
+    {
+        printf("File read Error\n");
+        return ret;
+    }
 
     printf("After read record :\n%s\n", (char *)buffer);
 
@@ -272,6 +277,8 @@ int readMerchantData(MerchantData* merchant)
     }
 
     cJSON_Delete(json);
+
+    return 0;
 
 }
 

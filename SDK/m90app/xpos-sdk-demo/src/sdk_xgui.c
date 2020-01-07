@@ -38,7 +38,7 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE ,	"CodePay",		""},
 	{MAIN_MENU_PAGE ,	"Version",		""},
 	{MAIN_MENU_PAGE ,	"Test",			""},
-	{MAIN_MENU_PAGE ,	"Settings",		""},
+	{MAIN_MENU_PAGE ,	UI_SETTINGS,		""},
 	{MAIN_MENU_PAGE ,	"Others",		""},
 
 	{"Test" ,	"Print",		""},
@@ -60,9 +60,9 @@ static  const st_gui_menu_item_def _menu_def[] = {
 
 
 
-	{"Settings" ,	"Net Select" ,""},
-	{"Settings" ,	"WIFI Settings" , "WIFI Menu"},
-	{"Settings",	"TimeSet",		""},
+	{UI_SETTINGS ,	"Net Select" ,""},
+	{UI_SETTINGS,	"WIFI Settings" , "WIFI Menu"},
+	{UI_SETTINGS,	"TimeSet",		""},
 
 	
 	{"Others",		"View AID",		""},
@@ -73,6 +73,10 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{SUPERVISION ,	UI_NETWORK,	     ""},
 	{SUPERVISION ,	UI_DOWNLOAD_LOGO, ""},
 	{SUPERVISION ,	UI_ABOUT, 		 ""},
+
+	{UI_NETWORK ,	UI_NET_SELECT,	""},
+	{UI_NETWORK ,	UI_WIFI_SETTINGS, UI_WIFI_MENU},
+	
 
 	{UI_REPRINT,	UI_REPRINT_TODAY,  	""},
 	{UI_REPRINT,	UI_REPRINT_BY_DATE,	""},
@@ -94,6 +98,15 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{MAINTAINANCE ,	UI_ACCNT_SELECTION,  ""},
 	{MAINTAINANCE ,	UI_TRANS_TYPE,   	 ""},
 	{MAINTAINANCE ,	UI_NOTIF_ID, 		 ""},
+
+
+	{UI_ACCNT_SELECTION , UI_SAVINGS_ACCT,	  ""},
+	{UI_ACCNT_SELECTION , UI_CURRENT_ACCT,	  ""},
+	{UI_ACCNT_SELECTION , UI_CREDIT_ACCT, 	  ""},
+	{UI_ACCNT_SELECTION , UI_DEFAULT_ACCT,	  ""},
+	{UI_ACCNT_SELECTION , UI_UNIVERSAL_ACCT,  ""},
+	{UI_ACCNT_SELECTION , UI_INVESTMENT_ACCT, ""},
+
 };
 
 int sdk_power_proc_page(void *pval)
@@ -188,6 +201,60 @@ void aboutTerminal(char *tid )
 
 }
 
+static getAccountType(enum AccountType type)
+{
+	switch (type)
+	{
+		case SAVINGS_ACCOUNT:
+        	return 0x10;
+		case CURRENT_ACCOUNT:
+			return 0x20;
+		case CREDIT_ACCOUNT:
+			return 0x30;
+		case DEFAULT_ACCOUNT:
+			return 0x00;
+		case UNIVERSAL_ACCOUNT:
+			return 0x40;
+		case INVESTMENT_ACCOUNT:
+			return 0x50;
+		default:
+			return -1;
+	
+	}
+
+	return -1;
+
+}
+
+static short accountSelectionHandler(const char *pid)
+{
+	int ret = -1;
+
+	if(strcmp(pid, UI_DEFAULT_ACCT) == 0) {
+		ret = getAccountType(DEFAULT_ACCOUNT);
+
+	} else if(strcmp(pid, UI_SAVINGS_ACCT) == 0) {
+		ret = getAccountType(SAVINGS_ACCOUNT);
+
+	} else if(strcmp(pid, UI_CURRENT_ACCT) == 0) {
+		ret = getAccountType(CURRENT_ACCOUNT);
+		
+	} else if(strcmp(pid, UI_CREDIT_ACCT) == 0) {
+		ret = getAccountType(CREDIT_ACCOUNT);
+		
+	} else if(strcmp(pid, UI_UNIVERSAL_ACCT) == 0) {
+		ret = getAccountType(UNIVERSAL_ACCOUNT);
+		
+	} else if(strcmp(pid, UI_INVESTMENT_ACCT) == 0) {
+		ret = getAccountType(INVESTMENT_ACCOUNT);
+
+	} 
+
+	printf("Account type selected : %d\n", ret);
+
+	return ret;
+}
+
 static short eftHandler(const char * pid)
 {
 	 if (strcmp(pid , UI_PURCHASE) == 0){
@@ -212,7 +279,7 @@ static short eftHandler(const char * pid)
 
 	return 0;
 }
-
+	//gui_get_message()
 // The menu callback function, as long as all the menu operations of this function are registered, 
 // this function will be called, and the selected menu name will be returned. 
 // It is mainly determined in this function that the response menu name is processed differently.
@@ -222,10 +289,18 @@ static int _menu_proc(char *pid)
 	char buff[20];
 	int pos = 0;
 	char msg[256];
+	int acctTypeValue = -1;
 
 	if (!eftHandler(pid)){
 		return 0;
-	}else if (strcmp(pid , "Version") == 0){
+	} else if((acctTypeValue = accountSelectionHandler(pid)) >= 0) {
+
+		sprintf(buff, "%d", acctTypeValue);
+		gui_clear_dc();
+		gui_messagebox_show( "Options" , buff , "" , "confirm" , 0);
+		return 0;
+
+	} else if (strcmp(pid , "Version") == 0){
 		sprintf(msg , "app:%s\r\n", APP_VER);
 		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
 		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());
@@ -295,11 +370,12 @@ static int _menu_proc(char *pid)
 		sdk_M1test();
 	} else if (strcmp(pid, UI_ABOUT) == 0)
 	{
-		
 		MerchantData mParam = {0};
-		if(getMerchantData() == 0)
+	
+		if(readMerchantData(&mParam))
 		{
-			readMerchantData(&mParam);
+			gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);
+			return -1;
 		}
 
 		aboutTerminal(mParam.tid);

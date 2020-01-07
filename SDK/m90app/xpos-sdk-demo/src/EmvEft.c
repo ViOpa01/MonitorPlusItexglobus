@@ -286,6 +286,8 @@ static short autoReversal(Eft *eft)
 	{
 
 		//TODO Error: display eft->responseDesc on the screen.
+		gui_clear_dc();
+		gui_messagebox_show( "Message" , eft->responseDesc , "" , "confirm" , 0);
 		return -3;
 	}
 
@@ -337,6 +339,7 @@ static short orginalDataRequired(const Eft *eft)
 static short uiGetRrn(char rrn[13])
 {
 	//TODO: Get rrn from user for reversal, or refund, or completion.
+	
 	return 0;
 }
 
@@ -358,7 +361,7 @@ static short getOriginalDataFromDb(Eft *eft)
 	strncpy(eft->originalYyyymmddhhmmss, "20191220123231", sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
 	strncpy(eft->authorizationCode, "", sizeof(eft->authorizationCode));
 
-	return 0; //Success																						   //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
+	return 0; //Success								 //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
 }
 
 static short getReversalReason(Eft *eft)

@@ -40,7 +40,19 @@
 #define UI_PREP_TERMINAL    "Prep Terminal"
 #define UI_GET_PARAMETER    "Get Parameter"
 #define UI_CALL_HOME        "Call Home"
-#define UI_ACCNT_SELECTION  "Account Seelction"
+#define UI_ACCNT_SELECTION  "Account Selection"
 #define UI_TRANS_TYPE       "Trans Type"
 #define UI_NOTIF_ID         "Notification ID"
+
+#define UI_DEFAULT_ACCT     "Default"
+#define UI_SAVINGS_ACCT     "Savings"
+#define UI_CURRENT_ACCT     "Current"
+#define UI_CREDIT_ACCT      "Credit"
+#define UI_UNIVERSAL_ACCT   "Universal"
+#define UI_INVESTMENT_ACCT  "Investment"
+
+#define UI_SETTINGS         "Settings"
+#define UI_NET_SELECT       "Net Select"
+#define UI_WIFI_SETTINGS    "Wifi Settings"
+#define UI_WIFI_MENU        "WIFI Menu"
 

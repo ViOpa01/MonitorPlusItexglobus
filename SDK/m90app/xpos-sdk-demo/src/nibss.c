@@ -19,6 +19,7 @@
 //Itex
 #include "nibss.h"
 #include "network.h"
+#include "merchant.h"
 #include "itexFile.h"
 #include "util.h"
 
@@ -39,9 +40,18 @@
 
 static void setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
 {
+    MerchantData mParam = {'\0'};
 
-    strncpy(netParam->host, NIBSS_HOST, strlen(NIBSS_HOST));
-    netParam->port = NIBSS_PORT;
+    if(getMerchantData())
+    {
+        gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);
+        return; 
+    } 
+
+    if(readMerchantData(&mParam)) return;
+
+    strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+    netParam->port = mParam.nibss_port;
     netParam->isSsl = isSsl;
     netParam->isHttp = isHttp;
 
