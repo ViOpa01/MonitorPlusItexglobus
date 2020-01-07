@@ -24,14 +24,6 @@ extern "C" {
 
 using namespace std;
 
-void writeMyName()
-{
-    std::string name = "Jeremiah Olatunde";
-    printf("%s\n", name.c_str());
-
-}
-
-
 static void getMerchantDetails(char *buffer)
 {
     NetWorkParameters netParam = {0};
@@ -61,48 +53,7 @@ static void getMerchantDetails(char *buffer)
     
 }
 
-
-class MerchantParameterData {
-
-    std::string address;
-    std::string rrn;
-    std::string status;
-    std::string stamp_label;
-    std::string stamp_duty_threshold;
-    std::string stamp_duty;
-    std::string port_type;
-    std::string prefix; // POSVAS, EPMS
-    std::string tid;
-    std::string ip_and_port;    // POSVASPUBLIC_SSL, EMPSPUBLIC_SSL
-    std::string phone_no;
-
-    char  rawResponse[0x1000];
-    
-
-
-  public:
-    MerchantParameterData(char *buffer);
-
-    short parseXmlResponse();
-    short parseJsonFile(char *buff, cJSON **parsed);
-    void readMerchantDetails(MerchantData *parameter);
-    void saveMerchantDetails();
-    void sayMsg (int);
-    
-};
-
-void MerchantParameterData::sayMsg (int port) {
-    printf("Port is : %d\n", port);
-}
-
-MerchantParameterData::MerchantParameterData(char *buffer) {
-
-    memcpy(rawResponse, buffer, strlen(buffer));
-    printf("%s\n", rawResponse);
-
-}
-
-short MerchantParameterData::parseJsonFile(char *buff, cJSON **parsed)
+static short parseJsonFile(char *buff, cJSON **parsed)
 {
     cJSON *status = NULL;
 	int ret = -1;
@@ -132,81 +83,104 @@ short MerchantParameterData::parseJsonFile(char *buff, cJSON **parsed)
     }
 
     return ret;
-
    
 }
 
-short MerchantParameterData::parseXmlResponse()
+int saveMerchantDataXml(const char* merchantXml)
 {
-    // efttran->tran, then my data
+    // takes xml
+    // Parse it
+    // Save it
 
     ezxml_t root;
     ezxml_t tran;
+
+    MerchantData merchant = { 0 };
+    std::string ip_and_port;    // POSVASPUBLIC_SSL, EMPSPUBLIC_SSL
+    int pos = 0;
+    int ret = -1;
+
+    char  rawResponse[0x1000] = {'\0'};
+
+    memcpy(rawResponse, merchantXml, strlen(merchantXml));
     root = ezxml_parse_str(rawResponse, strlen(rawResponse));
 
-    printf("Raw response is>>>> %s\n", rawResponse);
+    printf("Raw response is >>>> %s\n", rawResponse);
 
     if (!root) {
         printf("\nError, Please Try Again\n");
         ezxml_free(root);
-        return -1;
+        return ret;
     }
 
     tran = ezxml_child(root, "tran");
 
-    address.append(ezxml_child(tran, "Address")->txt);
-    printf("Address : %s\n", ezxml_child(tran, "Address")->txt);
+    strncpy(merchant.address, ezxml_child(tran, "Address")->txt, sizeof(merchant.address) - 1);
+    printf("Address : %s\n", merchant.address);
 
-    rrn.append(ezxml_child(tran, "RRN")->txt);
-    printf("rrn : %s\n", ezxml_child(tran, "RRN")->txt);
+    strncpy(merchant.rrn, ezxml_child(tran, "RRN")->txt, sizeof(merchant.rrn) - 1);
+    printf("rrn : %s\n", merchant.rrn);
 
-    tid.append(ezxml_child(tran, "message")->txt);
-    printf("tid : %s\n", ezxml_child(tran, "message")->txt);
+    strncpy(merchant.tid, ezxml_child(tran, "message")->txt, sizeof(merchant.tid) - 1);
+    printf("rrn : %s\n", merchant.tid);
+    
+    merchant.status = atoi(ezxml_child(tran, "status")->txt);
+    printf("Status : %d\n", merchant.status);
 
-    status.append(ezxml_child(tran, "status")->txt);
-    printf("Status : %s\n", ezxml_child(tran, "status")->txt);
+    strncpy(merchant.stamp_label, ezxml_child(tran, "STAMP_LABEL")->txt, sizeof(merchant.stamp_label) - 1);
+    printf("Stamp Label : %s\n", merchant.stamp_label);
+    
+    merchant.stamp_duty_threshold = atoi(ezxml_child(tran, "STAMP_DUTY_THRESHOLD")->txt);
+    printf("Stamp threshold : %d\n", merchant.stamp_duty_threshold);
 
-    stamp_label.append(ezxml_child(tran, "STAMP_LABEL")->txt);
-    printf("Stamp Label : %s\n", ezxml_child(tran, "STAMP_LABEL")->txt);
+    merchant.stamp_duty = atoi(ezxml_child(tran, "STAMP_DUTY")->txt);
+    printf("Stamb duty : %d\n", merchant.stamp_duty);
 
-    stamp_duty_threshold.append(ezxml_child(tran, "STAMP_DUTY_THRESHOLD")->txt);
-    printf("Stamp threshold : %s\n", ezxml_child(tran, "STAMP_DUTY_THRESHOLD")->txt);
+    strncpy(merchant.port_type, ezxml_child(tran, "PORT_TYPE")->txt, sizeof(merchant.port_type) - 1);
+    printf("Port Type : %s\n", merchant.port_type);
+    
+    strncpy(merchant.nibss_platform, ezxml_child(tran, "PREFIX")->txt, sizeof(merchant.nibss_platform) - 1);
+    printf("Platform : %s\n", merchant.nibss_platform);
 
-    stamp_duty.append(ezxml_child(tran, "STAMP_DUTY")->txt);
-    printf("Stamb duty : %s\n", ezxml_child(tran, "STAMP_DUTY")->txt);
 
-    port_type.append(ezxml_child(tran, "PORT_TYPE")->txt);
-    printf("Port Type : %s\n", ezxml_child(tran, "PORT_TYPE")->txt);
-
-    prefix.append(ezxml_child(tran, "PREFIX")->txt);
-    printf("Platform : %s\n", ezxml_child(tran, "PREFIX")->txt);
-
-    if(strcmp(prefix.c_str(), "POSVAS") == 0)
+    if(strcmp(merchant.nibss_platform, "POSVAS") == 0)
     {
         // get POSVAS IP and PORT
         ip_and_port.append(ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
         printf("ip and port : %s\n", ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
 
-    } else if(strcmp(prefix.c_str(), "EPMS") == 0)
+    } else if(strcmp(merchant.nibss_platform, "EPMS") == 0)
     {
         // EPMS IP and PORT
         ip_and_port.append(ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
         printf("ip and port : %s\n", ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
     }
 
-    phone_no.append(ezxml_child(tran, "phone")->txt);
-    printf("Phone no : %s\n", ezxml_child(tran, "phone")->txt);
+    pos = ip_and_port.find(';');
+    strncpy(merchant.nibss_ip, ip_and_port.substr(0, pos).c_str(), sizeof(merchant.nibss_ip) - 1);
+    printf("ip and port : %s\n", merchant.nibss_ip);
+
+    merchant.nibss_port = atoi(ip_and_port.substr(pos + 1, std::string::npos).c_str());
+    printf("port is : %d\n", merchant.nibss_port);
+
+    strncpy(merchant.phone_no, ezxml_child(tran, "phone")->txt, sizeof(merchant.phone_no) - 1);
+    printf("Platform : %s\n", merchant.nibss_platform);
+    printf("Phone no : %s\n", merchant.phone_no);
 
     ezxml_free(root);
-    //ezxml_free(tran);
+
+    ret = saveMerchantData(&merchant);
+
+    return ret;
+    
 }
 
-void MerchantParameterData::readMerchantDetails(MerchantData *parameter)
+int readMerchantData(MerchantData* merchant)
 {
-    // 1. Read .json file
-    // 2. convert it to struct for user to use
+    // Read json
+    // populate the data
 
-	cJSON *json;
+    cJSON *json;
     cJSON *jsonAddress, *jsonRrn, *jsonStatus, *jsonTID, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone;
    
@@ -216,7 +190,8 @@ void MerchantParameterData::readMerchantDetails(MerchantData *parameter)
 
     printf("After read record :\n%s\n", (char *)buffer);
 
-    if(parameter->status = parseJsonFile(buffer, &json) == -1) return;
+    // if(merchant->status = parseJsonFile(buffer, &json) == -1) return;
+    parseJsonFile(buffer, &json);
     
     jsonAddress = cJSON_GetObjectItemCaseSensitive(json, "address");
     jsonRrn = cJSON_GetObjectItemCaseSensitive(json, "rrn");
@@ -232,114 +207,105 @@ void MerchantParameterData::readMerchantDetails(MerchantData *parameter)
 
     if(cJSON_IsString(jsonAddress))
     {
-        memcpy(parameter->address, jsonAddress->valuestring, sizeof(parameter->address));
-        printf("Address : %s\n", parameter->address);
+        strncpy(merchant->address, jsonAddress->valuestring, sizeof(merchant->address) - 1);
+        printf("Address : %s\n", merchant->address);
     }
 
     if(cJSON_IsString(jsonRrn))
     {
-        memcpy(parameter->rrn, jsonRrn->valuestring, sizeof(parameter->rrn));
-        printf("rrn : %s\n", parameter->rrn);
+        strncpy(merchant->rrn, jsonRrn->valuestring, sizeof(merchant->rrn) - 1);
+        printf("rrn : %s\n", merchant->rrn);
     }
 
     if(cJSON_IsString(jsonTID))
     {
-        memcpy(parameter->tid, jsonTID->valuestring, sizeof(parameter->tid));
-        printf("TID : %s\n", parameter->tid);
+        strncpy(merchant->tid, jsonTID->valuestring, sizeof(merchant->tid) - 1);
+        printf("TID : %s\n", merchant->tid);
     }
 
     if(cJSON_IsString(jsonStampLabel))
     {
-        memcpy(parameter->stamp_label, jsonStampLabel->valuestring, sizeof(parameter->stamp_label));
-        printf("Stamp Label : %s\n", parameter->stamp_label);
+        memcpy(merchant->stamp_label, jsonStampLabel->valuestring, sizeof(merchant->stamp_label) - 1);
+        printf("Stamp Label : %s\n", merchant->stamp_label);
     }
 
     if(cJSON_IsNumber(jsonStampDuty))
     {
-        parameter->stamp_duty = jsonStampDuty->valueint;
-        printf("Stamp duty : %d\n", parameter->stamp_duty);
+        merchant->stamp_duty = jsonStampDuty->valueint;
+        printf("Stamp duty : %d\n", merchant->stamp_duty);
     }
 
     if(cJSON_IsNumber(jsonStampDutyThreshold))
     {
-        parameter->stamp_duty_threshold = jsonStampDutyThreshold->valueint;
-        printf("Stamp duty threshold: %d\n", parameter->stamp_duty_threshold);
+        merchant->stamp_duty_threshold = jsonStampDutyThreshold->valueint;
+        printf("Stamp duty threshold: %d\n", merchant->stamp_duty_threshold);
     }
 
     if(cJSON_IsString(jsonPlatform))
     {
-        memcpy(parameter->nibss_platform, jsonPlatform->valuestring, sizeof(parameter->nibss_platform));
-        printf("Nibss platform : %s\n", parameter->nibss_platform);
+        strncpy(merchant->nibss_platform, jsonPlatform->valuestring, sizeof(merchant->nibss_platform) - 1);
+        printf("Nibss platform : %s\n", merchant->nibss_platform);
     }
 
     if(cJSON_IsString(jsonNibssIp))
     {
-        memcpy(parameter->nibss_ip, jsonNibssIp->valuestring, sizeof(parameter->nibss_ip));
-        printf("Nibss ip : %s\n", parameter->nibss_ip);
+        strncpy(merchant->nibss_ip, jsonNibssIp->valuestring, sizeof(merchant->nibss_ip) - 1);
+        printf("Nibss ip : %s\n", merchant->nibss_ip);
     }
 
     if(cJSON_IsNumber(jsonNibssPort))
     {
-        parameter->nibss_port = jsonNibssPort->valueint;
-        printf("Nibss port : %d\n", parameter->nibss_port);
+        merchant->nibss_port = jsonNibssPort->valueint;
+        printf("Nibss port : %d\n", merchant->nibss_port);
     }
 
     if(cJSON_IsString(jsonPhone))
     {
-        memcpy(parameter->phone_no, jsonPhone->valuestring, sizeof(parameter->phone_no));
-        printf("Customer Phone : %s\n", parameter->phone_no);
+        strncpy(merchant->phone_no, jsonPhone->valuestring, sizeof(merchant->phone_no) - 1);
+        printf("Customer Phone : %s\n", merchant->phone_no);
     }
 
     if(cJSON_IsString(jsonPortType))
     {
-        memcpy(parameter->port_type, jsonPortType->valuestring, sizeof(parameter->port_type));
-        printf("Port Type : %s\n", parameter->port_type);
+        strncpy(merchant->port_type, jsonPortType->valuestring, sizeof(merchant->port_type) - 1);
+        printf("Port Type : %s\n", merchant->port_type);
     }
 
     cJSON_Delete(json);
 
 }
 
-void MerchantParameterData::saveMerchantDetails()
+int saveMerchantData(const MerchantData* merchant)
 {
-    
+    // json equivalent of merchant
+
     cJSON *json, *requestJson;
-    string ip;
-    int port;
-    int pos = 0;
     char *requestJsonStr;
     char jsonData[1024] = {'\0'};
+    int ret = -1;
 
-
-    // 1. get xml file coming and convert
-    // 2. Parse the xml
-    parseXmlResponse();
-
-    // 3. Arrange them in json formats
     requestJson = cJSON_CreateObject();
 
     if (!requestJson) {
         
         printf("Can't create json object\n");
-        return;
+        return ret;
     }
 
-    pos = ip_and_port.find(';');
-    ip = ip_and_port.substr(0, pos);
-    port = atoi(ip_and_port.substr(pos+1, ip_and_port.length()).c_str());
+    // save json to file
 
-    cJSON_AddItemToObject(requestJson, "address", cJSON_CreateString(address.c_str()));
-    cJSON_AddItemToObject(requestJson, "rrn", cJSON_CreateString(rrn.c_str()));
-    cJSON_AddItemToObject(requestJson, "tid", cJSON_CreateString(tid.c_str()));
-    cJSON_AddItemToObject(requestJson, "status", cJSON_CreateNumber(atoi(status.c_str())));
-    cJSON_AddItemToObject(requestJson, "stamp_label", cJSON_CreateString(stamp_label.c_str()));
-    cJSON_AddItemToObject(requestJson, "stamp_threshold", cJSON_CreateNumber(atoi(stamp_duty_threshold.c_str())));
-    cJSON_AddItemToObject(requestJson, "stamp_duty", cJSON_CreateNumber(atoi(stamp_duty.c_str())));
-    cJSON_AddItemToObject(requestJson, "port_type", cJSON_CreateString(port_type.c_str()));
-    cJSON_AddItemToObject(requestJson, "prefix", cJSON_CreateString(prefix.c_str()));
-    cJSON_AddItemToObject(requestJson, "ip", cJSON_CreateString(ip.c_str()));
-    cJSON_AddItemToObject(requestJson, "port", cJSON_CreateNumber(port));
-    cJSON_AddItemToObject(requestJson, "phone_no", cJSON_CreateString(phone_no.c_str()));
+    cJSON_AddItemToObject(requestJson, "address", cJSON_CreateString(merchant->address));
+    cJSON_AddItemToObject(requestJson, "rrn", cJSON_CreateString(merchant->rrn));
+    cJSON_AddItemToObject(requestJson, "tid", cJSON_CreateString(merchant->tid));
+    cJSON_AddItemToObject(requestJson, "status", cJSON_CreateNumber(merchant->status));
+    cJSON_AddItemToObject(requestJson, "stamp_label", cJSON_CreateString(merchant->stamp_label));
+    cJSON_AddItemToObject(requestJson, "stamp_threshold", cJSON_CreateNumber(merchant->stamp_duty_threshold));
+    cJSON_AddItemToObject(requestJson, "stamp_duty", cJSON_CreateNumber(merchant->stamp_duty));
+    cJSON_AddItemToObject(requestJson, "port_type", cJSON_CreateString(merchant->port_type));
+    cJSON_AddItemToObject(requestJson, "prefix", cJSON_CreateString(merchant->nibss_platform));
+    cJSON_AddItemToObject(requestJson, "ip", cJSON_CreateString(merchant->nibss_ip));
+    cJSON_AddItemToObject(requestJson, "port", cJSON_CreateNumber(merchant->nibss_port));
+    cJSON_AddItemToObject(requestJson, "phone_no", cJSON_CreateString(merchant->phone_no));
 
     requestJsonStr = cJSON_PrintUnformatted(requestJson);
     memcpy(jsonData, requestJsonStr, sizeof(jsonData));
@@ -347,25 +313,26 @@ void MerchantParameterData::saveMerchantDetails()
     printf("Parameter in json format :\n%s\n", jsonData);
 
     // 4. Save the json file
-    saveRecord((void *)jsonData, MERCHANT_DETAIL_FILE, sizeof(jsonData), 0);
-    
+    ret = saveRecord((void *)jsonData, MERCHANT_DETAIL_FILE, sizeof(jsonData), 0);
+
+    return ret;
 }
 
-void runGetMerchantParameter(MerchantData *param, int shouldRefresh)
+int getMerchantData()
 {
+    int ret = -1;
     char responseXml[0x1000] = {'\0'};
     getMerchantDetails(responseXml);
 
-    MerchantParameterData obj(responseXml);
-
-    if(shouldRefresh)
-    {
-         obj.saveMerchantDetails();
+    if ((ret = saveMerchantDataXml(responseXml)) != 0) {
+        // error
+        printf("Error saving merchant data, ret : %d\n", ret);
+        return ret;
     }
-   
-    obj.readMerchantDetails(param);
-    obj.sayMsg(77);
-  
+
+    return ret;
 }
+
+
 
 

@@ -25,8 +25,10 @@ typedef struct MerchantData
 } MerchantData;
 
 
-void writeMyName();
-void runGetMerchantParameter(MerchantData *param, int shouldRefresh);
+int readMerchantData(MerchantData* merchant);
+int saveMerchantData(const MerchantData* merchant);
+int saveMerchantDataXml(const char* merchantXml);
+int getMerchantData();
 
 
 #ifdef __cplusplus

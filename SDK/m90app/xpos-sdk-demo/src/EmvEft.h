@@ -17,6 +17,8 @@ extern "C"
 
 #include "nibss.h"
 
+void eftTrans(const enum TransType transType);
+
 #ifdef __cplusplus
 }
 #endif

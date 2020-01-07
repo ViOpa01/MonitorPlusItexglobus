@@ -32,6 +32,9 @@ extern "C"
         unsigned char iccData[511];
         unsigned short iccDataLen;
 
+        unsigned char iccDataBcd[256];
+        unsigned short iccDataBcdLen;
+
         unsigned char Info_Included_Data[1];
     } HostType;
 
@@ -141,12 +144,20 @@ extern "C"
         char merchantName[41];
         char currencyCode[5];
         char pinData[17];
+        unsigned char pinDataBcd[16];
+	    int pinDataBcdLen;
+
         char iccData[511];
+        unsigned char iccDataBcd[256];
+        unsigned int iccDataBcdLen;
         char echoData[256];
         short isFallback;
         char secondaryMessageHashValue[64];
         short batchNumber;
         short sequenceNumber;
+
+
+        char message[256];
 
         enum ReversalReason reversalReason;
         char originalMti[5];
@@ -209,24 +220,12 @@ extern "C"
         char clearPtadKey[33];
 
     } NetworkManagement;
-/*
-    typedef struct MerchantData
-    {
-        char address[80];
-        char rrn[13];
-        int status;
-        char stamp_label[12];
-        int stamp_duty_threshold;
-        int stamp_duty;
-        char nibss_platform[12];    // POSVAS, EPMS
-        char nibss_ip[22];
-        int  nibss_port;
-        char port_type[12];
-        char tid[14];
-        char phone_no[14];
 
-    } MerchantData;
-*/
+    
+
+    unsigned int transTypeToCode(const enum TransType transType);
+    char * transTypeToTitle(const enum TransType transType);
+
     int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
     int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);
     int extractNetworkManagmentResponse(NetworkManagement *networkMangement, const char *response, const int size);

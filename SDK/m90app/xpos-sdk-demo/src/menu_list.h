@@ -5,6 +5,14 @@
 #define MAINTAINANCE	    "maintanance"
 
 #define UI_PURCHASE         "Purchase"          // Menu for Purchase
+#define UI_CASHBACK         "Cashback"
+#define UI_PREAUTH          "Pre Authorization"
+#define UI_COMPLETION       "Completion"
+#define UI_REVERSAL         "Reversal"
+#define UI_REFUND           "Refund"
+#define UI_CASHADVANCE      "Cash Advance"
+#define UI_BALANCE          "Balance Inquiry"
+
 
 #define UI_REPRINT          "Reprint"       // Menu for Reprint
 
