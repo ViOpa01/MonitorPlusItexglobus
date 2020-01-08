@@ -18,7 +18,7 @@ extern "C"
 
 short uiHandshake(void);
 
-
+int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl);
 int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);
 int getSessionKey(char sessionKey[33]);

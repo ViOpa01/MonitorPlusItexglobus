@@ -8,7 +8,8 @@
 #include "network.h"
 
 #include "EmvEft.h"
-#include "merchant.h";
+#include "nibss.h"
+#include "merchant.h"
 
 typedef enum
 {
@@ -422,11 +423,14 @@ void eftTrans(const enum TransType transType)
 {
 	Eft eft;
 
+	MerchantData mParam = {'\0'};
 	MerchantParameters merchantParameters;
 	char sessionKey[33] = {'\0'};
 	char tid[9] = {'\0'};
 
 	memset(&eft, 0x00, sizeof(Eft));
+
+	readMerchantData(&mParam);
 
 	eft.transType = transType;
 	eft.fromAccount = DEFAULT_ACCOUNT; //perform eft will update it if needed
@@ -446,6 +450,10 @@ void eftTrans(const enum TransType transType)
 	}
 
 	//TODO: get tid, eft.terminalId
+	if(mParam.tid[0])
+	{
+		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
+	}
 
 	if (orginalDataRequired(&eft))
 	{
@@ -528,9 +536,13 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, unsigned cha
 {
 	int result = -1;
 	unsigned char response[2048];
+	NetWorkParameters netParam = {0};
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 
 	//TODO: Send packet to host, return commsStatus, and populate response
+
+	setupNibssRequestParameter(&netParam, 0, 1);
+	commsStatus = sendAndRecvDataSsl(&netParam);
 
 	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
 	{

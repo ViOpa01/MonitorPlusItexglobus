@@ -38,17 +38,17 @@
 #define NIBSS_PORT  5003
 
 
-static void setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
+int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
 {
     MerchantData mParam = {'\0'};
 
     if(getMerchantData())
     {
-        gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);
-        return; 
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
+        return -1; 
     } 
 
-    if(readMerchantData(&mParam)) return;
+    if(readMerchantData(&mParam)) return -2;
 
     strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
     netParam->port = mParam.nibss_port;
@@ -360,17 +360,28 @@ short uiHandshake(void)
 {
     NetworkManagement networkMangement;
     NetWorkParameters netParam = {0};
+    MerchantData mParam = {0};
     char terminalSerialNumber[22] = {'\0'};
+    char tid[9] = {'\0'};
     int maxRetry = 2;
     int i;
+    int ret;
+
+    getMerchantData(&mParam);
+
+    if(mParam.tid[0])
+    {
+        strncpy(tid, mParam.tid, strlen(mParam.tid));
+    }
 
     memset(&networkMangement, 0x00, sizeof(NetworkManagement));
-    strncpy(networkMangement.terminalId, "2070HE88", sizeof(networkMangement.terminalId));
+    strncpy(networkMangement.terminalId, tid /*"2070HE88"*/, sizeof(networkMangement.terminalId));
 
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
+    ret = setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
+    if(ret) return ret;
 
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
