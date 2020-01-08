@@ -55,6 +55,8 @@ int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSs
     netParam->isSsl = isSsl;
     netParam->isHttp = isHttp;
 
+    return 0;
+
 }
 
 static void getDateTime(char *yyyymmddhhmmss)
