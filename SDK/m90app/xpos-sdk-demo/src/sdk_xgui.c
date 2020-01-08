@@ -99,14 +99,6 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{MAINTAINANCE ,	UI_TRANS_TYPE,   	 ""},
 	{MAINTAINANCE ,	UI_NOTIF_ID, 		 ""},
 
-
-	{UI_ACCNT_SELECTION , UI_SAVINGS_ACCT,	  ""},
-	{UI_ACCNT_SELECTION , UI_CURRENT_ACCT,	  ""},
-	{UI_ACCNT_SELECTION , UI_CREDIT_ACCT, 	  ""},
-	{UI_ACCNT_SELECTION , UI_DEFAULT_ACCT,	  ""},
-	{UI_ACCNT_SELECTION , UI_UNIVERSAL_ACCT,  ""},
-	{UI_ACCNT_SELECTION , UI_INVESTMENT_ACCT, ""},
-
 };
 
 int sdk_power_proc_page(void *pval)
@@ -201,58 +193,42 @@ void aboutTerminal(char *tid )
 
 }
 
-static getAccountType(enum AccountType type)
+static int enableAndDisableAccountSelection()
 {
-	switch (type)
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char msg[12] = {'\0'};
+
+	readMerchantData(&mParam);
+
+	if(mParam.account_selection == 1)
 	{
-		case SAVINGS_ACCOUNT:
-        	return 0x10;
-		case CURRENT_ACCOUNT:
-			return 0x20;
-		case CREDIT_ACCOUNT:
-			return 0x30;
-		case DEFAULT_ACCOUNT:
-			return 0x00;
-		case UNIVERSAL_ACCOUNT:
-			return 0x40;
-		case INVESTMENT_ACCOUNT:
-			return 0x50;
-		default:
-			return -1;
-	
+		sprintf(msg, "%s", "Disable");
+	} else if(mParam.account_selection == 0)
+	{
+		sprintf(msg, "%s", "Enable");
+	}
+	char *menuOption[] = {
+		msg
+	};
+
+	option = gui_select_page_ex("Select" , menuOption, 1, 3000, 0);	// if it timesout it return -ve no else index on the menu list
+	// printf("Option : %d\n", option);
+
+	if(!option) 
+	{
+		option = gui_messagebox_show("Message" , msg, "Exit" , "Confrim" , 0);	// Exit : 2, Confirm : 1
+		if(option == 1)
+		{
+			mParam.account_selection = mParam.account_selection ? 0 : 1;
+			saveMerchantData(&mParam);
+		}
+		
 	}
 
-	return -1;
-
-}
-
-static short accountSelectionHandler(const char *pid)
-{
-	int ret = -1;
-
-	if(strcmp(pid, UI_DEFAULT_ACCT) == 0) {
-		ret = getAccountType(DEFAULT_ACCOUNT);
-
-	} else if(strcmp(pid, UI_SAVINGS_ACCT) == 0) {
-		ret = getAccountType(SAVINGS_ACCOUNT);
-
-	} else if(strcmp(pid, UI_CURRENT_ACCT) == 0) {
-		ret = getAccountType(CURRENT_ACCOUNT);
-		
-	} else if(strcmp(pid, UI_CREDIT_ACCT) == 0) {
-		ret = getAccountType(CREDIT_ACCOUNT);
-		
-	} else if(strcmp(pid, UI_UNIVERSAL_ACCT) == 0) {
-		ret = getAccountType(UNIVERSAL_ACCOUNT);
-		
-	} else if(strcmp(pid, UI_INVESTMENT_ACCT) == 0) {
-		ret = getAccountType(INVESTMENT_ACCOUNT);
-
-	} 
-
-	printf("Account type selected : %d\n", ret);
-
-	return ret;
+	return option;
+	
 }
 
 static short eftHandler(const char * pid)
@@ -293,13 +269,7 @@ static int _menu_proc(char *pid)
 
 	if (!eftHandler(pid)){
 		return 0;
-	} else if((acctTypeValue = accountSelectionHandler(pid)) >= 0) {
-
-		sprintf(buff, "%d", acctTypeValue);
-		gui_clear_dc();
-		gui_messagebox_show( "Options" , buff , "" , "confirm" , 0);
-		return 0;
-
+	
 	} else if (strcmp(pid , "Version") == 0){
 		sprintf(msg , "app:%s\r\n", APP_VER);
 		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
@@ -372,29 +342,34 @@ static int _menu_proc(char *pid)
 	{
 		MerchantData mParam = {0};
 
-
 		if(readMerchantData(&mParam))
 		{
 			gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);
 			return -1;
 		}
-
 		aboutTerminal(mParam.tid);
 
 	} else if (strcmp(pid, "My Plain") == 0)
 	{
-		sendAndReceiveDemoRequest(0, 80);
+		//sendAndReceiveDemoRequest(0, 80);
 
 	} else if (strcmp(pid, "My Ssl") == 0)
 	{
-		sendAndReceiveDemoRequest(1, 443);
+		//sendAndReceiveDemoRequest(1, 443);
 		
 	} else if(!strcmp(pid, "Prep Terminal")) {
 		if (uiHandshake()) {
 			gui_messagebox_show("ERROR" , "Prepping failed.", "" , "" , 3000);
 			//TODO: display prepping failed on screen
 		}
+	} else if(!strcmp(pid, UI_ACCNT_SELECTION))
+	{
+		int ret = -1;
+		ret = enableAndDisableAccountSelection();
+		printf("Enable / Disable ret : %d\n", ret);
+
 	}
+
 	return 0;
 }
 

@@ -8,6 +8,7 @@
 #include "network.h"
 
 #include "EmvEft.h"
+#include "merchant.h";
 
 typedef enum
 {
@@ -311,6 +312,50 @@ static enum AccountType getAccountType(void)
         ACCOUNT_END
 	*/
 
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char *account_type_list[] = {
+		"Savings",
+		"Current",
+		"Default",
+		"Credit",
+		"Universal",
+		"Investment"
+	};
+
+	readMerchantData(&mParam);
+	if(mParam.account_selection != 1)
+		return DEFAULT_ACCOUNT;
+
+	switch (option = gui_select_page_ex("Select Account Type" , account_type_list, 6, 10000, 0))	// if exit : -1, timout : -2
+	{
+		case -1:
+		case -2:
+			return ACCOUNT_END;
+		case 0:
+        	// return 0x10;
+			return SAVINGS_ACCOUNT;
+		case 1:
+			// return 0x20;
+			return CURRENT_ACCOUNT;
+		case 2:
+			// return 0x00;
+			return DEFAULT_ACCOUNT;
+		case 3:
+			// return 0x30;
+			return CREDIT_ACCOUNT;
+		case 4:
+			// return 0x40;
+			return UNIVERSAL_ACCOUNT;
+		case 5:
+			// return 0x50;
+			return INVESTMENT_ACCOUNT;
+		default:
+			return DEFAULT_ACCOUNT;
+	
+	}
+
 	return DEFAULT_ACCOUNT; //I need to be removed.
 }
 
@@ -452,7 +497,7 @@ static long long getAmount(Eft *eft, const char *title)
 		sprintf(eft->additionalAmount, "%lld", cashbackAmount);
 	}
 
-	sprintf(eft->amount, "%lld", amount);
+	sprintf(eft->amount, "%012lld", amount);
 
 	return amount;
 }
@@ -509,11 +554,21 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, unsigned cha
 static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 {
 	int result = -1;
-	int onlineResult = 1;
-	//TODO: Icc data update
+	int onlineResult = -1;
+	unsigned char iccData[256];
+	int iccDataLen = hostType->iccDataBcdLen;
 
-	//TODO: The function below will only work on the latest sdk
-	//result = emv_online_resp_proc(onlineResult, eft->responseCode, hostType->iccDataBcd, hostType->iccDataBcdLen);
+	onlineResult = strncmp(eft->responseCode, "00", 2) ? -1 : 1;
+	memcpy(iccData, hostType->iccDataBcd, iccDataLen);
+
+	
+	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AUTHCODE) {
+		memcpy(&iccData[iccDataLen], hostType->AuthorizationCode, hostType->AuthorizationCodeLen);
+		iccDataLen += hostType->LenAuth;
+	}
+	
+	result = emv_online_resp_proc(onlineResult, eft->responseCode, iccData, iccDataLen);
+	
 	if (result != EMVAPI_RET_TC)
 	{
 		return result;
@@ -554,7 +609,7 @@ int performEft(Eft *eft, const char *title)
 	card_in->pin_input = 1;
 	card_in->pin_max_len = 12;
 	card_in->key_pid = 1;		 //1 KF_MKSK 2 KF_DUKPT
-	card_in->pin_key_index = -1; //-1:The returned PIN block is not encrypted (The key index number injected by the key injection tool, such as PIN KEY is 0, and LINE KEY is 1.)
+	//card_in->pin_key_index = -1; //-1:The returned PIN block is not encrypted (The key index number injected by the key injection tool, such as PIN KEY is 0, and LINE KEY is 1.)
 	card_in->pin_timeover = 60000;
 	strcpy(card_in->title, title);
 	strcpy(card_in->card_page_msg, "Please insert/swipe"); //Swipe interface prompt information, a line of 20 characters, up to two lines, automatic branch.
@@ -662,7 +717,7 @@ int performEft(Eft *eft, const char *title)
 	if (card_out->pin_len)
 	{
 		eft->pinDataBcdLen = card_out->pin_len;
-		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
+		memcpy(eft->pinDataBcd, card_out->pin_block, sizeof(card_out->pin_block));
 	}
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
@@ -687,18 +742,21 @@ int performEft(Eft *eft, const char *title)
 	strcpy(card_info.pan, card_out->pan);
 	strcpy(card_info.expdate, card_out->exp_data);
 
-	free(card_in);
-	free(card_out);
-
 	//TODO: print receipt from DB
 	//upay_print_proc(&card_info);	//TODO:		// Printout
 
+	printf("Outside eft->iccDataBcdLen, eft->pinDataBcdLen -> %d, %d\n", eft->iccDataBcdLen, eft->pinDataBcdLen);
+
+	printf("Out sizeof eft -> %d\n", sizeof(Eft));
+	
 	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
 	{
 		free(card_in);
 		free(card_out);
 		return -3;
 	}
+
+	printf("After eft->iccDataBcdLen, eft->pinDataBcdLen -> %d, %d\n", eft->iccDataBcdLen, eft->pinDataBcdLen);
 
 	result = processPacketOnline(eft, &hostType, packet, sizeof(packet));
 
