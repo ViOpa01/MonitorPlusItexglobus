@@ -649,8 +649,87 @@ int performEft(Eft *eft, const char *title)
 
 	APP_TRACE("emv_read_card");
 	card_out = (st_read_card_out *)malloc(sizeof(st_read_card_out));
+	
+	#if 0
 	memset(card_out, 0, sizeof(st_read_card_out));
 	ret = emv_read_card(card_in, card_out);
+	#endif 
+
+loop_card:
+	memset(card_out, 0, sizeof(st_read_card_out));
+	ret = emv_read_card(card_in, card_out);
+
+	APP_TRACE( "-----------------------upay_consum Ret:%d-------------------------",ret);
+	//if(ret == READ_CARD_RET_MAGNETIC){					// Magnetic stripe cards
+	//	sdk_log_out("trackb:%s\r\n", card_out.track2);
+	//	sdk_log_out("trackc:%s\r\n", card_out.track3);
+	//	sdk_log_out("pan:%s\r\n", card_out.pan);
+	//	sdk_log_out("expdate:%s\r\n", card_out.exp_data);
+
+	//	
+	//}
+	//else if(ret == INPUTCARD_RET_ICC){					// 
+	//	
+	//}
+	//else if(ret == INPUTCARD_RET_RFID){
+	//card_rf_emv_proc(0, 1, m_tmf_param,_pack_8583);
+	//}
+	//else{
+	//	return ret;
+	//}
+	if(EMVAPI_RET_FALLBACk==ret){
+		card_in->card_mode = READ_CARD_MODE_MAG;
+		card_in->forceIC=0;
+		memset(card_in->card_page_msg,0x00,sizeof(card_in->card_page_msg));
+		strcpy(card_in->card_page_msg,"please try to swipe");
+			goto loop_card;
+	}
+	else if(EMVAPI_RET_FORCEIC==ret){
+		if(card_in->card_mode == READ_CARD_MODE_MAG)
+			ret =EMVAPI_RET_ARQC;
+		else{
+			card_in->card_mode = READ_CARD_MODE_IC | READ_CARD_MODE_RF;
+			memset(card_in->card_page_msg,0x00,sizeof(card_in->card_page_msg));
+			strcpy(card_in->card_page_msg,"don't swipe,please tap/insert the card");
+			goto loop_card;
+		}
+	}
+	else if(EMVAPI_RET_OTHER==ret){
+		card_in->card_mode = READ_CARD_MODE_IC;
+		memset(card_in->card_page_msg,0x00,sizeof(card_in->card_page_msg));
+		strcpy(card_in->card_page_msg,"please insert card");
+			goto loop_card;
+	}
+
+	if(EMVAPI_RET_ARQC == ret)
+	{
+		gui_messagebox_show("", "Online Request" , "" , "ok" , 0);
+	}
+	else if(EMVAPI_RET_TC == ret)
+	{
+		gui_messagebox_show("", "Approved" , "" , "ok" , 0);
+	}
+	else if(EMVAPI_RET_AAC == ret)
+	{
+		gui_messagebox_show("", "Declined" , "" , "ok" , 0);
+		free(card_in);
+		free(card_out);
+		return 0;
+	}
+	else if(EMVAPI_RET_AAR == ret)
+	{
+		gui_messagebox_show("", "Terminate" , "" , "ok" , 0);
+		free(card_in);
+		free(card_out);
+		return 0;
+	}
+	else
+	{
+		gui_messagebox_show("", "Cancel" , "" , "ok" , 0);
+		free(card_in);
+		free(card_out);
+		return 0;
+	}
 
 	//if(ret == READ_CARD_RET_MAGNETIC){					// Magnetic stripe cards
 	//	sdk_log_out("trackb:%s\r\n", card_out.track2);
@@ -670,6 +749,7 @@ int performEft(Eft *eft, const char *title)
 	//	return ret;
 	//}
 
+	#if 0
 	if (EMVAPI_RET_ARQC == ret)
 	{
 		gui_messagebox_show("", "Online Request", "", "ok", 0);
@@ -699,6 +779,7 @@ int performEft(Eft *eft, const char *title)
 		free(card_out);
 		return 0;
 	}
+	#endif
 
 	if ((eft->techMode = cardTypeToTechMode(card_out->card_type)) == UNKNOWN_MODE)
 	{ //will never happen
