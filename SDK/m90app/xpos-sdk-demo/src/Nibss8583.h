@@ -13,6 +13,15 @@ extern "C"
 #ifndef _NIBSS_ISO_8583_INCLUDED
 #define _NIBSS_ISO_8583_INCLUDED
 
+#define  INPUT_ONLINE_RESP                0x01  // OnlineResult
+#define  INPUT_ONLINE_AC                  0x02  // AuthResp, DE 39
+#define  INPUT_ONLINE_AUTHDATA            0x04  // AuthData, tag91
+#define  INPUT_ONLINE_SCRIPTCRIT          0x08  // ScriptCritData, tag 71
+#define  INPUT_ONLINE_SCRIPTUNCRIT        0x10  // ScriptUnCritData, tag 72
+#define  INPUT_ONLINE_AUTHCODE            0x20  // AuthorizationCode, tag 8A
+#define  INPUT_ONLINE_RESULT_REFERRAL     0x40  // Result_referral
+#define  INPUT_ONLINE_ARC_REFERRAL        0x80  // AuthResp_Referral
+
     typedef struct HostType
     {
         char OnlineResult;
@@ -24,6 +33,7 @@ extern "C"
         unsigned short LenScriptUnCrit;
         unsigned char ScriptUnCritData[512];
         unsigned char AuthorizationCode[6];
+        int AuthorizationCodeLen;
         char Result_referral;
         char AuthResp_Referral[2];
         unsigned char unKnownData[512];

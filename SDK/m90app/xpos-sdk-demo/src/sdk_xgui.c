@@ -300,11 +300,11 @@ static int _menu_proc(char *pid)
 		aboutTerminal();
 	} else if (strcmp(pid, "My Plain") == 0)
 	{
-		sendAndReceiveDemoRequest(0, 80);
+		//sendAndReceiveDemoRequest(0, 80);
 
 	} else if (strcmp(pid, "My Ssl") == 0)
 	{
-		sendAndReceiveDemoRequest(1, 443);
+		//sendAndReceiveDemoRequest(1, 443);
 		
 	} else if(!strcmp(pid, "Prep Terminal")) {
 		if (uiHandshake()) {
