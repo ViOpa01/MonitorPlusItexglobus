@@ -184,7 +184,10 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvPacket(netParam);
+
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return -2;
+    }
 
     printf("Master key response: \n%s\n", &netParam->response[2]);
 
@@ -222,7 +225,9 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvPacket(netParam);
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return -2;
+    }
 
     printf("Session key response: \n%s\n", &netParam->response[2]);
 
@@ -253,7 +258,9 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvPacket(netParam);
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return -2;
+    }
 
     printf("Pin key response: \n%s\n", &netParam->response[2]);
 
@@ -280,7 +287,10 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvPacket(netParam);
+
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return -2;
+    }
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
@@ -311,7 +321,10 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvPacket(netParam);
+    
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return -2;
+    }
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 

@@ -2,6 +2,7 @@
 
 #include "network.h"
 #include "util.h"
+#include "log.h"
 #include "sdk_http.h"
 #include "libapi_xpos/inc/libapi_comm.h"
 #include "libapi_xpos/inc/libapi_gui.h"
@@ -12,6 +13,14 @@ static int m_connect_tick = 0;
 static int m_connect_time = 0;
 static int m_connect_exit = 0;
 static int m_comm_sock = 1;
+
+static void logNetworkParameters(NetWorkParameters * netWorkParameters)
+{
+    LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
+    LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
+    LOG_PRINTF("NetLink Timeout -> %d, Recv Timeout -> %d, title -> %s", netWorkParameters->netLinkTimeout,  netWorkParameters->receiveTimeout, netWorkParameters->title);
+
+}
 
 
 static void comm_page_set_page(char * title , char * msg ,int quit)
@@ -219,6 +228,7 @@ enum CommsStatus {
 static short tryConnection(NetWorkParameters *netParam, const int i)
 {
 	char tmp[32] = {0};
+	int result;
 
 	m_connect_tick = Sys_TimerOpen(30000);
 	m_connect_exit = 0;
@@ -230,9 +240,9 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	if (netParam->isSsl)
 	{
 
-		if (comm_ssl_init(COMM_SOCK, netParam->serverCert, netParam->clientCert, netParam->clientKey, netParam->verificationLevel))
+		if (result = comm_ssl_init(COMM_SOCK, netParam->serverCert, netParam->clientCert, netParam->clientKey, netParam->verificationLevel))
 		{
-			printf("Ssl init failed");
+			LOG_PRINTF("Ssl init failed result = %d", result);
 			comm_ssl_close(COMM_SOCK);
 			return -3;
 		}
@@ -241,14 +251,14 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 
 		if (comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc))
 		{
-			printf("Ssl connect failed...\n");
+			LOG_PRINTF("Ssl connect failed...\n");
 			comm_ssl_close(COMM_SOCK);
 			return -4;
 		}
 
 		if (comm_page_get_exit() || m_connect_exit == 1)
 		{
-			printf("comm_func_connect_server Cancel");
+			LOG_PRINTF("comm_func_connect_server Cancel");
 			comm_ssl_close(COMM_SOCK);
 			return -5;
 		}
@@ -257,7 +267,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	{
 		if (comm_sock_connect(COMM_SOCK, netParam->host, netParam->port)) //  Connect to http server
 		{
-			printf("Socket connect failed...\n");
+			LOG_PRINTF("Socket connect failed...\n");
 			comm_sock_close(COMM_SOCK);
 			return -6;
 		}
@@ -330,19 +340,27 @@ static short receivePacket(NetWorkParameters *netParam)
 	int result = -1;
 	int bytes = 0;
 
-	if (netParam->isSsl)
+	while (1) 
 	{
-		result = comm_ssl_recv(COMM_SOCK, (unsigned char *) &netParam->response[bytes], sizeof(netParam->response));
+		if (netParam->isSsl)
+		{
+			result = comm_ssl_recv(COMM_SOCK, (unsigned char *) &netParam->response[bytes], sizeof(netParam->response));
 
-		printf("Ssl recv result -> %d", result);
-	}
-	else
-	{
-		result = comm_sock_recv(COMM_SOCK, (unsigned char *)&netParam->response[bytes], sizeof(netParam->response), netParam->receiveTimeout);
-		printf("plain recv result -> %d", result);
-	}
+			printf("Ssl recv result -> %d", result);
+		}
+		else
+		{
+			result = comm_sock_recv(COMM_SOCK, (unsigned char *)&netParam->response[bytes], sizeof(netParam->response), netParam->receiveTimeout);
+			printf("plain recv result -> %d", result);
+		}
 
-	//Sys_Delay(500);
+		
+		if (result <= 0) break;
+		Sys_Delay(100);
+		bytes += result;
+	}
+	
+    if(bytes > 0) netParam->responseSize = bytes;
 
 	return result;
 }
@@ -383,6 +401,7 @@ void hostTest(void)
 
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 {
+	logNetworkParameters(netParam);
 
 	if (connectToHost(netParam))
 	{
