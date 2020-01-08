@@ -15,6 +15,7 @@ extern "C"
 #define _ITEX_NIBSS_INCLUDED
 
 #include "Nibss8583.h"
+#include "network.h"
 
 short uiHandshake(void);
 
