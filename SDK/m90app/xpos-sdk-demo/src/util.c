@@ -1,7 +1,11 @@
 #include "util.h"
 #include "network.h"
-#include "string.h"
-#include "stdio.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "libapi_xpos/inc/libapi_util.h"
+
 
 
 int bin2hex(unsigned char* pcInBuffer, char* pcOutBuffer, int iLen)
@@ -76,6 +80,17 @@ int getHttpStatusCode(char *heads)
 	return -1;
 }
 
+
+void logHex(unsigned char * data, const int size, const char * title)
+{
+    const int ascLen = size * 2 + 1;
+    char * asc = (char *) calloc(ascLen, sizeof(char));
+
+    Util_Bcd2Asc((char *) data, asc, ascLen - 1);
+    fprintf(stderr, "%s -> %s", title, asc);
+
+    free(asc);
+}
 
 
 

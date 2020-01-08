@@ -39,10 +39,10 @@ extern "C"
         unsigned char unKnownData[512];
         unsigned short unKnownDataLen;
 
-        unsigned char iccData[511];
+        unsigned char iccData[1000];
         unsigned short iccDataLen;
 
-        unsigned char iccDataBcd[256];
+        unsigned char iccDataBcd[500];
         unsigned short iccDataBcdLen;
 
         unsigned char Info_Included_Data[1];
@@ -157,8 +157,8 @@ extern "C"
         unsigned char pinDataBcd[16];
 	    int pinDataBcdLen;
 
-        char iccData[511];
-        unsigned char iccDataBcd[256];
+        char iccData[1000];
+        unsigned char iccDataBcd[500];
         unsigned int iccDataBcdLen;
         char echoData[256];
         short isFallback;
