@@ -372,6 +372,19 @@ static short getReversalReason(Eft *eft)
 	return 0;
 }
 
+static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
+{
+	strncpy(netParam->host, mParam->nibss_ip, strlen(mParam->nibss_ip));
+	netParam->port = mParam->nibss_port;
+	netParam->isSsl = 1;
+	netParam->isHttp = 0;
+	netParam->receiveTimeout = 1000;
+	strncpy(netParam->title, "Nibss", 10);
+	strncpy(netParam->apn, "CMNET", 10);
+	netParam->netLinkTimeout = 30000;
+
+}
+
 void eftTrans(const enum TransType transType)
 {
 	Eft eft;
@@ -380,7 +393,9 @@ void eftTrans(const enum TransType transType)
 	MerchantParameters merchantParameters;
 	char sessionKey[33] = {'\0'};
 	char tid[9] = {'\0'};
+	NetWorkParameters netParam;
 
+	memset(&netParam, 0x00, sizeof(NetWorkParameters));
 	memset(&eft, 0x00, sizeof(Eft));
 
 	readMerchantData(&mParam);
@@ -401,6 +416,8 @@ void eftTrans(const enum TransType transType)
 		printf("Error getting session key");
 		return;
 	}
+
+	initNibssParameters(&netParam, &mParam);
 
 	//TODO: get tid, eft.terminalId
 	if(mParam.tid[0])
@@ -424,7 +441,7 @@ void eftTrans(const enum TransType transType)
 	strncpy(eft.posConditionCode, POS_CONDITION_CODE, sizeof(eft.posConditionCode));
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
 
-	performEft(&eft, transTypeToTitle(transType));
+	performEft(&eft, &netParam, transTypeToTitle(transType));
 }
 
 static short amountRequired(const Eft *eft)
@@ -485,24 +502,21 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus)
 	}
 }
 
-static int processPacketOnline(Eft *eft, struct HostType *hostType, unsigned char *packet, const int size)
+
+static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParameters *netParam)
 {
 	int result = -1;
 	unsigned char response[2048];
-	NetWorkParameters netParam = {0};
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 
-	//TODO: Send packet to host, return commsStatus, and populate response
-
-	setupNibssRequestParameter(&netParam, 0, 1);
-	commsStatus = sendAndRecvDataSsl(&netParam);
+	commsStatus = sendAndRecvPacket(&netParam);
 
 	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
 	{
 		return handleFailedComms(eft, commsStatus);
 	}
 
-	if (result = getEftOnlineResponse(&hostType, eft, response, sizeof(response)))
+	if (result = getEftOnlineResponse(&hostType, eft, netParam->response, netParam->responseSize))
 	{
 		//Shouldn't happen
 		printf("Critical Error");
@@ -542,7 +556,7 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	return result;
 }
 
-int performEft(Eft *eft, const char *title)
+int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
 	long long namt = 0;
@@ -686,13 +700,14 @@ int performEft(Eft *eft, const char *title)
 
 	//printf("=========================> 3\n");
 
-	/*
+	
 	if (card_out->pin_len)
 	{
-		eft->pinDataBcdLen = card_out->pin_len;
-		memcpy(eft->pinDataBcd, card_out->pin_block, sizeof(card_out->pin_block));
+		eft->pinDataBcdLen = 8;
+		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
+
+		logHex(eft->pinDataBcd, eft->pinDataBcdLen, "Pin block");
 	}
-	*/
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 
@@ -736,8 +751,9 @@ int performEft(Eft *eft, const char *title)
 		free(card_out);
 		return -3;
 	}
+	Sys_Delay(10000);
 
-	result = processPacketOnline(eft, &hostType, packet, sizeof(packet));
+	result = processPacketOnline(eft, &hostType, netParam);
 
 	free(card_in);
 	free(card_out);

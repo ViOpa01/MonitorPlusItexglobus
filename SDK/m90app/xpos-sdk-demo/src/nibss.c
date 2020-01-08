@@ -59,6 +59,19 @@ int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSs
 
 }
 
+static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
+{
+	strncpy(netParam->host, mParam->nibss_ip, strlen(mParam->nibss_ip));
+	netParam->port = mParam->nibss_port;
+	netParam->isSsl = 1;
+	netParam->isHttp = 0;
+	netParam->receiveTimeout = 1000;
+	strncpy(netParam->title, "Nibss", 10);
+	strncpy(netParam->apn, "CMNET", 10);
+	netParam->netLinkTimeout = 30000;
+
+}
+
 static void getDateTime(char *yyyymmddhhmmss)
 {
     Sys_GetDateTime(yyyymmddhhmmss);
@@ -159,8 +172,6 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
     unsigned char packet[256];
     unsigned char response[512];
 
-    // setupNibssRequestParameter(&netParam, 0, 0);
-
     networkMangement->type = MASTER_KEY;
 
     addGenericNetworkFields(networkMangement);
@@ -173,7 +184,7 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Master key response: \n%s\n", &netParam->response[2]);
 
@@ -211,7 +222,7 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Session key response: \n%s\n", &netParam->response[2]);
 
@@ -242,7 +253,7 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Pin key response: \n%s\n", &netParam->response[2]);
 
@@ -269,7 +280,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
@@ -300,7 +311,7 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
@@ -369,7 +380,13 @@ short uiHandshake(void)
     int i;
     int ret;
 
-    getMerchantData(&mParam);
+    if(getMerchantData())
+    {
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
+        return -1; 
+    } 
+
+    if(readMerchantData(&mParam)) return -2;
 
     if(mParam.tid[0])
     {
@@ -382,8 +399,9 @@ short uiHandshake(void)
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    ret = setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
-    if(ret) return ret;
+    initNibssParameters(&netParam, &mParam);
+    // ret = setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
+    // if(ret) return ret;
 
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)

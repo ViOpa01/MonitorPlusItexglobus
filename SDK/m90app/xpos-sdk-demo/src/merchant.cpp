@@ -29,33 +29,45 @@ extern "C" {
 
 using namespace std;
 
-static void getMerchantDetails(char *buffer)
+static void initTamsParameters(NetWorkParameters * netParam)
 {
-    NetWorkParameters netParam = {0};
-    char terminalSn[22] = {0};
 
+	netParam->receiveTimeout = 1000;
+	strncpy(netParam->title, "TAMS", 10);
+	strncpy(netParam->apn, "CMNET", 10);
+	netParam->netLinkTimeout = 30000;
+
+    netParam->isHttp = 1;
+    netParam->isSsl = 0;
+}
+
+
+static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
+{
+
+    char terminalSn[22] = {0};
     char path[0x500] = {'\0'};
     string add;
 
 
-    strncpy((char *)netParam.host, ITEX_TAMS_PUBLIC_IP, strlen(ITEX_TAMS_PUBLIC_IP));
-    netParam.port = atoi(ITEX_TASM_PUBLIC_PORT);
-    netParam.isHttp = 1;
-    netParam.isSsl = 0;
-    netParam.packetSize = 0;
+    strncpy((char *)netParam->host, ITEX_TAMS_PUBLIC_IP, strlen(ITEX_TAMS_PUBLIC_IP));
+    netParam->port = atoi(ITEX_TASM_PUBLIC_PORT);
+
     getTerminalSn(terminalSn);
 
     sprintf(path, "tams/eftpos/devinterface/transactionadvice.php?action=TAMS_WEBAPI&termID=%s&posUID=%s&ver=%s%s&model=%s&control=TamsSecurity", DEFAULT_TID, terminalSn, APP_NAME, APP_VER, APP_MODEL);
     
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "GET /%s\r\n", path);
- 	netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d", netParam.host, netParam.port);
-	netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "%s", "\r\n\r\n");
+    netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "GET /%s\r\n", path);
+ 	netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "Host: %s:%d", netParam->host, netParam->port);
+	netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "%s", "\r\n\r\n");
 
-    printf("request : \n%s\n", netParam.packet);
-    sendAndRecvDataSsl(&netParam);
+    printf("request : \n%s\n", netParam->packet);
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return -1;
+    }
 
-    memcpy(buffer, netParam.response, strlen((char *)netParam.response));
-    
+    memcpy(buffer, netParam->response, strlen((char *)netParam->response));
+    return 0;
 }
 
 static short parseJsonFile(char *buff, cJSON **parsed)
@@ -364,9 +376,13 @@ int saveMerchantData(const MerchantData* merchant)
 
 int getMerchantData()
 {
+    NetWorkParameters netParam;
     int ret = -1;
     char responseXml[0x1000] = {'\0'};
-    getMerchantDetails(responseXml);
+
+    memset(&netParam, 0, sizeof(NetWorkParameters));
+    initTamsParameters(&netParam);
+    if(getMerchantDetails(&netParam, responseXml)) return ret;
 
     if ((ret = saveMerchantDataXml(responseXml)) != 0) {
         // error

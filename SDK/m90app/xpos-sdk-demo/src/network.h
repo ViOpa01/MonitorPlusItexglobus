@@ -25,21 +25,18 @@ typedef struct
     char apn[50];
     char title[35];
     int netLinkTimeout;
-    int sendTimeout;
     int receiveTimeout;
 
+    char serverCert[256];
+	char clientCert[256];
+	char clientKey[256];
+	int verificationLevel; //0 no verification, 1: verify
 } NetWorkParameters;
 
-void logNetwork(const NetWorkParameters *param)
-{
-    printf("Host : %s\n", param->host);
-    printf("Port : %d\n", param->port);
-    printf("isSsl : %d\n", param->isSsl);
-    printf("isHttp : %d\n", param->isHttp);
-}
 
 
-enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam);
+
+enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
 
 #endif 
 
