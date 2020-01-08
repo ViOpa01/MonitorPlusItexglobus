@@ -298,6 +298,8 @@ loop_card:
 	//else{
 	//	return ret;
 	//}
+
+	printf("Track 2 : %s\n", card_out->track2);
 	if(EMVAPI_RET_FALLBACk==ret){
 		card_in->card_mode = READ_CARD_MODE_MAG;
 		card_in->forceIC=0;

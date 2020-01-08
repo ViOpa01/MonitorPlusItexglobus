@@ -133,9 +133,9 @@ static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl, i
             ret = comm_sock_recv( sock, (unsigned char *)(buff + index), len - index , 1000);
         }
 
-		printf("ret from comm_sock_recv : %d\n", ret);
+		// printf("ret from comm_sock_recv : %d\n", ret);
 
-		if(ret) return ret;		// Temporarily
+		// if(ret) return ret;		// Temporarily
 
 	
 		if(isHttp){
@@ -199,22 +199,87 @@ static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl, i
 	return -1;
 }
 
-enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
-{
 
-	int ret = -1;
-	int sock = 0;
-	char apn[32] = "CMNET";
+/*
+enum CommsStatus {
+   
+    SEND_RECEIVE_SUCCESSFUL,
+    CONNECTION_FAILED,
+    SENDING_FAILED,
+    RECEIVING_FAILED,
+
+    //Extended Response, leave this part for me.
+    MANUAL_REVERSAL_NEEDED,
+    AUTO_REVERSAL_SUCCESSUL, 
+
+};
+*/
+
+
+static short tryConnection(NetWorkParameters *netParam, const int i)
+{
+	char tmp[32] = {0};
+
+	m_connect_tick = Sys_TimerOpen(30000);
+	m_connect_exit = 0;
+	m_connect_time = i + 1;
+
+	sprintf(tmp, "Connecting (%d) ...", i + 1);
+	comm_page_set_page("Http", tmp, 1);
+
+	if (netParam->isSsl)
+	{
+
+		if (comm_ssl_init(COMM_SOCK, netParam->serverCert, netParam->clientCert, netParam->clientKey, netParam->verificationLevel))
+		{
+			printf("Ssl init failed");
+			comm_ssl_close(COMM_SOCK);
+			return -3;
+		}
+
+		//TODO: Check callback later.
+
+		if (comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc))
+		{
+			printf("Ssl connect failed...\n");
+			comm_ssl_close(COMM_SOCK);
+			return -4;
+		}
+
+		if (comm_page_get_exit() || m_connect_exit == 1)
+		{
+			printf("comm_func_connect_server Cancel");
+			comm_ssl_close(COMM_SOCK);
+			return -5;
+		}
+	}
+	else
+	{
+		if (comm_sock_connect(COMM_SOCK, netParam->host, netParam->port)) //  Connect to http server
+		{
+			printf("Socket connect failed...\n");
+			comm_sock_close(COMM_SOCK);
+			return -6;
+		}
+	}
+
+	return 0;
+}
+
+
+static short connectToHost(NetWorkParameters *netParam)
+{
     int i;
     int nret;	
-	int nTime = 3;
+	const int nTime = 3;
 
 			
-	nret = comm_net_link("", apn, 30000);		// Network link with 30s timeout
+	nret = comm_net_link(netParam->title, netParam->apn, netParam->netLinkTimeout);		// Network link with 30s timeout
+	
 	if (nret != 0)
 	{
 		gui_messagebox_show("NET LINK" , "Link Fail", "" , "Exit" , 0);
-		return;
+		return -1;
 	}
 
 	if(COMM_SOCK = comm_sock_create(0))
@@ -222,118 +287,125 @@ enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam)
 		// Failed to create socket
         gui_messagebox_show("SOCKET" , "Socket Failed", "" , "Exit" , 0);
         printf("Failed to create socket\n");
-		return;
+		return -2;
 	}
 
-	for ( i = 0 ; i < nTime ; i++)
-	{		
-		char tmp[32] = {0};
-
-		m_connect_tick = Sys_TimerOpen(30000);
-		m_connect_exit = 0;
-		m_connect_time = i + 1;
-
-		printf("connect server... ip = %s, port : %d\r\n", netParam->host,  netParam->port);
-		
-		sprintf(tmp , "Connecting (%d) ..." , i + 1);
-		comm_page_set_page("Http", tmp , 1);
-
-		if(netParam->isSsl) 
-		{
-			printf("--------------------comm_ssl_init---------------------------\r\n" );
-			comm_ssl_init(COMM_SOCK ,0,0,0,0);
-
-			ret = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc);
-			printf( "--------------------comm_ssl_connect: %d ---------------------------\r\n", ret );
-
-			if (comm_page_get_exit() || m_connect_exit == 1)	{
-				printf("comm_func_connect_server Cancel" );
-				comm_ssl_close(COMM_SOCK);
-				ret = -1;
-				break;
-			}
-
-		} else {
-			ret = comm_sock_connect(COMM_SOCK, netParam->host, netParam->port);	//  Connect to http server
-
-		}
-
-		
-		printf( "--------------------comm_sock_connect: %d ---------------------------\r\n", ret );
-		if (ret == 0)			
-			break;
-		
-		if(netParam->isSsl)
-		{
-			comm_ssl_close(COMM_SOCK);
-		} else {
-			comm_sock_close(COMM_SOCK);
-		}
+	for (i = 0; i < nTime; i++)
+	{
+		if (!tryConnection(netParam, i)) break;
 		Sys_Delay(500);
+	}
 
-	}	
-
-
-	if(nTime <= 3 && ret)
-	{
-		printf("Failed to connect to the host\n");
+	if (i == nTime) {
 		gui_messagebox_show(netParam->isSsl ? "HTTPS" : "HTTP" , "Connection Fail", "" , "Exit" , 0);
-		return CONNECTION_FAILED;
+		return -3;
 	}
 
-    printf("connect server ret : %d, %s:%d\r\n" , ret , netParam->host , netParam->port);
+	return 0;
+}
 
-	printf("------------------------Sending request to the host-----------------------\n");
-	if(ret == 0) 
+
+static short sendPacket(NetWorkParameters *netParam)
+{
+	int result = -1;
+
+	if (netParam->isSsl)
 	{
-
-		if(netParam->isSsl) 
-		{
-			ret = comm_ssl_send(COMM_SOCK , netParam->packet ,  netParam->packetSize);
-		} else {
-			ret = comm_sock_send(COMM_SOCK , (unsigned char *)netParam->packet  ,  netParam->packetSize);	
-		}
-
-		printf("ret from comm send : %d\n", ret);
-
-    /*
-		if(ret)
-		{
-			printf("Failed to send the request, ret = %d\n", ret);
-			return SENDING_FAILED;
-		}
-    */
+		result = comm_ssl_send(COMM_SOCK, netParam->packet, netParam->packetSize);
 	}
-
-	printf("-------------------------------Receiving from the server----------------------------\n");
-
-	ret = socket_recv(COMM_SOCK, netParam->response,  sizeof(netParam->response), 30000, netParam->isSsl, netParam->isHttp);  // check for len very well
-    netParam->responseSize = ret;   // getting the response length
-
-
-	if(ret > 0) 
+	else
 	{
-		printf("Receive legth : %d\n", strlen(netParam->response));
-		printf("recv buff: %s\n", netParam->response);	
-
-	} else {
-		printf("No response received\n");
-		gui_messagebox_show("RESPONSE" , "No Response received", "" , "" , 2000);
-		return RECEIVING_FAILED;
+		result = comm_sock_send(COMM_SOCK, (unsigned char *)netParam->packet, netParam->packetSize);
 	}
 
-	if(netParam->isSsl)
-	{
-		comm_ssl_close(COMM_SOCK);
-	} else {
-		comm_sock_close(sock);
-	}
-		   
-	comm_net_unlink();		// Unlink network connection
-    
-    return SEND_RECEIVE_SUCCESSFUL;
+	printf("Send Result : %d\n", result);
 
+	return result > 0 ? 0 : -1;
 }
 
 
 
+static short receivePacket(NetWorkParameters *netParam)
+{
+	int result = -1;
+	int bytes = 0;
+
+	if (netParam->isSsl)
+	{
+		result = comm_ssl_recv(COMM_SOCK, (unsigned char *) &netParam->response[bytes], sizeof(netParam->response));
+
+		printf("Ssl recv result -> %d", result);
+	}
+	else
+	{
+		result = comm_sock_recv(COMM_SOCK, (unsigned char *)&netParam->response[bytes], sizeof(netParam->response), netParam->receiveTimeout);
+		printf("plain recv result -> %d", result);
+	}
+
+	//Sys_Delay(500);
+
+	return result;
+}
+
+
+#if 0
+void hostTest(void)
+{
+    char testData[200] = { '\0' };
+    int len;
+    char* response = 0;
+    enum com_ErrorCodes com_errno;
+
+    struct com_ConnectHandle* handle = beginNibssConnection(NULL, NULL, &com_errno);
+    if (!handle) {
+        UI_ShowOkCancelMessage(10000, "Nibss", com_GetErrorString(com_errno), UI_DIALOG_TYPE_NONE);
+        return;
+    }
+
+    strcpy(&testData[2], "080022380000008000009A0000031611084511084511084503162044309N");
+
+    len = strlen(&testData[2]);
+    testData[0] = (unsigned char)(len >> 8);
+    testData[1] = (unsigned char)len;
+
+    len = sendAndReceiveNibss((void**)&response, handle, (const void*)testData, len + 2, nibssCallback, connection_callback, &com_errno);
+    if (len > 0 && response) {
+        char message[1024] = { 0 };
+        memcpy(message, response + 2, len - 2);
+        UI_ShowOkCancelMessage(2000, "RECEIVED", message, UI_DIALOG_TYPE_CONFIRMATION);
+        free(response);
+    }
+
+    endNibssConnection(handle);
+}
+#endif
+
+
+enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
+{
+
+	if (connectToHost(netParam))
+	{
+		return CONNECTION_FAILED;
+	}
+
+	puts("\nConnection Successful!\n");
+
+	if (sendPacket(netParam))
+	{
+		return SENDING_FAILED;
+	}
+
+	puts("Sending Successful!\n");
+
+	if (receivePacket(netParam))
+	{
+		return RECEIVING_FAILED;
+	}
+
+	puts("Receive Successful!\n");
+
+	netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+	comm_net_unlink(); // Unlink network connection
+	return SEND_RECEIVE_SUCCESSFUL;
+}

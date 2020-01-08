@@ -15,10 +15,11 @@ extern "C"
 #define _ITEX_NIBSS_INCLUDED
 
 #include "Nibss8583.h"
+#include "network.h"
 
 short uiHandshake(void);
 
-
+int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl);
 int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);
 int getSessionKey(char sessionKey[33]);

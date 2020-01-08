@@ -1,4 +1,7 @@
-#include "libapi_xpos/inc/libapi_file.h"
+//#include "libapi_xpos/inc/libapi_file.h"
+//#include "libapi_xpos/inc/libapi_gui.h"
+
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +17,8 @@ extern "C" {
 #include "itexFile.h"
 #include "ezxml.h"
 #include "cJSON.h"
+#include "libapi_xpos/inc/libapi_gui.h"
+
 }
 
 #define ITEX_TAMS_PUBLIC_IP "basehuge.itexapp.com"
@@ -24,33 +29,45 @@ extern "C" {
 
 using namespace std;
 
-static void getMerchantDetails(char *buffer)
+static void initTamsParameters(NetWorkParameters * netParam)
 {
-    NetWorkParameters netParam = {0};
-    char terminalSn[22] = {0};
 
+	netParam->receiveTimeout = 1000;
+	strncpy(netParam->title, "TAMS", 10);
+	strncpy(netParam->apn, "CMNET", 10);
+	netParam->netLinkTimeout = 30000;
+
+    netParam->isHttp = 1;
+    netParam->isSsl = 0;
+}
+
+
+static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
+{
+
+    char terminalSn[22] = {0};
     char path[0x500] = {'\0'};
     string add;
 
 
-    strncpy((char *)netParam.host, ITEX_TAMS_PUBLIC_IP, strlen(ITEX_TAMS_PUBLIC_IP));
-    netParam.port = atoi(ITEX_TASM_PUBLIC_PORT);
-    netParam.isHttp = 1;
-    netParam.isSsl = 0;
-    netParam.packetSize = 0;
+    strncpy((char *)netParam->host, ITEX_TAMS_PUBLIC_IP, strlen(ITEX_TAMS_PUBLIC_IP));
+    netParam->port = atoi(ITEX_TASM_PUBLIC_PORT);
+
     getTerminalSn(terminalSn);
 
     sprintf(path, "tams/eftpos/devinterface/transactionadvice.php?action=TAMS_WEBAPI&termID=%s&posUID=%s&ver=%s%s&model=%s&control=TamsSecurity", DEFAULT_TID, terminalSn, APP_NAME, APP_VER, APP_MODEL);
     
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "GET /%s\r\n", path);
- 	netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d", netParam.host, netParam.port);
-	netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "%s", "\r\n\r\n");
+    netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "GET /%s\r\n", path);
+ 	netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "Host: %s:%d", netParam->host, netParam->port);
+	netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "%s", "\r\n\r\n");
 
-    printf("request : \n%s\n", netParam.packet);
-    sendAndRecvDataSsl(&netParam);
+    printf("request : \n%s\n", netParam->packet);
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return -1;
+    }
 
-    memcpy(buffer, netParam.response, strlen((char *)netParam.response));
-    
+    memcpy(buffer, netParam->response, strlen((char *)netParam->response));
+    return 0;
 }
 
 static short parseJsonFile(char *buff, cJSON **parsed)
@@ -95,12 +112,15 @@ int saveMerchantDataXml(const char* merchantXml)
     ezxml_t root;
     ezxml_t tran;
 
+    char itexPosMessage[14] = {0};
     MerchantData merchant = { 0 };
     std::string ip_and_port;    // POSVASPUBLIC_SSL, EMPSPUBLIC_SSL
     int pos = 0;
     int ret = -1;
 
     char  rawResponse[0x1000] = {'\0'};
+
+    merchant.status = 0;
 
     memcpy(rawResponse, merchantXml, strlen(merchantXml));
     root = ezxml_parse_str(rawResponse, strlen(rawResponse));
@@ -115,6 +135,25 @@ int saveMerchantDataXml(const char* merchantXml)
 
     tran = ezxml_child(root, "tran");
 
+    merchant.status = atoi(ezxml_child(tran, "status")->txt);
+    printf("Status : %d\n", merchant.status);
+
+    if(ezxml_child(tran, "message") != NULL)
+       strncpy(itexPosMessage, ezxml_child(tran, "message")->txt, sizeof(itexPosMessage) - 1);
+
+    int len = strlen(itexPosMessage);    
+    if (len == 8 && isdigit(itexPosMessage[0])) {
+        memset(merchant.tid, '\0', sizeof(merchant.tid));
+        strncpy(merchant.tid, itexPosMessage, strlen(itexPosMessage));
+
+    } else {
+        ret = saveMerchantData(&merchant);
+        gui_messagebox_show("VIOLATION", "This Terminal does not belong to Itex", "", "", 0);
+        return -1;
+    }    
+    
+    printf("tid : %s\n", merchant.tid);
+
     strncpy(merchant.address, ezxml_child(tran, "Address")->txt, sizeof(merchant.address) - 1);
     printf("Address : %s\n", merchant.address);
 
@@ -124,9 +163,6 @@ int saveMerchantDataXml(const char* merchantXml)
     strncpy(merchant.tid, ezxml_child(tran, "message")->txt, sizeof(merchant.tid) - 1);
     printf("rrn : %s\n", merchant.tid);
     
-    merchant.status = atoi(ezxml_child(tran, "status")->txt);
-    printf("Status : %d\n", merchant.status);
-
     strncpy(merchant.stamp_label, ezxml_child(tran, "STAMP_LABEL")->txt, sizeof(merchant.stamp_label) - 1);
     printf("Stamp Label : %s\n", merchant.stamp_label);
     
@@ -172,6 +208,7 @@ int saveMerchantDataXml(const char* merchantXml)
 
     ezxml_free(root);
 
+    
     ret = saveMerchantData(&merchant);
 
     return ret;
@@ -339,9 +376,13 @@ int saveMerchantData(const MerchantData* merchant)
 
 int getMerchantData()
 {
+    NetWorkParameters netParam;
     int ret = -1;
     char responseXml[0x1000] = {'\0'};
-    getMerchantDetails(responseXml);
+
+    memset(&netParam, 0, sizeof(NetWorkParameters));
+    initTamsParameters(&netParam);
+    if(getMerchantDetails(&netParam, responseXml)) return ret;
 
     if ((ret = saveMerchantDataXml(responseXml)) != 0) {
         // error

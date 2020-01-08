@@ -9,11 +9,6 @@ enum CommsStatus {
     CONNECTION_FAILED,
     SENDING_FAILED,
     RECEIVING_FAILED,
-
-    //Extended Response, leave this part for me.
-    MANUAL_REVERSAL_NEEDED,
-    AUTO_REVERSAL_SUCCESSUL, 
-
 };
 
 typedef struct
@@ -26,10 +21,21 @@ typedef struct
     int port;
     int isSsl;
     int isHttp;
+    char apn[50];
+    char title[35];
+    int netLinkTimeout;
+    int receiveTimeout;
+
+    char serverCert[256];
+	char clientCert[256];
+	char clientKey[256];
+	int verificationLevel; //0 no verification, 1: verify
 } NetWorkParameters;
 
 
-enum CommsStatus sendAndRecvDataSsl(NetWorkParameters *netParam);
+
+
+enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
 
 #endif 
 

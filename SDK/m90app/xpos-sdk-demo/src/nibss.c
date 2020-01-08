@@ -38,22 +38,37 @@
 #define NIBSS_PORT  5003
 
 
-static void setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
+int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
 {
     MerchantData mParam = {'\0'};
 
     if(getMerchantData())
     {
-        gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);
-        return; 
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
+        return -1; 
     } 
 
-    if(readMerchantData(&mParam)) return;
+    if(readMerchantData(&mParam)) return -2;
 
     strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
     netParam->port = mParam.nibss_port;
     netParam->isSsl = isSsl;
     netParam->isHttp = isHttp;
+
+    return 0;
+
+}
+
+static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
+{
+	strncpy(netParam->host, mParam->nibss_ip, strlen(mParam->nibss_ip));
+	netParam->port = mParam->nibss_port;
+	netParam->isSsl = 1;
+	netParam->isHttp = 0;
+	netParam->receiveTimeout = 1000;
+	strncpy(netParam->title, "Nibss", 10);
+	strncpy(netParam->apn, "CMNET", 10);
+	netParam->netLinkTimeout = 30000;
 
 }
 
@@ -157,8 +172,6 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
     unsigned char packet[256];
     unsigned char response[512];
 
-    // setupNibssRequestParameter(&netParam, 0, 0);
-
     networkMangement->type = MASTER_KEY;
 
     addGenericNetworkFields(networkMangement);
@@ -171,7 +184,7 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Master key response: \n%s\n", &netParam->response[2]);
 
@@ -209,7 +222,7 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Session key response: \n%s\n", &netParam->response[2]);
 
@@ -240,7 +253,7 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Pin key response: \n%s\n", &netParam->response[2]);
 
@@ -267,7 +280,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
@@ -298,7 +311,7 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
-    sendAndRecvDataSsl(netParam);
+    sendAndRecvPacket(netParam);
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
@@ -360,17 +373,35 @@ short uiHandshake(void)
 {
     NetworkManagement networkMangement;
     NetWorkParameters netParam = {0};
+    MerchantData mParam = {0};
     char terminalSerialNumber[22] = {'\0'};
+    char tid[9] = {'\0'};
     int maxRetry = 2;
     int i;
+    int ret;
+
+    if(getMerchantData())
+    {
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
+        return -1; 
+    } 
+
+    if(readMerchantData(&mParam)) return -2;
+
+    if(mParam.tid[0])
+    {
+        strncpy(tid, mParam.tid, strlen(mParam.tid));
+    }
 
     memset(&networkMangement, 0x00, sizeof(NetworkManagement));
-    strncpy(networkMangement.terminalId, "2070HE88", sizeof(networkMangement.terminalId));
+    strncpy(networkMangement.terminalId, tid /*"2070HE88"*/, sizeof(networkMangement.terminalId));
 
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    //setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
+    initNibssParameters(&netParam, &mParam);
+    // ret = setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
+    // if(ret) return ret;
 
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
