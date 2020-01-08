@@ -516,7 +516,7 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	
 	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AUTHCODE) {
 		memcpy(&iccData[iccDataLen], hostType->AuthorizationCode, hostType->AuthorizationCodeLen);
-		iccDataLen += hostType->LenAuth;
+		iccDataLen += hostType->AuthorizationCodeLen;
 	}
 	
 	result = emv_online_resp_proc(onlineResult, eft->responseCode, iccData, iccDataLen);
@@ -666,11 +666,13 @@ int performEft(Eft *eft, const char *title)
 		memcpy(eft->iccDataBcd, eft->iccDataBcd, eft->iccDataBcdLen);
 	}
 
+	/*
 	if (card_out->pin_len)
 	{
 		eft->pinDataBcdLen = card_out->pin_len;
 		memcpy(eft->pinDataBcd, card_out->pin_block, sizeof(card_out->pin_block));
 	}
+	*/
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
@@ -697,7 +699,6 @@ int performEft(Eft *eft, const char *title)
 	//TODO: print receipt from DB
 	//upay_print_proc(&card_info);	//TODO:		// Printout
 
-	printf("Outside eft->iccDataBcdLen, eft->pinDataBcdLen -> %d, %d\n", eft->iccDataBcdLen, eft->pinDataBcdLen);
 
 	printf("Out sizeof eft -> %d\n", sizeof(Eft));
 	
@@ -707,8 +708,6 @@ int performEft(Eft *eft, const char *title)
 		free(card_out);
 		return -3;
 	}
-
-	printf("After eft->iccDataBcdLen, eft->pinDataBcdLen -> %d, %d\n", eft->iccDataBcdLen, eft->pinDataBcdLen);
 
 	result = processPacketOnline(eft, &hostType, packet, sizeof(packet));
 
