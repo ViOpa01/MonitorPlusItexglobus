@@ -19,6 +19,8 @@
 //Itex
 #include "nibss.h"
 #include "network.h"
+#include "merchant.h"
+#include "itexFile.h"
 #include "util.h"
 
 #define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
@@ -38,9 +40,18 @@
 
 static void setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
 {
+    MerchantData mParam = {'\0'};
 
-    strncpy(netParam->host, NIBSS_HOST, strlen(NIBSS_HOST));
-    netParam->port = NIBSS_PORT;
+    if(getMerchantData())
+    {
+        gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);
+        return; 
+    } 
+
+    if(readMerchantData(&mParam)) return;
+
+    strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+    netParam->port = mParam.nibss_port;
     netParam->isSsl = isSsl;
     netParam->isHttp = isHttp;
 
@@ -66,7 +77,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Verifone\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
 }
-
+/*
 static int inSaveParameters(const void *parameters, const char *filename, const int recordSize)
 {
     int ret = 0;
@@ -107,13 +118,13 @@ static int inGetParameters(void *parameters, const char *filename, const int rec
     return UFILE_SUCCESS;
 }
 
-
+*/
 int getSessionKey(char sessionKey[33])
 {
     int result = -1;
     NetworkKey sessionKeyStruct;
 
-    result = inGetParameters(&sessionKeyStruct, SESSION_KEY_FILE, sizeof(NetworkKey));
+    result = getRecord(&sessionKeyStruct, SESSION_KEY_FILE, sizeof(NetworkKey), sizeof(NetworkKey));
 
     if (!result) {
         strncpy(sessionKey, sessionKeyStruct.clearKey, 32);
@@ -126,7 +137,7 @@ int getParameters(MerchantParameters *merchantParameters)
 {
     int result = -1;
 
-    result = inGetParameters(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters));
+    result = getRecord(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters), sizeof(MerchantParameters));
 
     return result;
 }
@@ -135,7 +146,7 @@ int saveParameters(const MerchantParameters *merchantParameters)
 {
     int result = -1;
 
-    result = inSaveParameters(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters));
+    result = saveRecord(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters), sizeof(MerchantParameters));
 
     return result;
 }
@@ -175,7 +186,7 @@ static int saveSessionKey(const NetworkKey * sessionKey)
 {
      int result = -1;
 
-    result = inSaveParameters(sessionKey, SESSION_KEY_FILE, sizeof(NetworkKey));
+    result = saveRecord(sessionKey, SESSION_KEY_FILE, sizeof(NetworkKey), sizeof(NetworkKey));
 
     return result;
 }

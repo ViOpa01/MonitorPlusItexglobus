@@ -7,21 +7,17 @@
 #include "libapi_xpos/inc/libapi_security.h"
 #include "libapi_xpos/inc/libapi_emv.h"
 
+#include "appInfo.h"
 #include "util.h"
 #include "network.h"
 #include "menu_list.h"
+#include "merchant.h"
 
-#define APP_VER "V1.1.2"
 #define LOGOIMG "xxxx\\logo2.bmp"
 
 
 #include "nibss.h"
-
-
-#define MAIN_MENU_PAGE	"main"
-#define SUPERVISION		"supervision"
-#define MAINTAINANCE	"maintanance"
-
+#include "Nibss8583.h"
 
 // Define the menu array, the first parameter is the name of the parent menu, 
 // the second parameter is the name of the current menu,
@@ -42,7 +38,7 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE ,	"CodePay",		""},
 	{MAIN_MENU_PAGE ,	"Version",		""},
 	{MAIN_MENU_PAGE ,	"Test",			""},
-	{MAIN_MENU_PAGE ,	"Settings",		""},
+	{MAIN_MENU_PAGE ,	UI_SETTINGS,		""},
 	{MAIN_MENU_PAGE ,	"Others",		""},
 
 	{"Test" ,	"Print",		""},
@@ -64,9 +60,9 @@ static  const st_gui_menu_item_def _menu_def[] = {
 
 
 
-	{"Settings" ,	"Net Select" ,""},
-	{"Settings" ,	"WIFI Settings" , "WIFI Menu"},
-	{"Settings",	"TimeSet",		""},
+	{UI_SETTINGS ,	"Net Select" ,""},
+	{UI_SETTINGS,	"WIFI Settings" , "WIFI Menu"},
+	{UI_SETTINGS,	"TimeSet",		""},
 
 	
 	{"Others",		"View AID",		""},
@@ -77,6 +73,10 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{SUPERVISION ,	UI_NETWORK,	     ""},
 	{SUPERVISION ,	UI_DOWNLOAD_LOGO, ""},
 	{SUPERVISION ,	UI_ABOUT, 		 ""},
+
+	{UI_NETWORK ,	UI_NET_SELECT,	""},
+	{UI_NETWORK ,	UI_WIFI_SETTINGS, UI_WIFI_MENU},
+	
 
 	{UI_REPRINT,	UI_REPRINT_TODAY,  	""},
 	{UI_REPRINT,	UI_REPRINT_BY_DATE,	""},
@@ -98,6 +98,7 @@ static  const st_gui_menu_item_def _menu_def[] = {
 	{MAINTAINANCE ,	UI_ACCNT_SELECTION,  ""},
 	{MAINTAINANCE ,	UI_TRANS_TYPE,   	 ""},
 	{MAINTAINANCE ,	UI_NOTIF_ID, 		 ""},
+
 };
 
 int sdk_power_proc_page(void *pval)
@@ -154,7 +155,7 @@ static void ShowString()
 	}
 }
 
-void aboutTerminal(void )
+void aboutTerminal(char *tid )
 {
 	int key = UUTIL_TIMEOUT;
 
@@ -174,6 +175,8 @@ void aboutTerminal(void )
 		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(2), data);
 		sprintf(data,"TID:");	
 		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(3), data);
+		//sprintf(data, "%s", mParam.tid);	
+		gui_text_out((gui_get_width() - gui_get_text_width(tid)) / 2, GUI_LINE_TOP(4), tid);
 		// I can Print the Terminal ID here
 		gui_end_batch_paint();
 
@@ -188,6 +191,44 @@ void aboutTerminal(void )
 		
 	}
 
+}
+
+static int enableAndDisableAccountSelection()
+{
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char msg[12] = {'\0'};
+
+	readMerchantData(&mParam);
+
+	if(mParam.account_selection == 1)
+	{
+		sprintf(msg, "%s", "Disable");
+	} else if(mParam.account_selection == 0)
+	{
+		sprintf(msg, "%s", "Enable");
+	}
+	char *menuOption[] = {
+		msg
+	};
+
+	option = gui_select_page_ex("Select" , menuOption, 1, 3000, 0);	// if it timesout it return -ve no else index on the menu list
+	// printf("Option : %d\n", option);
+
+	if(!option) 
+	{
+		option = gui_messagebox_show("Message" , msg, "Exit" , "Confrim" , 0);	// Exit : 2, Confirm : 1
+		if(option == 1)
+		{
+			mParam.account_selection = mParam.account_selection ? 0 : 1;
+			saveMerchantData(&mParam);
+		}
+		
+	}
+
+	return option;
+	
 }
 
 static short eftHandler(const char * pid)
@@ -214,7 +255,7 @@ static short eftHandler(const char * pid)
 
 	return 0;
 }
-
+	//gui_get_message()
 // The menu callback function, as long as all the menu operations of this function are registered, 
 // this function will be called, and the selected menu name will be returned. 
 // It is mainly determined in this function that the response menu name is processed differently.
@@ -224,10 +265,12 @@ static int _menu_proc(char *pid)
 	char buff[20];
 	int pos = 0;
 	char msg[256];
+	int acctTypeValue = -1;
 
 	if (!eftHandler(pid)){
 		return 0;
-	}else if (strcmp(pid , "Version") == 0){
+	
+	} else if (strcmp(pid , "Version") == 0){
 		sprintf(msg , "app:%s\r\n", APP_VER);
 		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
 		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());
@@ -297,7 +340,15 @@ static int _menu_proc(char *pid)
 		sdk_M1test();
 	} else if (strcmp(pid, UI_ABOUT) == 0)
 	{
-		aboutTerminal();
+		MerchantData mParam = {0};
+
+		if(readMerchantData(&mParam))
+		{
+			gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);
+			return -1;
+		}
+		aboutTerminal(mParam.tid);
+
 	} else if (strcmp(pid, "My Plain") == 0)
 	{
 		//sendAndReceiveDemoRequest(0, 80);
@@ -311,7 +362,14 @@ static int _menu_proc(char *pid)
 			gui_messagebox_show("ERROR" , "Prepping failed.", "" , "" , 3000);
 			//TODO: display prepping failed on screen
 		}
+	} else if(!strcmp(pid, UI_ACCNT_SELECTION))
+	{
+		int ret = -1;
+		ret = enableAndDisableAccountSelection();
+		printf("Enable / Disable ret : %d\n", ret);
+
 	}
+
 	return 0;
 }
 

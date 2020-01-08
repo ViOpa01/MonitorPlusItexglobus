@@ -8,6 +8,7 @@
 #include "network.h"
 
 #include "EmvEft.h"
+#include "merchant.h";
 
 typedef enum
 {
@@ -286,6 +287,8 @@ static short autoReversal(Eft *eft)
 	{
 
 		//TODO Error: display eft->responseDesc on the screen.
+		gui_clear_dc();
+		gui_messagebox_show( "Message" , eft->responseDesc , "" , "confirm" , 0);
 		return -3;
 	}
 
@@ -308,6 +311,50 @@ static enum AccountType getAccountType(void)
 
         ACCOUNT_END
 	*/
+
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char *account_type_list[] = {
+		"Savings",
+		"Current",
+		"Default",
+		"Credit",
+		"Universal",
+		"Investment"
+	};
+
+	readMerchantData(&mParam);
+	if(mParam.account_selection != 1)
+		return DEFAULT_ACCOUNT;
+
+	switch (option = gui_select_page_ex("Select Account Type" , account_type_list, 6, 10000, 0))	// if exit : -1, timout : -2
+	{
+		case -1:
+		case -2:
+			return ACCOUNT_END;
+		case 0:
+        	// return 0x10;
+			return SAVINGS_ACCOUNT;
+		case 1:
+			// return 0x20;
+			return CURRENT_ACCOUNT;
+		case 2:
+			// return 0x00;
+			return DEFAULT_ACCOUNT;
+		case 3:
+			// return 0x30;
+			return CREDIT_ACCOUNT;
+		case 4:
+			// return 0x40;
+			return UNIVERSAL_ACCOUNT;
+		case 5:
+			// return 0x50;
+			return INVESTMENT_ACCOUNT;
+		default:
+			return DEFAULT_ACCOUNT;
+	
+	}
 
 	return DEFAULT_ACCOUNT; //I need to be removed.
 }
@@ -337,6 +384,7 @@ static short orginalDataRequired(const Eft *eft)
 static short uiGetRrn(char rrn[13])
 {
 	//TODO: Get rrn from user for reversal, or refund, or completion.
+	
 	return 0;
 }
 
@@ -358,7 +406,7 @@ static short getOriginalDataFromDb(Eft *eft)
 	strncpy(eft->originalYyyymmddhhmmss, "20191220123231", sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
 	strncpy(eft->authorizationCode, "", sizeof(eft->authorizationCode));
 
-	return 0; //Success																						   //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
+	return 0; //Success								 //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
 }
 
 static short getReversalReason(Eft *eft)
