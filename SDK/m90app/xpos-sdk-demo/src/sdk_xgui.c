@@ -371,7 +371,8 @@ static int _menu_proc(char *pid)
 	} else if (strcmp(pid, UI_ABOUT) == 0)
 	{
 		MerchantData mParam = {0};
-	
+
+
 		if(readMerchantData(&mParam))
 		{
 			gui_messagebox_show("MERCHANT" , "Error getting merchant details", "" , "" , 3000);

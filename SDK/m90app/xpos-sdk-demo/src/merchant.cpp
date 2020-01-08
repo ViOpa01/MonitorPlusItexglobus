@@ -163,6 +163,9 @@ int saveMerchantDataXml(const char* merchantXml)
     merchant.nibss_port = atoi(ip_and_port.substr(pos + 1, std::string::npos).c_str());
     printf("port is : %d\n", merchant.nibss_port);
 
+    merchant.account_selection = atoi(ezxml_child(tran, "accountSelection")->txt);
+    printf("Account Selection : %d\n", merchant.account_selection);
+
     strncpy(merchant.phone_no, ezxml_child(tran, "phone")->txt, sizeof(merchant.phone_no) - 1);
     printf("Platform : %s\n", merchant.nibss_platform);
     printf("Phone no : %s\n", merchant.phone_no);
@@ -182,7 +185,7 @@ int readMerchantData(MerchantData* merchant)
 
     cJSON *json;
     cJSON *jsonAddress, *jsonRrn, *jsonStatus, *jsonTID, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
-    cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone;
+    cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonAccntSelection;
    
     char buffer[1024] = {'\0'};
     int ret = -1;
@@ -209,6 +212,7 @@ int readMerchantData(MerchantData* merchant)
     jsonNibssIp = cJSON_GetObjectItemCaseSensitive(json, "ip");    // String
     jsonNibssPort = cJSON_GetObjectItemCaseSensitive(json, "port");    // Int
     jsonPortType = cJSON_GetObjectItemCaseSensitive(json, "port_type"); // String
+    jsonAccntSelection = cJSON_GetObjectItemCaseSensitive(json, "account_selection"); // Int
 
     if(cJSON_IsString(jsonAddress))
     {
@@ -276,6 +280,12 @@ int readMerchantData(MerchantData* merchant)
         printf("Port Type : %s\n", merchant->port_type);
     }
 
+    if(cJSON_IsNumber(jsonAccntSelection))
+    {
+        merchant->account_selection = jsonAccntSelection->valueint;
+        printf("Account Selections : %d\n", merchant->account_selection);
+    }
+
     cJSON_Delete(json);
 
     return 0;
@@ -313,6 +323,8 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "ip", cJSON_CreateString(merchant->nibss_ip));
     cJSON_AddItemToObject(requestJson, "port", cJSON_CreateNumber(merchant->nibss_port));
     cJSON_AddItemToObject(requestJson, "phone_no", cJSON_CreateString(merchant->phone_no));
+    cJSON_AddItemToObject(requestJson, "account_selection", cJSON_CreateNumber(merchant->account_selection));
+
 
     requestJsonStr = cJSON_PrintUnformatted(requestJson);
     memcpy(jsonData, requestJsonStr, sizeof(jsonData));
