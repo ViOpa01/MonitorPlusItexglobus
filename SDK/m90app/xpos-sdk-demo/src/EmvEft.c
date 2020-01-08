@@ -673,13 +673,14 @@ int performEft(Eft *eft, const char *title)
 
 	//printf("=========================> 3\n");
 
-	/*
+	
 	if (card_out->pin_len)
 	{
-		eft->pinDataBcdLen = card_out->pin_len;
-		memcpy(eft->pinDataBcd, card_out->pin_block, sizeof(card_out->pin_block));
+		eft->pinDataBcdLen = 8;
+		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
+
+		logHex(eft->pinDataBcd, eft->pinDataBcdLen, "Pin block");
 	}
-	*/
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 
