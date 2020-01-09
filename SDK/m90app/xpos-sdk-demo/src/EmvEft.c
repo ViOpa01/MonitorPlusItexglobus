@@ -312,6 +312,50 @@ static enum AccountType getAccountType(void)
         ACCOUNT_END
 	*/
 
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char *account_type_list[] = {
+		"Savings",
+		"Current",
+		"Default",
+		"Credit",
+		"Universal",
+		"Investment"
+	};
+
+	readMerchantData(&mParam);
+	if(mParam.account_selection != 1)
+		return DEFAULT_ACCOUNT;
+
+	switch (option = gui_select_page_ex("Select Account Type" , account_type_list, 6, 10000, 0))	// if exit : -1, timout : -2
+	{
+		case -1:
+		case -2:
+			return ACCOUNT_END;
+		case 0:
+		// return 0x10;
+			return SAVINGS_ACCOUNT;
+		case 1:
+		// return 0x20;
+			return CURRENT_ACCOUNT;
+		case 2:
+		// return 0x00;
+			return DEFAULT_ACCOUNT;
+		case 3:
+		// return 0x30;
+			return CREDIT_ACCOUNT;
+		case 4:
+		// return 0x40;
+			return UNIVERSAL_ACCOUNT;
+		case 5:
+		// return 0x50;
+			return INVESTMENT_ACCOUNT;
+		default:
+			return DEFAULT_ACCOUNT;
+
+	}
+
 	return DEFAULT_ACCOUNT; //I need to be removed.
 }
 
