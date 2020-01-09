@@ -63,7 +63,7 @@ typedef enum                    /**<The key value is defined according to differ
 //Terminal information structure
 typedef struct
 {
-	byte	Terminal[20];	//Terminal model,Align left(Vendor+model,PAX¡¢XGD¡¢LND¡¢NLD¡¢VFI¡¢HZR¡¢SYD)
+	byte	Terminal[20];	//Terminal model,Align left(Vendor+model,PAXï¿½ï¿½XGDï¿½ï¿½LNDï¿½ï¿½NLDï¿½ï¿½VFIï¿½ï¿½HZRï¿½ï¿½SYD)
 	byte	SN[40];			//Terminal hardware serial number
 	int		Disp_X;			//Horizontal maximum pixel
 	int		Disp_Y;			//Vertical maximum pixel
@@ -244,7 +244,7 @@ typedef enum 	/*Hang up mode*/
 //  UHANGUP_EXIT
 }HangUpMode;
 
-//Wireless network registration parameter structure(GPRS¡¢CDMA)
+//Wireless network registration parameter structure(GPRSï¿½ï¿½CDMA)
 typedef struct
 {
 	char  NetUsername[41] ; /* User name to be used when the wireless modem establishes a PPP link */
@@ -319,7 +319,7 @@ typedef enum
 /**<WIFI Communication parameter structure:*/
 typedef struct
 {
-    byte DHCP;           /**<Whether to open DHCP£¬0x00-No£¬0x01-yes*/
+    byte DHCP;           /**<Whether to open DHCPï¿½ï¿½0x00-Noï¿½ï¿½0x01-yes*/
     int  Wsec;			 /*Contains the numeric value for network security type.See enum UWLNNETWSEC*/
     int  WAuthType;		 /*Contains the numeric value for the network authentication type.See UWLNNETWAUTHTYPE*/
     byte SSID[100];      /**<WIFI user*/
@@ -339,7 +339,7 @@ typedef struct
     int  WAuthType;		/*Contains the numeric value for the network authentication type.See UWLNNETWAUTHTYPE*/
 } WIFIINFO;
 
-//IP¡¢WIFI Communication local IP information
+//IPï¿½ï¿½WIFI Communication local IP information
 typedef struct
 {
 	char  IP[16];         /*Local IP address*/
@@ -353,7 +353,7 @@ typedef struct
 //MODEM Communication parameter structure
 typedef struct
 {
-	int     DialMode;        /*Dial mode£º0 Synchronize,1 Asynchronous*/
+	int     DialMode;        /*Dial modeï¿½ï¿½0 Synchronize,1 Asynchronous*/
 	char	PredialNo[10];   /*Outside line number*/
 	char	TelNo[3][21];	 /*Telephone number*/
 	int		IsCheckDialTone; /*Whether to detect dial tone	 0 default detection, 1 does not detect */
@@ -417,7 +417,7 @@ typedef struct
 int iCommMode;		/*Communication method, read the communication method in the machine parameters, see enum CommMode */
 	union
 	{
-		PPPLOGINCONFIG	st_ppploginconfig ;	/*GPRS¡¢CDMA parameter,see PPPLOGINCONFIG */
+		PPPLOGINCONFIG	st_ppploginconfig ;	/*GPRSï¿½ï¿½CDMA parameter,see PPPLOGINCONFIG */
 		IPCONFIG		st_ipconfig;		/*Ethernet parameter,see IPCONFIG */
 		WIFICONFIG      st_wificonfig;		/*WIFI parameter,see WIFICONFIG */
 		MODEMCONFIG     st_modemconfig;		/*MODEM Communication parameters,see MODEMCONFIG */
@@ -517,8 +517,8 @@ typedef enum
 	//	UICC_AT24C64, //Reserved
 	UICC_CPUCARD,
 	UICC_MIFARE,	  //Non-connected MIFARE card,Reserved
-	//	UICC_RFCPU_1356,//Non-connected CPU¿¨13.56M
-	//	UICC_RFCPU_24   //Non-connected CPU¿¨2.4G
+	//	UICC_RFCPU_1356,//Non-connected CPUï¿½ï¿½13.56M
+	//	UICC_RFCPU_24   //Non-connected CPUï¿½ï¿½2.4G
 } IccType;
 
 //IC card slot enumeration
@@ -1019,7 +1019,7 @@ typedef enum
 //TMS Download communication structure
 typedef struct
 {
-	unsigned char ucCOMMType;  /*Communication type£ºSee enum UTMSCOMTYPE*/
+	unsigned char ucCOMMType;  /*Communication typeï¿½ï¿½See enum UTMSCOMTYPE*/
 	unsigned char ucTPDUFlag;  /*TPDU presence identifier: 0-none, 1-is*/
 	unsigned char aucTPDU[5];  /*TPDU number (requires identification with TPDU)*/
 	unsigned int  uiSockID;	   /*Tcpip communication Socket ID UTMSCOMTYPE 3,4,5,6,7*/

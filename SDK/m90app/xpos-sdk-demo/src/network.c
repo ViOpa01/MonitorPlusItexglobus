@@ -43,18 +43,19 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	{
 		// 196.6.103.72 5042  nibss epms port and ip test environment
 
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		// netParam->port = mParam.nibss_port;
-
-		strncpy(netParam->host, "196.6.103.72", sizeof(netParam->host));
-		netParam->port = 5042;
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		netParam->port = mParam.nibss_port;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
 
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = mParam.nibss_plain_port;
+		
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = mParam.nibss_plain_port;
+
+		strncpy(netParam->host, "196.6.103.10", strlen(mParam.nibss_ip));
+		netParam->port = 55531;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
 

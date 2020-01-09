@@ -422,7 +422,7 @@ void eftTrans(const enum TransType transType)
 	//TODO: get tid, eft.terminalId
 	if(mParam.tid[0])
 	{
-		strncpy(eft.terminalId, "20442R13"/*mParam.tid*/, strlen(mParam.tid));
+		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
 	}
 
 	if (orginalDataRequired(&eft))

@@ -407,12 +407,12 @@ short uiHandshake(void)
     }
 
     memset(&networkMangement, 0x00, sizeof(NetworkManagement));
-    strncpy(networkMangement.terminalId, /*tid*/ "20442R13", sizeof(networkMangement.terminalId));
+    strncpy(networkMangement.terminalId, tid, sizeof(networkMangement.terminalId));
 
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    getNetParams(&netParam, NET_EPMS_PLAIN, 0);
+    getNetParams(&netParam, NET_POSVAS_PLAIN, 0);
     
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
