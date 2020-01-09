@@ -5,6 +5,7 @@
 #include "util.h"
 #include "log.h"
 #include "sdk_http.h"
+#include "merchant.h"
 #include "libapi_xpos/inc/libapi_comm.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 
@@ -285,15 +286,23 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	sprintf(tmp, "Connecting (%d) ...", i + 1);
 	comm_page_set_page("Http", tmp, 1);
 
+	//comm_page_set_page("COM", tmp , 1);
+
 	if (netParam->isSsl)
 	{
 
-		if (result = comm_ssl_init(COMM_SOCK, netParam->serverCert, netParam->clientCert, netParam->clientKey, netParam->verificationLevel))
-		{
-			LOG_PRINTF("Ssl init failed result = %d", result);
-			comm_ssl_close(COMM_SOCK);
-			return -3;
-		}
+		//for(;;) 
+		//{
+			result = comm_ssl_init(COMM_SOCK, netParam->serverCert, netParam->clientCert, netParam->clientKey, netParam->verificationLevel);
+			//LOG_PRINTF("Ignoring ssl init return -> %d, comm socket -> %d", result, COMM_SOCK);
+			//if (result == 0) break;
+			//Sys_Delay(5000);
+		//}
+		
+
+		sprintf(tmp , "Connect server %d times" , i + 1);
+		comm_page_set_page("SSL", tmp , 1);
+		
 
 		//TODO: Check callback later.
 
@@ -347,6 +356,8 @@ static short connectToHost(NetWorkParameters *netParam)
         printf("Failed to create socket\n");
 		return -2;
 	}
+
+	Sys_Delay(1000);
 
 	for (i = 0; i < nTime; i++)
 	{
@@ -402,7 +413,6 @@ static short receivePacket(NetWorkParameters *netParam)
 			printf("plain recv result -> %d", result);
 		}
 
-		
 		if (result <= 0) break;
 		Sys_Delay(100);
 		bytes += result;
@@ -412,6 +422,30 @@ static short receivePacket(NetWorkParameters *netParam)
 
 	return result;
 }
+
+/*
+short getNetParams(NetWorkParameters * netParam, const NetType netType)
+{
+	MerchantData mParam;
+
+	memset(&mParam, 0x00, sizoef(MerchantData));
+	readMerchantData(&mParam);
+
+
+	strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+	netParam->port = mParam.nibss_port;
+	netParam->isSsl = 1;
+	netParam->isHttp = 0;
+	netParam->receiveTimeout = 1000;
+	strncpy(netParam->title, "Nibss", 10);
+	strncpy(netParam->apn, "CMNET", 10);
+	netParam->netLinkTimeout = 30000;
+
+	return 0;
+
+}
+*/
+
 
 
 #if 0

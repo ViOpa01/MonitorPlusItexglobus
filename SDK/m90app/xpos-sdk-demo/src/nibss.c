@@ -191,7 +191,7 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     printf("Master key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
     printf("********\n");   // Log to know where issue is
 
@@ -231,7 +231,7 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     printf("Session key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
     if (!result) {
         saveSessionKey(&networkMangement->sessionKey);
@@ -264,7 +264,7 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     printf("Pin key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
     return result;
 }
@@ -294,7 +294,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
     if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
     {
@@ -328,7 +328,7 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
     return result;
 }

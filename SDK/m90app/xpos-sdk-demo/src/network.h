@@ -20,7 +20,7 @@ enum CommsStatus {
 
 };
 
-typedef struct
+typedef struct NetWorkParameters
 {
     unsigned char packet[2048];
     unsigned char response[4096];
@@ -41,12 +41,7 @@ typedef struct
 	int verificationLevel; //0 no verification, 1: verify
 } NetWorkParameters;
 
-
-
-
-
 short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp);
-
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
 
 #endif 

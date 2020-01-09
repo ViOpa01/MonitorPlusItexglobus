@@ -5,6 +5,7 @@
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
+#include "libapi_xpos/inc/libapi_security.h"
 #include "network.h"
 #include "util.h"
 #include "EmvEft.h"
@@ -585,11 +586,16 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -1;
 	}
 
-	card_in->pin_input = 1;
-	card_in->pin_max_len = 12;
-	card_in->key_pid = 1;		 //1 KF_MKSK 2 KF_DUKPT
-	//card_in->pin_key_index = -1; //-1:The returned PIN block is not encrypted (The key index number injected by the key injection tool, such as PIN KEY is 0, and LINE KEY is 1.)
-	card_in->pin_timeover = 60000;
+
+	card_in->pin_input=1;
+	card_in->pin_max_len=12;
+	card_in->key_pid = 1;//1 KF_MKSK 2 KF_DUKPT
+	card_in->pin_mksk_gid=0;//The key index of MKSK; -1 is not encrypt
+	card_in->pin_dukpt_gid=-1;//The key index of DUKPT PIN KEY
+	card_in->des_mode = 0;//0 ECB, 1 CBC
+	card_in->data_dukpt_gid=-1;//The key index of DUPKT Track data KEY
+	card_in->pin_timeover=60000;
+	
 	strcpy(card_in->title, title);
 	strcpy(card_in->card_page_msg, "Please insert/swipe"); //Swipe interface prompt information, a line of 20 characters, up to two lines, automatic branch.
 
@@ -710,13 +716,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
-
-	strcpy(eft->track2Data, "5178685092355984=2105221008663239");
-
-	//strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
-
-	logHex(card_out->track2, sizeof(card_out->track2), "TRACK2");
-
+	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
 	strncpy(eft->cardSequenceNumber, card_out->pan_sn, sizeof(eft->cardSequenceNumber));
 
