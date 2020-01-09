@@ -5,12 +5,9 @@
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
-#include "libapi_xpos/inc/libapi_security.h"
 #include "network.h"
-#include "util.h"
+
 #include "EmvEft.h"
-#include "nibss.h"
-#include "merchant.h"
 
 typedef enum
 {
@@ -373,33 +370,15 @@ static short getReversalReason(Eft *eft)
 	return 0;
 }
 
-static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
-{
-	strncpy(netParam->host, mParam->nibss_ip, strlen(mParam->nibss_ip));
-	netParam->port = mParam->nibss_port;
-	netParam->isSsl = 1;
-	netParam->isHttp = 0;
-	netParam->receiveTimeout = 1000;
-	strncpy(netParam->title, "Nibss", 10);
-	strncpy(netParam->apn, "CMNET", 10);
-	netParam->netLinkTimeout = 30000;
-
-}
-
 void eftTrans(const enum TransType transType)
 {
 	Eft eft;
 
-	MerchantData mParam = {'\0'};
 	MerchantParameters merchantParameters;
 	char sessionKey[33] = {'\0'};
 	char tid[9] = {'\0'};
-	NetWorkParameters netParam;
 
-	memset(&netParam, 0x00, sizeof(NetWorkParameters));
 	memset(&eft, 0x00, sizeof(Eft));
-
-	readMerchantData(&mParam);
 
 	eft.transType = transType;
 	eft.fromAccount = DEFAULT_ACCOUNT; //perform eft will update it if needed
@@ -418,13 +397,7 @@ void eftTrans(const enum TransType transType)
 		return;
 	}
 
-	initNibssParameters(&netParam, &mParam);
-
 	//TODO: get tid, eft.terminalId
-	if(mParam.tid[0])
-	{
-		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
-	}
 
 	if (orginalDataRequired(&eft))
 	{
@@ -442,7 +415,7 @@ void eftTrans(const enum TransType transType)
 	strncpy(eft.posConditionCode, POS_CONDITION_CODE, sizeof(eft.posConditionCode));
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
 
-	performEft(&eft, &netParam, transTypeToTitle(transType));
+	performEft(&eft, transTypeToTitle(transType));
 }
 
 static short amountRequired(const Eft *eft)
@@ -503,21 +476,20 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus)
 	}
 }
 
-
-static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParameters *netParam)
+static int processPacketOnline(Eft *eft, struct HostType *hostType, unsigned char *packet, const int size)
 {
 	int result = -1;
 	unsigned char response[2048];
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 
-	commsStatus = sendAndRecvPacket(&netParam);
+	//TODO: Send packet to host, return commsStatus, and populate response
 
 	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
 	{
 		return handleFailedComms(eft, commsStatus);
 	}
 
-	if (result = getEftOnlineResponse(&hostType, eft, netParam->response, netParam->responseSize))
+	if (result = getEftOnlineResponse(&hostType, eft, response, sizeof(response)))
 	{
 		//Shouldn't happen
 		printf("Critical Error");
@@ -534,21 +506,11 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 {
 	int result = -1;
-	int onlineResult = -1;
-	unsigned char iccData[256];
-	int iccDataLen = hostType->iccDataBcdLen;
+	int onlineResult = 1;
+	//TODO: Icc data update
 
-	onlineResult = strncmp(eft->responseCode, "00", 2) ? -1 : 1;
-	memcpy(iccData, hostType->iccDataBcd, iccDataLen);
-
-	
-	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AUTHCODE) {
-		memcpy(&iccData[iccDataLen], hostType->AuthorizationCode, hostType->AuthorizationCodeLen);
-		iccDataLen += hostType->AuthorizationCodeLen;
-	}
-	
-	result = emv_online_resp_proc(onlineResult, eft->responseCode, iccData, iccDataLen);
-	
+	//TODO: The function below will only work on the latest sdk
+	//result = emv_online_resp_proc(onlineResult, eft->responseCode, hostType->iccDataBcd, hostType->iccDataBcdLen);
 	if (result != EMVAPI_RET_TC)
 	{
 		return result;
@@ -557,7 +519,7 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	return result;
 }
 
-int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
+int performEft(Eft *eft, const char *title)
 {
 	int ret;
 	long long namt = 0;
@@ -586,16 +548,11 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -1;
 	}
 
-
-	card_in->pin_input=1;
-	card_in->pin_max_len=12;
-	card_in->key_pid = 1;//1 KF_MKSK 2 KF_DUKPT
-	card_in->pin_mksk_gid=0;//The key index of MKSK; -1 is not encrypt
-	card_in->pin_dukpt_gid=-1;//The key index of DUKPT PIN KEY
-	card_in->des_mode = 0;//0 ECB, 1 CBC
-	card_in->data_dukpt_gid=-1;//The key index of DUPKT Track data KEY
-	card_in->pin_timeover=60000;
-	
+	card_in->pin_input = 1;
+	card_in->pin_max_len = 12;
+	card_in->key_pid = 1;		 //1 KF_MKSK 2 KF_DUKPT
+	card_in->pin_key_index = -1; //-1:The returned PIN block is not encrypted (The key index number injected by the key injection tool, such as PIN KEY is 0, and LINE KEY is 1.)
+	card_in->pin_timeover = 60000;
 	strcpy(card_in->title, title);
 	strcpy(card_in->card_page_msg, "Please insert/swipe"); //Swipe interface prompt information, a line of 20 characters, up to two lines, automatic branch.
 
@@ -685,8 +642,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return 0;
 	}
 
-	//printf("\n=========================> 1\n");
-
 	if ((eft->techMode = cardTypeToTechMode(card_out->card_type)) == UNKNOWN_MODE)
 	{ //will never happen
 		free(card_in);
@@ -695,32 +650,22 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -2;
 	}
 
-	//printf("=========================> 2\n");
-	
-
 	if (card_out->ic_data_len)
 	{
 		eft->iccDataBcdLen = card_out->ic_data_len;
-		memcpy(eft->iccDataBcd, card_out->ic_data, eft->iccDataBcdLen);
+		memcpy(eft->iccDataBcd, eft->iccDataBcd, eft->iccDataBcdLen);
 	}
 
-	//printf("=========================> 3\n");
-
-	
 	if (card_out->pin_len)
 	{
-		eft->pinDataBcdLen = 8;
+		eft->pinDataBcdLen = card_out->pin_len;
 		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
-
-		logHex(eft->pinDataBcd, eft->pinDataBcdLen, "Pin block");
 	}
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
 	strncpy(eft->cardSequenceNumber, card_out->pan_sn, sizeof(eft->cardSequenceNumber));
-
-	printf("=========================> 4\n");
 
 	if (!orginalDataRequired(&eft))
 	{
@@ -742,6 +687,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//TODO: print receipt from DB
 	//upay_print_proc(&card_info);	//TODO:		// Printout
 
+	printf("Outside eft->iccDataBcdLen, eft->pinDataBcdLen -> %d, %d\n", eft->iccDataBcdLen, eft->pinDataBcdLen);
 
 	printf("Out sizeof eft -> %d\n", sizeof(Eft));
 	
@@ -751,9 +697,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		free(card_out);
 		return -3;
 	}
-	Sys_Delay(10000);
 
-	result = processPacketOnline(eft, &hostType, netParam);
+	printf("After eft->iccDataBcdLen, eft->pinDataBcdLen -> %d, %d\n", eft->iccDataBcdLen, eft->pinDataBcdLen);
+
+	result = processPacketOnline(eft, &hostType, packet, sizeof(packet));
 
 	free(card_in);
 	free(card_out);
