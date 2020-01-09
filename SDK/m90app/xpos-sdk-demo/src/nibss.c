@@ -340,8 +340,8 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, networkMangement->masterKey.clearKeyBcd, kvc);
 
-    /*
-    if (strncmp(kvc, networkMangement->masterKey.checkValue, strlen(networkMangement->masterKey.checkValue)))
+
+    if (memcmp(kvc, networkMangement->masterKey.checkValueBcd, networkMangement->masterKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         char buffer[256];
@@ -351,34 +351,33 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
         printf("Master key check value failed.");
         return -1;
     }
-    */
+    
 
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, networkMangement->pinKey.encryptedKeyBcd, kvc);
 
-    /*
-    if (strcmp(kvc, networkMangement->pinKey.checkValue))
+    
+    if (memcmp(kvc, networkMangement->pinKey.checkValueBcd, networkMangement->pinKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         gui_messagebox_show("ERROR" , "Pin key check value failed.", "" , "" , 8000);
         printf("Pinkey key check value failed.");
         return -2;
     }
-    */
+    
 
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, networkMangement->sessionKey.encryptedKeyBcd, kvc);
 
-    /*
-    if (strcmp(kvc, networkMangement->sessionKey.checkValue))
+    
+    if (memcmp(kvc, networkMangement->sessionKey.checkValueBcd, networkMangement->sessionKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         gui_messagebox_show("ERROR" , "Session key check value failed.", "" , "" , 8000);
         printf("Session key check value failed.");
         return -3;
     }
-    */
-
+    
     return 0;
 }
 
