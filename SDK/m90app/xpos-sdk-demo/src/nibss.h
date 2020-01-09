@@ -18,10 +18,11 @@ extern "C"
 #include "network.h"
 
 
+#define CURRENT_PATFORM NET_POSVAS_PLAIN
+
 
 short uiHandshake(void);
 
-int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl);
 int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);
 int getSessionKey(char sessionKey[33]);

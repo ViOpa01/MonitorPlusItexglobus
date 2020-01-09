@@ -3,19 +3,28 @@
 
 //#include "Nibss8583.h"
 
+typedef enum NetType {
+    NET_EPMS_SSL,
+    NET_EPMS_PLAIN,
+    NET_POSVAS_SSL,
+    NET_POSVAS_PLAIN
+
+}NetType;
+
 enum CommsStatus {
    
     SEND_RECEIVE_SUCCESSFUL,
     CONNECTION_FAILED,
     SENDING_FAILED,
-    RECEIVING_FAILED,
+    RECEIVING_FAILED
+
 };
 
 typedef struct NetWorkParameters
 {
     unsigned char packet[2048];
     unsigned char response[4096];
-    int packetSize;     // just request body
+    int packetSize;  
     int responseSize;
     unsigned char host[64];
     int port;
@@ -32,16 +41,7 @@ typedef struct NetWorkParameters
 	int verificationLevel; //0 no verification, 1: verify
 } NetWorkParameters;
 
-typedef enum NetType {
-    NET_EPMS_SSL,
-    NET_EPMS_PLAIN,
-    NET_POSVAS_SSL,
-    NET_POSVAS_PLAIN,
-    NET_TAMS_SSL,
-    NET_TAMS_PLAIN,
-}NetType;
-
-short getNetParams(NetWorkParameters * netParam, const NetType netType);
+short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp);
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
 
 #endif 

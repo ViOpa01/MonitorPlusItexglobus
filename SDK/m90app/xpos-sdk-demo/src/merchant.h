@@ -18,10 +18,12 @@ typedef struct MerchantData
     char nibss_platform[12];    // POSVAS, EPMS
     char nibss_ip[22];
     int  nibss_port;
+    int  nibss_plain_port;
     char port_type[12];
     char tid[14];
     char phone_no[14];
     int account_selection;
+    int is_prepped;
 
 } MerchantData;
 

@@ -10,6 +10,7 @@
 #include "util.h"
 #include "EmvEft.h"
 #include "nibss.h"
+#include "log.h"
 #include "merchant.h"
 
 typedef enum
@@ -386,6 +387,15 @@ static void initNibssParameters(NetWorkParameters * netParam, const MerchantData
 
 }
 
+static void logNetworkParameters(NetWorkParameters * netWorkParameters)
+{
+	puts("\n\nEft.......\n");
+    LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
+    LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
+    LOG_PRINTF("NetLink Timeout -> %d, Recv Timeout -> %d, title -> %s", netWorkParameters->netLinkTimeout,  netWorkParameters->receiveTimeout, netWorkParameters->title);
+
+}
+
 void eftTrans(const enum TransType transType)
 {
 	Eft eft;
@@ -418,7 +428,11 @@ void eftTrans(const enum TransType transType)
 		return;
 	}
 
-	initNibssParameters(&netParam, &mParam);
+
+	getNetParams(&netParam, CURRENT_PATFORM, 0);
+
+	
+	
 
 	//TODO: get tid, eft.terminalId
 	if(mParam.tid[0])
@@ -439,6 +453,9 @@ void eftTrans(const enum TransType transType)
 	copyMerchantParams(&eft, &merchantParameters);
 	populateEchoData(eft.echoData);
 	strncpy(eft.sessionKey, sessionKey, sizeof(eft.sessionKey));
+
+	printf("Eft Session Key -> '%s'\n", sessionKey);
+
 	strncpy(eft.posConditionCode, POS_CONDITION_CODE, sizeof(eft.posConditionCode));
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
 
@@ -510,7 +527,7 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 	unsigned char response[2048];
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 
-	commsStatus = sendAndRecvPacket(&netParam);
+	commsStatus = sendAndRecvPacket(netParam);
 
 	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
 	{
@@ -657,7 +674,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	if (EMVAPI_RET_ARQC == ret)
 	{
-		gui_messagebox_show("", "Online Request", "", "ok", 0);
+		//gui_messagebox_show("", "Online Request", "", "ok", 0);
 	}
 	else if (EMVAPI_RET_TC == ret)
 	{
@@ -698,6 +715,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//printf("=========================> 2\n");
 	
 
+	
 	if (card_out->ic_data_len)
 	{
 		eft->iccDataBcdLen = card_out->ic_data_len;
@@ -722,7 +740,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	printf("=========================> 4\n");
 
-	if (!orginalDataRequired(&eft))
+	if (!orginalDataRequired(eft))
 	{
 		Sys_GetDateTime(eft->yyyymmddhhmmss);
 		strncpy(eft->stan, &eft->yyyymmddhhmmss[8], sizeof(eft->stan));
@@ -743,7 +761,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//upay_print_proc(&card_info);	//TODO:		// Printout
 
 
-	printf("Out sizeof eft -> %d\n", sizeof(Eft));
+	
 	
 	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
 	{
@@ -751,9 +769,16 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		free(card_out);
 		return -3;
 	}
-	Sys_Delay(10000);
+
+	
+	
+	netParam->packetSize = result;
+	memcpy(netParam->packet, packet, netParam->packetSize);
+
+	printf("Actual bytes to send -> %d\n", netParam->packetSize);
 
 	result = processPacketOnline(eft, &hostType, netParam);
+
 
 	free(card_in);
 	free(card_out);

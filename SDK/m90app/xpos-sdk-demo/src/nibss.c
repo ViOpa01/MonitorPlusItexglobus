@@ -23,7 +23,12 @@
 #include "itexFile.h"
 #include "util.h"
 
-#define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
+
+
+
+#define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA" //POSVAS LIVE
+//#define PTAD_KEY "DBEECACCB4210977ACE73A1D873CA59F" //TEST KEY
+
 #define MERCHANT_FILE "MerchantParams.dat"
 #define SESSION_KEY_FILE "SessionKey.dat"
 
@@ -37,27 +42,6 @@
 #define NIBSS_HOST "197.253.19.75"
 #define NIBSS_PORT  5003
 
-
-int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
-{
-    MerchantData mParam = {'\0'};
-
-    if(getMerchantData())
-    {
-        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
-        return -1; 
-    } 
-
-    if(readMerchantData(&mParam)) return -2;
-
-    strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-    netParam->port = mParam.nibss_port;
-    netParam->isSsl = isSsl;
-    netParam->isHttp = isHttp;
-
-    return 0;
-
-}
 
 static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
 {
@@ -191,7 +175,7 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     printf("Master key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
     printf("********\n");   // Log to know where issue is
 
@@ -231,7 +215,7 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     printf("Session key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
     if (!result) {
         saveSessionKey(&networkMangement->sessionKey);
@@ -264,7 +248,7 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     printf("Pin key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
     return result;
 }
@@ -280,6 +264,8 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
     addGenericNetworkFields(networkMangement);
     result = createIsoNetworkPacket(packet, sizeof(packet), networkMangement);
 
+    printf("Clear Session Key -> %s\n", networkMangement->sessionKey.clearKey);
+
     if (result <= 0)
         return -1;
 
@@ -294,7 +280,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
     if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
     {
@@ -328,7 +314,7 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
 
     printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, result);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
     return result;
 }
@@ -394,7 +380,7 @@ short uiHandshake(void)
 
     if(getMerchantData())
     {
-        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 0);
         return -1; 
     } 
 
@@ -406,15 +392,13 @@ short uiHandshake(void)
     }
 
     memset(&networkMangement, 0x00, sizeof(NetworkManagement));
-    strncpy(networkMangement.terminalId, tid /*"2070HE88"*/, sizeof(networkMangement.terminalId));
+    strncpy(networkMangement.terminalId, tid, sizeof(networkMangement.terminalId));
 
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    initNibssParameters(&netParam, &mParam);
-    // ret = setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
-    // if(ret) return ret;
-
+    getNetParams(&netParam, CURRENT_PATFORM, 0);
+    
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
     {
@@ -424,6 +408,9 @@ short uiHandshake(void)
 
     if (i == maxRetry)
         return -1;
+
+    printf("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
+    Sys_Delay(5000);
 
     gui_messagebox_show("MESSAGE" , "...Session...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
