@@ -23,7 +23,12 @@
 #include "itexFile.h"
 #include "util.h"
 
-#define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA"
+
+
+
+#define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA" //POSVAS LIVE
+//#define PTAD_KEY "DBEECACCB4210977ACE73A1D873CA59F" //TEST KEY
+
 #define MERCHANT_FILE "MerchantParams.dat"
 #define SESSION_KEY_FILE "SessionKey.dat"
 
@@ -37,27 +42,6 @@
 #define NIBSS_HOST "197.253.19.75"
 #define NIBSS_PORT  5003
 
-
-int setupNibssRequestParameter(NetWorkParameters *netParam, int isHttp, int isSsl)
-{
-    MerchantData mParam = {'\0'};
-
-    if(getMerchantData())
-    {
-        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
-        return -1; 
-    } 
-
-    if(readMerchantData(&mParam)) return -2;
-
-    strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-    netParam->port = mParam.nibss_port;
-    netParam->isSsl = isSsl;
-    netParam->isHttp = isHttp;
-
-    return 0;
-
-}
 
 static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
 {
@@ -280,6 +264,8 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
     addGenericNetworkFields(networkMangement);
     result = createIsoNetworkPacket(packet, sizeof(packet), networkMangement);
 
+    printf("Clear Session Key -> %s\n", networkMangement->sessionKey.clearKey);
+
     if (result <= 0)
         return -1;
 
@@ -340,8 +326,8 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, networkMangement->masterKey.clearKeyBcd, kvc);
 
-    /*
-    if (strncmp(kvc, networkMangement->masterKey.checkValue, strlen(networkMangement->masterKey.checkValue)))
+
+    if (memcmp(kvc, networkMangement->masterKey.checkValueBcd, networkMangement->masterKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         char buffer[256];
@@ -351,34 +337,33 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
         printf("Master key check value failed.");
         return -1;
     }
-    */
+    
 
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, networkMangement->pinKey.encryptedKeyBcd, kvc);
 
-    /*
-    if (strcmp(kvc, networkMangement->pinKey.checkValue))
+    
+    if (memcmp(kvc, networkMangement->pinKey.checkValueBcd, networkMangement->pinKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         gui_messagebox_show("ERROR" , "Pin key check value failed.", "" , "" , 8000);
         printf("Pinkey key check value failed.");
         return -2;
     }
-    */
+    
 
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, networkMangement->sessionKey.encryptedKeyBcd, kvc);
 
-    /*
-    if (strcmp(kvc, networkMangement->sessionKey.checkValue))
+    
+    if (memcmp(kvc, networkMangement->sessionKey.checkValueBcd, networkMangement->sessionKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         gui_messagebox_show("ERROR" , "Session key check value failed.", "" , "" , 8000);
         printf("Session key check value failed.");
         return -3;
     }
-    */
-
+    
     return 0;
 }
 
@@ -412,7 +397,7 @@ short uiHandshake(void)
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    getNetParams(&netParam, NET_POSVAS_PLAIN, 0);
+    getNetParams(&netParam, CURRENT_PATFORM, 0);
     
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
@@ -423,6 +408,9 @@ short uiHandshake(void)
 
     if (i == maxRetry)
         return -1;
+
+    printf("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
+    Sys_Delay(5000);
 
     gui_messagebox_show("MESSAGE" , "...Session...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)

@@ -187,6 +187,8 @@ extern "C"
         char clearKey[33];
         char encryptedKey[33];
         char checkValue[7];
+        unsigned char checkValueBcd[4];
+        int checkValueBcdLen;
 
         unsigned char clearKeyBcd[16];
         unsigned char encryptedKeyBcd[16];

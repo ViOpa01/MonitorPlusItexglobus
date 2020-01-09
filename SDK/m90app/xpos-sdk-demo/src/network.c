@@ -40,14 +40,16 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
     // NET_POSVAS_SSL,
     // NET_POSVAS_PLAIN
 
+
 	if(netType == NET_EPMS_SSL || netType == NET_POSVAS_SSL)
 	{
 		// 196.6.103.72 5042  nibss epms port and ip test environment
-
 		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
 		netParam->port = mParam.nibss_port;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
+
+		printf("SSL: EPMS/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
 
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
@@ -60,10 +62,16 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
 
+		printf("Plain: EMPS/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
+
+	}
+	else 
+	{
+		printf("Uknown Host\n");
 	}
 	
 	netParam->isHttp = isHttp;
-	netParam->receiveTimeout = (10 * 1000);
+	netParam->receiveTimeout = 4000;
 	strncpy(netParam->apn, "CMNET", 10);
 	netParam->netLinkTimeout = 30000;
 
@@ -378,6 +386,7 @@ static short sendPacket(NetWorkParameters *netParam)
 {
 	int result = -1;
 
+	printf("packet size to send -> %d\n", netParam->packetSize);
 	if (netParam->isSsl)
 	{
 		result = comm_ssl_send(COMM_SOCK, netParam->packet, netParam->packetSize);
@@ -398,29 +407,45 @@ static short receivePacket(NetWorkParameters *netParam)
 {
 	int result = -1;
 	int bytes = 0;
+	int count = 0;
+	const int size = sizeof(netParam->response);
 
+	/*
+	if (allDataReceived((unsigned char*)buff, index)){
+				return index;
+	}
+	*/
+	
 	while (1) 
 	{
 		if (netParam->isSsl)
 		{
-			result = comm_ssl_recv(COMM_SOCK, (unsigned char *) &netParam->response[bytes], sizeof(netParam->response));
-
-			printf("Ssl recv result -> %d", result);
+			result = comm_ssl_recv(COMM_SOCK, (unsigned char *) &netParam->response[bytes], size - bytes);
 		}
 		else
 		{
-			result = comm_sock_recv(COMM_SOCK, (unsigned char *)&netParam->response[bytes], sizeof(netParam->response), netParam->receiveTimeout);
-			printf("plain recv result -> %d", result);
+			result = comm_sock_recv(COMM_SOCK, (unsigned char *)&netParam->response[bytes], size - bytes, netParam->receiveTimeout);
+			
 		}
 
-		if (result <= 0) break;
-		Sys_Delay(100);
-		bytes += result;
-	}
-	
-    if(bytes > 0) netParam->responseSize = bytes;
+		if (result == 0) {
+			netParam->responseSize = bytes;
+			logHex(netParam->response, netParam->responseSize, "recv");
+			break;
+		} else if (result > 0) {
+			printf("recv: %d bytes received\n", result);
+			bytes += result;
+		} else if (result < 0) {
+			printf("Negative receive result -> %d\n", result);
+		}
 
-	return result;
+		Sys_Delay(100);
+		
+	}
+
+	printf("\nrecv result -> %d\n", netParam->responseSize);
+	
+	return bytes > 0 ? 0 : -1;
 }
 
 /*
