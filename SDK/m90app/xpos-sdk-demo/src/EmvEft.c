@@ -554,7 +554,7 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 	unsigned char response[2048];
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 
-	commsStatus = sendAndRecvPacket(&netParam);
+	commsStatus = sendAndRecvPacket(netParam);
 
 	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
 	{
@@ -634,7 +634,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	card_in->pin_input=1;
 	card_in->pin_max_len=12;
 	card_in->key_pid = 1;//1 KF_MKSK 2 KF_DUKPT
-	card_in->pin_mksk_gid=0;//The key index of MKSK; -1 is not encrypt
+	card_in->pin_mksk_gid=1;//The key index of MKSK; -1 is not encrypt
 	card_in->pin_dukpt_gid=-1;//The key index of DUKPT PIN KEY
 	card_in->des_mode = 0;//0 ECB, 1 CBC
 	card_in->data_dukpt_gid=-1;//The key index of DUPKT Track data KEY
@@ -796,6 +796,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -3;
 	}
 	Sys_Delay(10000);
+
+	netParam->packetSize = result;
+	memcpy(netParam->packet, packet, netParam->packetSize);
 
 	result = processPacketOnline(eft, &hostType, netParam);
 

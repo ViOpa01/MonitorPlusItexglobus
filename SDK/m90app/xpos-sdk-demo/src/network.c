@@ -52,18 +52,18 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
 		// netParam->port = mParam.nibss_plain_port;
 
-		strncpy(netParam->host, "196.6.103.10", strlen(mParam.nibss_ip));
-		netParam->port = 55531;
+		// strncpy(netParam->host, "196.6.103.10", strlen(mParam.nibss_ip));
+		netParam->port = 5004;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
 
 	}
 	
 	netParam->isHttp = isHttp;
-	netParam->receiveTimeout = 1000;
+	netParam->receiveTimeout = (10 * 1000);
 	strncpy(netParam->apn, "CMNET", 10);
 	netParam->netLinkTimeout = 30000;
 
