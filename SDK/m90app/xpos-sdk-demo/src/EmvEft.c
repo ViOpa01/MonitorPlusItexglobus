@@ -417,12 +417,12 @@ void eftTrans(const enum TransType transType)
 		return;
 	}
 
-	initNibssParameters(&netParam, &mParam);
+	getNetParams(&netParam, NET_EPMS_PLAIN, 0);
 
 	//TODO: get tid, eft.terminalId
 	if(mParam.tid[0])
 	{
-		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
+		strncpy(eft.terminalId, "20442R13"/*mParam.tid*/, strlen(mParam.tid));
 	}
 
 	if (orginalDataRequired(&eft))

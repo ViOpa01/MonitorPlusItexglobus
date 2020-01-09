@@ -23,6 +23,7 @@ extern "C" {
 
 #define ITEX_TAMS_PUBLIC_IP "basehuge.itexapp.com"
 #define ITEX_TASM_PUBLIC_PORT "80"
+#define ITEX_TASM_SSL_PORT "443"
 #define DEFAULT_TID "2070AS89"
 
 #define MERCHANT_DETAIL_FILE    "merchant.json"
@@ -115,6 +116,7 @@ int saveMerchantDataXml(const char* merchantXml)
     char itexPosMessage[14] = {0};
     MerchantData merchant = { 0 };
     std::string ip_and_port;    // POSVASPUBLIC_SSL, EMPSPUBLIC_SSL
+    std::string ip_and_port_plain;  // POSVASPUBLIC, EMPSPUBLIC
     int pos = 0;
     int ret = -1;
 
@@ -181,15 +183,22 @@ int saveMerchantDataXml(const char* merchantXml)
 
     if(strcmp(merchant.nibss_platform, "POSVAS") == 0)
     {
-        // get POSVAS IP and PORT
+        // get POSVAS IP and PORT SSL
         ip_and_port.append(ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
-        printf("ip and port : %s\n", ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
+        printf("ip and port ssl : %s\n", ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
+
+        ip_and_port_plain.append(ezxml_child(tran, "POSVASPUBLIC")->txt);
+        printf("ip and port plain : %s\n", ezxml_child(tran, "POSVASPUBLIC")->txt);
+
 
     } else if(strcmp(merchant.nibss_platform, "EPMS") == 0)
     {
-        // EPMS IP and PORT
+        // EPMS IP and PORT SSL
         ip_and_port.append(ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
-        printf("ip and port : %s\n", ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
+        printf("ip and port ssl : %s\n", ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
+
+        ip_and_port_plain.append(ezxml_child(tran, "EPMSPUBLIC")->txt);
+        printf("ip and port plain : %s\n", ezxml_child(tran, "EPMSPUBLIC")->txt);
     }
 
     pos = ip_and_port.find(';');
@@ -197,7 +206,15 @@ int saveMerchantDataXml(const char* merchantXml)
     printf("ip and port : %s\n", merchant.nibss_ip);
 
     merchant.nibss_port = atoi(ip_and_port.substr(pos + 1, std::string::npos).c_str());
-    printf("port is : %d\n", merchant.nibss_port);
+    printf("ssl port is : %d\n", merchant.nibss_port);
+
+    pos = 0;
+    pos = ip_and_port_plain.find(';');
+    // strncpy(merchant.nibss_ip, ip_and_port_plain.substr(0, pos).c_str(), sizeof(merchant.nibss_ip) - 1); same ip for all
+    // printf("ip and port : %s\n", merchant.nibss_ip);
+
+    merchant.nibss_plain_port = atoi(ip_and_port_plain.substr(pos + 1, std::string::npos).c_str());
+    printf("plain port is : %d\n", merchant.nibss_plain_port);
 
     merchant.account_selection = atoi(ezxml_child(tran, "accountSelection")->txt);
     printf("Account Selection : %d\n", merchant.account_selection);
@@ -205,6 +222,8 @@ int saveMerchantDataXml(const char* merchantXml)
     strncpy(merchant.phone_no, ezxml_child(tran, "phone")->txt, sizeof(merchant.phone_no) - 1);
     printf("Platform : %s\n", merchant.nibss_platform);
     printf("Phone no : %s\n", merchant.phone_no);
+
+    merchant.is_prepped = 1;
 
     ezxml_free(root);
 
@@ -222,7 +241,7 @@ int readMerchantData(MerchantData* merchant)
 
     cJSON *json;
     cJSON *jsonAddress, *jsonRrn, *jsonStatus, *jsonTID, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
-    cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonAccntSelection;
+    cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
     char buffer[1024] = {'\0'};
     int ret = -1;
@@ -243,11 +262,13 @@ int readMerchantData(MerchantData* merchant)
     jsonTID = cJSON_GetObjectItemCaseSensitive(json, "tid");
     jsonStampLabel = cJSON_GetObjectItemCaseSensitive(json, "stamp_label"); // String
     jsonStampDuty = cJSON_GetObjectItemCaseSensitive(json, "stamp_duty");   // Int
+    jsonIsPrep = cJSON_GetObjectItemCaseSensitive(json, "is_prepped");   // Int
     jsonStampDutyThreshold = cJSON_GetObjectItemCaseSensitive(json, "stamp_threshold");    // Int
     jsonPlatform = cJSON_GetObjectItemCaseSensitive(json, "prefix");    // String
     jsonPhone = cJSON_GetObjectItemCaseSensitive(json, "phone_no"); // String
     jsonNibssIp = cJSON_GetObjectItemCaseSensitive(json, "ip");    // String
     jsonNibssPort = cJSON_GetObjectItemCaseSensitive(json, "port");    // Int
+    jsonNibssPlainPort = cJSON_GetObjectItemCaseSensitive(json, "plain_port");    // Int
     jsonPortType = cJSON_GetObjectItemCaseSensitive(json, "port_type"); // String
     jsonAccntSelection = cJSON_GetObjectItemCaseSensitive(json, "account_selection"); // Int
 
@@ -281,6 +302,12 @@ int readMerchantData(MerchantData* merchant)
         printf("Stamp duty : %d\n", merchant->stamp_duty);
     }
 
+    if(cJSON_IsNumber(jsonIsPrep))
+    {
+        merchant->is_prepped = jsonIsPrep->valueint;
+        printf("Is prepped : %d\n", merchant->is_prepped);
+    }
+
     if(cJSON_IsNumber(jsonStampDutyThreshold))
     {
         merchant->stamp_duty_threshold = jsonStampDutyThreshold->valueint;
@@ -303,6 +330,12 @@ int readMerchantData(MerchantData* merchant)
     {
         merchant->nibss_port = jsonNibssPort->valueint;
         printf("Nibss port : %d\n", merchant->nibss_port);
+    }
+
+    if(cJSON_IsNumber(jsonNibssPlainPort))
+    {
+        merchant->nibss_plain_port = jsonNibssPlainPort->valueint;
+        printf("Nibss plain port : %d\n", merchant->nibss_plain_port);
     }
 
     if(cJSON_IsString(jsonPhone))
@@ -359,7 +392,10 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "prefix", cJSON_CreateString(merchant->nibss_platform));
     cJSON_AddItemToObject(requestJson, "ip", cJSON_CreateString(merchant->nibss_ip));
     cJSON_AddItemToObject(requestJson, "port", cJSON_CreateNumber(merchant->nibss_port));
+    cJSON_AddItemToObject(requestJson, "plain_port", cJSON_CreateNumber(merchant->nibss_plain_port));
     cJSON_AddItemToObject(requestJson, "phone_no", cJSON_CreateString(merchant->phone_no));
+    cJSON_AddItemToObject(requestJson, "is_prepped", cJSON_CreateNumber(merchant->is_prepped));
+
     cJSON_AddItemToObject(requestJson, "account_selection", cJSON_CreateNumber(merchant->account_selection));
 
 
@@ -382,6 +418,7 @@ int getMerchantData()
 
     memset(&netParam, 0, sizeof(NetWorkParameters));
     initTamsParameters(&netParam);
+    
     if(getMerchantDetails(&netParam, responseXml)) return ret;
 
     if ((ret = saveMerchantDataXml(responseXml)) != 0) {

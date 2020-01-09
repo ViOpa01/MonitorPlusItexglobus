@@ -395,7 +395,7 @@ short uiHandshake(void)
 
     if(getMerchantData())
     {
-        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 3000);
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 0);
         return -1; 
     } 
 
@@ -407,15 +407,13 @@ short uiHandshake(void)
     }
 
     memset(&networkMangement, 0x00, sizeof(NetworkManagement));
-    strncpy(networkMangement.terminalId, tid /*"2070HE88"*/, sizeof(networkMangement.terminalId));
+    strncpy(networkMangement.terminalId, /*tid*/ "20442R13", sizeof(networkMangement.terminalId));
 
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    initNibssParameters(&netParam, &mParam);
-    // ret = setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
-    // if(ret) return ret;
-
+    getNetParams(&netParam, NET_EPMS_PLAIN, 0);
+    
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)
     {

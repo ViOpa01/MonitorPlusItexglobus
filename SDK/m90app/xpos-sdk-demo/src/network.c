@@ -1,11 +1,16 @@
 #include <string.h>
 
 #include "network.h"
+#include "merchant.h"
 #include "util.h"
 #include "log.h"
 #include "sdk_http.h"
 #include "libapi_xpos/inc/libapi_comm.h"
 #include "libapi_xpos/inc/libapi_gui.h"
+
+#define ITEX_TAMS_PUBLIC_IP "basehuge.itexapp.com"
+#define ITEX_TASM_PUBLIC_PORT "80"
+#define ITEX_TASM_SSL_PORT "443"
 
 #define COMM_SOCK	m_comm_sock
 
@@ -19,6 +24,48 @@ static void logNetworkParameters(NetWorkParameters * netWorkParameters)
     LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
     LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
     LOG_PRINTF("NetLink Timeout -> %d, Recv Timeout -> %d, title -> %s", netWorkParameters->netLinkTimeout,  netWorkParameters->receiveTimeout, netWorkParameters->title);
+
+}
+
+short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp)
+{
+	MerchantData mParam;
+
+	memset(&mParam, 0x00, sizeof(MerchantData));
+	readMerchantData(&mParam);
+
+	// NET_EPMS_SSL,
+    // NET_EPMS_PLAIN,
+    // NET_POSVAS_SSL,
+    // NET_POSVAS_PLAIN
+
+	if(netType == NET_EPMS_SSL || netType == NET_POSVAS_SSL)
+	{
+		// 196.6.103.72 5042  nibss epms port and ip test environment
+
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = mParam.nibss_port;
+
+		strncpy(netParam->host, "196.6.103.72", sizeof(netParam->host));
+		netParam->port = 5042;
+		strncpy(netParam->title, "Nibss", 10);
+		netParam->isSsl = 1;
+
+	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
+	{
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		netParam->port = mParam.nibss_plain_port;
+		strncpy(netParam->title, "Nibss", 10);
+		netParam->isSsl = 0;
+
+	}
+	
+	netParam->isHttp = isHttp;
+	netParam->receiveTimeout = 1000;
+	strncpy(netParam->apn, "CMNET", 10);
+	netParam->netLinkTimeout = 30000;
+
+	return 0;
 
 }
 
