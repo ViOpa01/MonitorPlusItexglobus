@@ -406,6 +406,80 @@ static short sendPacket(NetWorkParameters *netParam)
 }
 
 
+static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int tick1,int timeover, int ssl_flag)
+{
+	int nret;
+	int curRecvLen = 0;
+	char msg[32];
+	char title[32];
+	unsigned int tick2 = Sys_TimerOpen(1000);
+
+	printf( "------http_recv_buff------\r\n" );		
+	while(Sys_TimerCheck(tick1) > 0){
+		int ret;
+		int num;
+
+		if(strlen(s_title)>0){
+			num = Sys_TimerCheck(tick1)/1000;
+			num = num < 0 ? 0 : num;
+
+			sprintf(msg , "%s(%d)" , "Recving" , num);
+
+			comm_page_set_page(s_title , msg , 1);
+			ret = comm_page_get_exit();
+
+			if(ret == 1){ 
+				return -2;
+			}
+		}
+
+
+		if(ssl_flag==1){
+			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)(recvBuff + curRecvLen), maxLen-curRecvLen);
+		}else{
+			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)(recvBuff + curRecvLen), maxLen-curRecvLen , 700);
+		}
+
+		if (nret >0){
+			tick2 = Sys_TimerOpen(1000);
+			curRecvLen+=nret;
+			if(curRecvLen == maxLen){
+				break;
+			}else if(allDataReceived(recvBuff, curRecvLen)){
+				break;
+			}
+		}else if(Sys_TimerCheck(tick2) == 0 && ssl_flag==1){
+			mf_ssl_recv3(COMM_SOCK);
+			printf("----------mf_ssl_recv3\r\n");
+			tick2 = Sys_TimerOpen(1000);
+		}
+	}
+
+	printf( "------curRecvLen: %d\r\n", curRecvLen );		
+
+	return curRecvLen;
+}
+
+
+/*
+  unsigned char packet[2048];
+    unsigned char response[4096];
+    int packetSize;  
+    int responseSize;
+    unsigned char host[64];
+    int port;
+    int isSsl;
+    int isHttp;
+    char apn[50];
+    char title[35];
+    int netLinkTimeout;
+    int receiveTimeout;
+
+    char serverCert[256];
+	char clientCert[256];
+	char clientKey[256];
+	int verificationLevel; 
+*/
 
 static short receivePacket(NetWorkParameters *netParam)
 {
@@ -413,6 +487,19 @@ static short receivePacket(NetWorkParameters *netParam)
 	int bytes = 0;
 	int count = 0;
 	const int size = sizeof(netParam->response);
+	int timeover = 60000;
+	unsigned int tick = Sys_TimerOpen(timeover);
+	
+
+
+	bytes = http_recv_buff(netParam->title, netParam->response, size, tick, timeover, netParam->isSsl);
+
+	if (bytes > 0) {
+		netParam->responseSize = bytes;
+	} else {
+		return -1;
+	}
+
 
 	/*
 	if (allDataReceived((unsigned char*)buff, index)){
