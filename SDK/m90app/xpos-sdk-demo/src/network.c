@@ -75,7 +75,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	}
 	
 	netParam->isHttp = isHttp;
-	netParam->receiveTimeout = 4000;
+	netParam->receiveTimeout = 1000;
 	strncpy(netParam->apn, "CMNET", 10);
 	netParam->netLinkTimeout = 30000;
 
@@ -290,6 +290,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 {
 	char tmp[32] = {0};
 	int result;
+	int sock = 0;
 
 	m_connect_tick = Sys_TimerOpen(30000);
 	m_connect_exit = 0;
@@ -391,6 +392,8 @@ static short sendPacket(NetWorkParameters *netParam)
 	int result = -1;
 
 	printf("packet size to send -> %d\n", netParam->packetSize);
+	printf("\npacket -> %s\n", &netParam->packet[2]);
+	
 	if (netParam->isSsl)
 	{
 		result = comm_ssl_send(COMM_SOCK, netParam->packet, netParam->packetSize);
@@ -491,7 +494,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	unsigned int tick = Sys_TimerOpen(timeover);
 	
 
-
+	/*
 	bytes = http_recv_buff(netParam->title, netParam->response, size, tick, timeover, netParam->isSsl);
 
 	if (bytes > 0) {
@@ -499,6 +502,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	} else {
 		return -1;
 	}
+	*/
 
 
 	/*

@@ -380,7 +380,7 @@ short uiHandshake(void)
 
     if(getMerchantData())
     {
-        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 0);
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 1);
         return -1; 
     } 
 
@@ -399,7 +399,7 @@ short uiHandshake(void)
 
     getNetParams(&netParam, CURRENT_PATFORM, 0);
     
-    gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
+    gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1);
     for (i = 0; i < maxRetry; i++)
     {
         if (!getTmk(&networkMangement, &netParam))
@@ -409,10 +409,10 @@ short uiHandshake(void)
     if (i == maxRetry)
         return -1;
 
-    printf("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
-    Sys_Delay(5000);
+    //printf("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
+    //Sys_Delay(5000);
 
-    gui_messagebox_show("MESSAGE" , "...Session...", "" , "" , 1000);
+    gui_messagebox_show("MESSAGE" , "...Session...", "" , "" , 1);
     for (i = 0; i < maxRetry; i++)
     {
         if (!getTsk(&networkMangement, &netParam))
@@ -422,7 +422,7 @@ short uiHandshake(void)
     if (i == maxRetry)
         return -2;
 
-    gui_messagebox_show("MESSAGE" , "...Pin...", "" , "" , 1000);
+    gui_messagebox_show("MESSAGE" , "...Pin...", "" , "" , 1);
     for (i = 0; i < maxRetry; i++)
     {
         if (!getTpk(&networkMangement, &netParam))
@@ -436,7 +436,7 @@ short uiHandshake(void)
     getTerminalSn(terminalSerialNumber);
     strncpy(networkMangement.serialNumber, terminalSerialNumber/*"346-231-236"*/, sizeof(networkMangement.serialNumber));
 
-    gui_messagebox_show("MESSAGE" , "...Parameter...", "" , "" , 1000);
+    gui_messagebox_show("MESSAGE" , "...Parameter...", "" , "" , 1);
     for (i = 0; i < maxRetry; i++)
     {
         if (!getParams(&networkMangement, &netParam))
@@ -453,14 +453,18 @@ short uiHandshake(void)
 
     addCallHomeData(&networkMangement);
 
-    gui_messagebox_show("MESSAGE" , "...Call Home...", "" , "" , 1000);
+    gui_messagebox_show("MESSAGE" , "...Call Home...", "" , "" , 1);
     for (i = 0; i < maxRetry; i++)
     {
         if (!sCallHome(&networkMangement, &netParam))
             break;
     }
 
+
+    mParam.is_prepped = 1;
+    saveMerchantData(&mParam);
     saveParameters(&networkMangement.merchantParameters);
+
 
     return 0;
 }

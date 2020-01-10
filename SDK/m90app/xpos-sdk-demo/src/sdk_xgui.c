@@ -391,12 +391,16 @@ void get_hhmmss_str(char *buff)
 
 void standby_pagepaint()
 {
+	int pos;
 	char data[32]={0};
 	int logowidth;
 	int logoheight;
 	int logoleft;
 	int logotop;
-	char * pbmp;	
+	char * pbmp;
+	char f1Msg[] = "Operator";
+	char f2Msg[] = "Admin";
+	char spaceRequired[35] = {'\0'};	
 
 	gui_begin_batch_paint();
 	gui_clear_dc();
@@ -412,11 +416,23 @@ void standby_pagepaint()
 	}
 	
 	get_yyyymmdd_str(data);	
+	data[10] = ' ';
+	data[11] = ' ';
+	get_hhmmss_str(&data[12]);
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(3), data);
-	get_hhmmss_str(data);	
-	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
+	//get_hhmmss_str(data);	
+	//gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
 
 	sprintf(data, "Version:%s", APP_VER);
+	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
+
+	//TODO: don't hardcode 32, get it at run time
+	pos = 32 - strlen(f1Msg) - strlen(f2Msg);
+	memset(spaceRequired, ' ', pos);
+
+	pos = sprintf(data, "%s%s%s", f1Msg, spaceRequired, f2Msg);
+	data[pos] = 0;
+
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(5), data);
 
 	gui_end_batch_paint();
@@ -450,6 +466,20 @@ void sdk_main_page()
 			}
 			else if (pmsg.message_id == GUI_KEYPRESS) {
 				if (pmsg.wparam == GUI_KEY_OK || pmsg.wparam == GUI_KEY_QUIT){
+					MerchantData merchantData;
+
+					memset(&merchantData, 0x00, sizeof(MerchantData));
+
+					if(readMerchantData(&merchantData)) {
+						//TODO: error reading merchant params
+						continue;
+					}
+
+					if (!merchantData.is_prepped) {
+						gui_messagebox_show("Notification" , "Device not ready for Eft", "" , "" , 7000);
+						continue;
+					}
+					
 					gui_main_menu_show(MAIN_MENU_PAGE , 0);	
 					gui_post_message(GUI_GUIPAINT, 0 , 0);
 
