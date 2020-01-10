@@ -5,7 +5,9 @@
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
+#include "libapi_xpos/inc/libapi_util.h"
 #include "libapi_xpos/inc/libapi_security.h"
+#include "libapi_xpos/inc/libapi_gui.h"
 #include "network.h"
 #include "util.h"
 #include "EmvEft.h"
@@ -385,6 +387,23 @@ static short orginalDataRequired(const Eft *eft)
 static short uiGetRrn(char rrn[13])
 {
 	//TODO: Get rrn from user for reversal, or refund, or completion.
+	int result;
+	
+	// Timeout : -3
+	// Cancel  : -2
+	// Fail    : -1
+	// success  : no of byte(character) entered
+
+	gui_clear_dc();
+	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
+	{
+		printf("rrn input failed ret : %d\n", result);
+		printf("rrn %s\n", rrn);
+		return result;
+	}
+
+	printf("rrn : %s\n", rrn);
+
 	return 0;
 }
 
@@ -414,9 +433,78 @@ static short getReversalReason(Eft *eft)
 {
 	//TODO: Let the user select reversal reason from the list of option, then
 	//set reversal reason respectively e.g
-	eft->reversalReason = TIMEOUT_WAITING_FOR_RESPONSE;
 
-	return 0;
+		// TIMEOUT_WAITING_FOR_RESPONSE,
+        // CUSTOMER_CANCELLATION,
+        // CHANGE_DISPENSED,
+        // CARD_ISSUER_UNAVAILABLE,
+        // UNDER_FLOOR_LIMIT,
+        // PIN_VERIFICATION_FAILURE,
+        // IOU_RECEIPT_PRINTED,
+        // OVER_FLOOR_LIMIT,
+        // NEGATIVE_CARD,
+        // UNSPECIFIED_NO_ACTION_TAKEN,
+        // COMPLETED_PARTIALLY,
+
+	int option = -1;
+	char *reversal_option_list[] = {
+		"Response timeout"
+		"Customer cancellation",
+		"Change dispensed",
+		"Card Issuer not available",
+		"Underfloor limit",
+		"Pin verification failure",
+		"IOU Receipt printed",
+		"Overfloor limit",
+		"Negative Card",
+		"Unspecified",
+		"Completed partially"
+	};
+
+	switch (option = gui_select_page_ex("Select Account Type" , reversal_option_list, 11, 10000, 0))	// if exit : -1, timout : -2
+	{
+		case -1:
+		case -2:
+			return -1;
+		case 0:
+			eft->reversalReason =  TIMEOUT_WAITING_FOR_RESPONSE;
+			return 0;	
+		case 1:
+			eft->reversalReason =  CUSTOMER_CANCELLATION;
+			return 0;
+		case 2:
+			eft->reversalReason =  CHANGE_DISPENSED;
+			return 0;
+		case 3:
+			eft->reversalReason =  CARD_ISSUER_UNAVAILABLE;
+			return 0;
+		case 4:
+			eft->reversalReason =  UNDER_FLOOR_LIMIT;
+			return 0;
+		case 5:
+			eft->reversalReason =  PIN_VERIFICATION_FAILURE;
+			return 0;
+		case 6:
+			eft->reversalReason =  IOU_RECEIPT_PRINTED;
+			return 0;
+		case 7:
+			eft->reversalReason =  OVER_FLOOR_LIMIT;
+			return 0;
+		case 8:
+			eft->reversalReason =  NEGATIVE_CARD;
+			return 0;
+		case 9:
+			eft->reversalReason =  UNSPECIFIED_NO_ACTION_TAKEN;
+			return 0;
+		case 10:
+			eft->reversalReason =  COMPLETED_PARTIALLY;
+			return 0;
+		default:
+			return -1;
+
+	};
+	
+	return -1;
 }
 
 static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
@@ -477,8 +565,6 @@ void eftTrans(const enum TransType transType)
 	getNetParams(&netParam, CURRENT_PATFORM, 0);
 
 	
-	
-
 	//TODO: get tid, eft.terminalId
 	if(mParam.tid[0])
 	{
@@ -657,7 +743,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	card_in->pin_input=1;
 	card_in->pin_max_len=12;
 	card_in->key_pid = 1;//1 KF_MKSK 2 KF_DUKPT
-	card_in->pin_mksk_gid=0;//The key index of MKSK; -1 is not encrypt
+	card_in->pin_mksk_gid=1;//The key index of MKSK; -1 is not encrypt
 	card_in->pin_dukpt_gid=-1;//The key index of DUKPT PIN KEY
 	card_in->des_mode = 0;//0 ECB, 1 CBC
 	card_in->data_dukpt_gid=-1;//The key index of DUPKT Track data KEY
@@ -826,6 +912,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	memcpy(netParam->packet, packet, netParam->packetSize);
 
 	printf("Actual bytes to send -> %d\n", netParam->packetSize);
+
+	netParam->packetSize = result;
+	memcpy(netParam->packet, packet, netParam->packetSize);
 
 	result = processPacketOnline(eft, &hostType, netParam);
 

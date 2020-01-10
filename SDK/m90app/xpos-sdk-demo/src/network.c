@@ -20,6 +20,7 @@ static int m_connect_time = 0;
 static int m_connect_exit = 0;
 static int m_comm_sock = 1;
 
+
 static void logNetworkParameters(NetWorkParameters * netWorkParameters)
 {
     LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
@@ -54,15 +55,11 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		
 		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		//strncpy(netParam->host, "196.6.103.10", strlen(mParam.nibss_ip));
-
-		netParam->port = 5004;
-		//netParam->port = mParam.nibss_plain_port;
+		// netParam->port = mParam.nibss_plain_port;
 
 		// strncpy(netParam->host, "196.6.103.10", strlen(mParam.nibss_ip));
-		// netParam->port = 55531;
+		netParam->port = 5004;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
 
@@ -306,8 +303,8 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 
 		//for(;;) 
 		//{
-			result = comm_ssl_init(COMM_SOCK, netParam->serverCert, netParam->clientCert, netParam->clientKey, netParam->verificationLevel);
-			//LOG_PRINTF("Ignoring ssl init return -> %d, comm socket -> %d", result, COMM_SOCK);
+			result = comm_ssl_init(COMM_SOCK, 0/*netParam->serverCert*/, 0 /*netParam->clientCert*/, 0/*netParam->clientKey*/, 0/*netParam->verificationLevel*/);
+			LOG_PRINTF("Ignoring ssl init return -> %d, comm socket -> %d", result, COMM_SOCK);
 			//if (result == 0) break;
 			//Sys_Delay(5000);
 		//}
@@ -319,9 +316,9 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 
 		//TODO: Check callback later.
 
-		if (comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc))
+		if (result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc))
 		{
-			LOG_PRINTF("Ssl connect failed...\n");
+			LOG_PRINTF("Ssl connect failed... ret : %d\n", result);
 			comm_ssl_close(COMM_SOCK);
 			return -4;
 		}
