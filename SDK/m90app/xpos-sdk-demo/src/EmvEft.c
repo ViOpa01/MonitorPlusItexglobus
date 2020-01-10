@@ -400,6 +400,7 @@ void getRrn(char rrn[13])
 
 static short getOriginalDataFromDb(Eft *eft)
 {
+	//TODO: @PIUS ->
 	//TODO: Use eft->rrn to get old data and populate the struct
 	strncpy(eft->originalMti, "0200", sizeof(eft->originalMti)); //The mti of the equivalent(original) purchase transaction.
 	strncpy(eft->forwardingInstitutionIdCode, "557694", sizeof(eft->forwardingInstitutionIdCode));
@@ -504,6 +505,11 @@ void eftTrans(const enum TransType transType)
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
 
 	performEft(&eft, &netParam, transTypeToTitle(transType));
+
+	//TODO: @PIUS -> convert eft struct to sql query and save it on DB.
+	//e.g if saveEft(&eft) ..
+	//TODO: @PIUS -> print eft receipt from DB.
+	
 }
 
 static short amountRequired(const Eft *eft)
