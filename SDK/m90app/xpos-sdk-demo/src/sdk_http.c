@@ -561,6 +561,8 @@ static void https_test()
 	int nret;	
 	int nTime = 3;
 
+	int initResult = 0;
+
 	//mbed_ssl_set_log(10); 
 	http_pack(buff, msg);		//  Package http data
 	
@@ -586,7 +588,8 @@ static void https_test()
 		printf("connect server ip=%s, port=%d\r\n", ip,  port);
 		printf("--------------------comm_ssl_init---------------------------\r\n" );
 
-		comm_ssl_init(COMM_SOCK ,0,0,0,0);	
+		initResult = comm_ssl_init(COMM_SOCK ,0,0,0,0);	
+		printf("Init Result is >>>> %d\n", initResult);
 		sprintf(tmp , "Connect server%dtimes" , i + 1);
 		comm_page_set_page("Https", tmp , 1);
 

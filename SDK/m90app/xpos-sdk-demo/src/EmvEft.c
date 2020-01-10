@@ -5,7 +5,9 @@
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
+#include "libapi_xpos/inc/libapi_util.h"
 #include "libapi_xpos/inc/libapi_security.h"
+#include "libapi_xpos/inc/libapi_gui.h"
 #include "network.h"
 #include "util.h"
 #include "EmvEft.h"
@@ -385,6 +387,23 @@ static short orginalDataRequired(const Eft *eft)
 static short uiGetRrn(char rrn[13])
 {
 	//TODO: Get rrn from user for reversal, or refund, or completion.
+	int result;
+	
+	// Timeout : -3
+	// Cancel  : -2
+	// Fail    : -1
+	// success  : 0
+
+	gui_clear_dc();
+	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
+	{
+		printf("rrn input failed ret : %d\n", result);
+		printf("rrn %s\n", rrn);
+		return result;
+	}
+
+	printf("rrn : %s\n", rrn);
+
 	return 0;
 }
 
@@ -476,8 +495,6 @@ void eftTrans(const enum TransType transType)
 	getNetParams(&netParam, CURRENT_PATFORM, 0);
 
 	
-	
-
 	//TODO: get tid, eft.terminalId
 	if(mParam.tid[0])
 	{
