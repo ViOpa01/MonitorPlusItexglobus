@@ -255,6 +255,15 @@ static short eftHandler(const char * pid)
 
 	return 0;
 }
+
+static void removeMerchantData(void)
+{
+	if (!UFile_Clear(MERCHANT_DETAIL_FILE, FILE_PRIVATE)) {
+		gui_messagebox_show("", "Merchat Record", "", "Cleared", 2000);
+	} else {
+		gui_messagebox_show("", "Merchat Record", "", "Error", 2000);
+	}
+}
 	//gui_get_message()
 // The menu callback function, as long as all the menu operations of this function are registered, 
 // this function will be called, and the selected menu name will be returned. 

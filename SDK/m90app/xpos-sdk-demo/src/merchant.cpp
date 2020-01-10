@@ -26,7 +26,7 @@ extern "C" {
 #define ITEX_TASM_SSL_PORT "443"
 #define DEFAULT_TID "2070AS89"
 
-#define MERCHANT_DETAIL_FILE    "merchant.json"
+
 
 using namespace std;
 

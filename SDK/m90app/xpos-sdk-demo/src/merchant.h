@@ -3,6 +3,8 @@
 
 #include "Nibss8583.h"
 
+#define MERCHANT_DETAIL_FILE    "merchant.json"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

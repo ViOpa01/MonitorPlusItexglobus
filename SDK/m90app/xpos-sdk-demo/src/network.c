@@ -390,7 +390,7 @@ static short sendPacket(NetWorkParameters *netParam)
 
 	printf("packet size to send -> %d\n", netParam->packetSize);
 	printf("\npacket -> %s\n", &netParam->packet[2]);
-	
+
 	if (netParam->isSsl)
 	{
 		result = comm_ssl_send(COMM_SOCK, netParam->packet, netParam->packetSize);
