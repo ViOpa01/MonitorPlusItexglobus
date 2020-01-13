@@ -223,7 +223,7 @@ int saveMerchantDataXml(const char* merchantXml)
     printf("Platform : %s\n", merchant.nibss_platform);
     printf("Phone no : %s\n", merchant.phone_no);
 
-    merchant.is_prepped = 0;
+    merchant.is_prepped = 1;
 
     ezxml_free(root);
 

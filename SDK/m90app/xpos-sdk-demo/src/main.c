@@ -22,17 +22,6 @@ void app_main()
 	EMV_iKernelInit();//Init EMV
 	autoHandshake();
 	sdk_main_page(); 
-
-	// if(readMerchantData(&mParam)) return;
-
-	// if(mParam.is_prepped == 0)
-	// {
-	// 	 if(getMerchantData())
-	// 	{
-	// 		gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 0);
-	// 		return -1; 
-	// 	} 
-	// }
 }
 #ifndef WIN32
 void main(){

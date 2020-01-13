@@ -852,11 +852,11 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	
 
 	
-	if (card_out->ic_data_len)
-	{
-		eft->iccDataBcdLen = card_out->ic_data_len;
-		memcpy(eft->iccDataBcd, card_out->ic_data, eft->iccDataBcdLen);
-	}
+	// if (card_out->ic_data_len)
+	// {
+	// 	eft->iccDataBcdLen = card_out->ic_data_len;
+	// 	memcpy(eft->iccDataBcd, card_out->ic_data, eft->iccDataBcdLen);
+	// }
 
 	//printf("=========================> 3\n");
 

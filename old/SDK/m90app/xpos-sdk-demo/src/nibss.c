@@ -359,7 +359,7 @@ short uiHandshake(void)
     //Master key requires clear ptad key
     strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
 
-    setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
+    // setupNibssRequestParameter(&netParam, 0, NIBSS_IS_SSL);
 
     gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1000);
     for (i = 0; i < maxRetry; i++)

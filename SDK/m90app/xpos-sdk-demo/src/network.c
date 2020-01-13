@@ -55,11 +55,11 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		// netParam->port = mParam.nibss_plain_port;
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = 5004;
 
-		// strncpy(netParam->host, "196.6.103.10", strlen(mParam.nibss_ip));
-		netParam->port = 5004;
+		strncpy(netParam->host, "192.168.43.61", strlen(mParam.nibss_ip));
+		netParam->port = 4444;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
 
@@ -72,7 +72,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	}
 	
 	netParam->isHttp = isHttp;
-	netParam->receiveTimeout = 1000;
+	netParam->receiveTimeout = 7000;
 	strncpy(netParam->apn, "CMNET", 10);
 	netParam->netLinkTimeout = 30000;
 
@@ -529,6 +529,7 @@ static short receivePacket(NetWorkParameters *netParam)
 			bytes += result;
 		} else if (result < 0) {
 			printf("Negative receive result -> %d\n", result);
+			break;
 		}
 
 		Sys_Delay(100);
