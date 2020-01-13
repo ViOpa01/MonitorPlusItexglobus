@@ -42,19 +42,6 @@
 #define NIBSS_HOST "197.253.19.75"
 #define NIBSS_PORT  5003
 
-static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
-{
-	strncpy(netParam->host, mParam->nibss_ip, strlen(mParam->nibss_ip));
-	netParam->port = mParam->nibss_port;
-	netParam->isSsl = 1;
-	netParam->isHttp = 0;
-	netParam->receiveTimeout = 1000;
-	strncpy(netParam->title, "Nibss", 10);
-	strncpy(netParam->apn, "CMNET", 10);
-	netParam->netLinkTimeout = 30000;
-
-}
-
 static void getDateTime(char *yyyymmddhhmmss)
 {
     Sys_GetDateTime(yyyymmddhhmmss);
