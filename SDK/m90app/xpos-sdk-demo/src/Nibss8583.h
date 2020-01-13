@@ -243,6 +243,9 @@ extern "C"
     int extractNetworkManagmentResponse(NetworkManagement *networkMangement, const char *response, const int size);
     int getEftOnlineResponse(HostType *hostType, Eft *eft, unsigned char *response, const int size);
 
+     short verifyMac(const unsigned char *packet, const int packetSize, char key[65], char expectedMac[65]);
+    void macTest(void);
+    
 #ifdef __cplusplus
 }
 #endif

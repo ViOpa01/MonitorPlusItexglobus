@@ -125,9 +125,14 @@ int getSessionKey(char sessionKey[33])
 
     result = getRecord(&sessionKeyStruct, SESSION_KEY_FILE, sizeof(NetworkKey), sizeof(NetworkKey));
 
-    if (!result) {
-        strncpy(sessionKey, sessionKeyStruct.clearKey, 32);
+    if (result) {
+        fprintf(stdout, "Error getting session key\n\n");
+        return -1;
     }
+
+    strncpy(sessionKey, sessionKeyStruct.clearKey, 32);
+
+    sessionKey[32] = 0;
 
     return result;
 }
@@ -148,6 +153,16 @@ int saveParameters(const MerchantParameters *merchantParameters)
     result = saveRecord(merchantParameters, MERCHANT_FILE, sizeof(MerchantParameters), sizeof(MerchantParameters));
 
     return result;
+}
+
+static short handleDe39(char * responseCode, char * responseDesc)
+{
+    if (strncmp(responseCode, "00", 2)) {
+        gui_messagebox_show(responseCode , responseDesc, "" , "" , 0);   
+      return -1;
+    }
+
+    return 0;
 }
 
 static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netParam)
@@ -178,6 +193,11 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
     result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
     printf("********\n");   // Log to know where issue is
+
+    if (handleDe39(networkMangement->responseCode, networkMangement->responseDesc)) {
+        return -3;
+    }
+
 
     return result;
 }
@@ -217,9 +237,16 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
-    if (!result) {
-        saveSessionKey(&networkMangement->sessionKey);
+    if (result) {
+        return -2;
     }
+
+    if (handleDe39(networkMangement->responseCode, networkMangement->responseDesc)) {
+        return -3;
+    }
+
+    saveSessionKey(&networkMangement->sessionKey);
+    
 
     return result;
 }
@@ -250,6 +277,14 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
+    if (result) {
+        return -2;
+    }
+
+    if (handleDe39(networkMangement->responseCode, networkMangement->responseDesc)) {
+        return -3;
+    }
+    
     return result;
 }
 
@@ -282,9 +317,18 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
-    if (!result && Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
+    if (result) {
+        return -2;
+    }
+
+    if (handleDe39(networkMangement->responseCode, networkMangement->responseDesc)) {
+        return -3;
+    }
+
+    if (Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
     {
         printf("Error syncing device with Nibss time");
+        return -3;
     }
 
     return result;
@@ -293,15 +337,17 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *netParam)
 {
     int result = -1;
-    unsigned char packet[256];
+    unsigned char packet[1024];
     unsigned char response[512];
 
     networkMangement->type = CALL_HOME;
     addGenericNetworkFields(networkMangement);
     result = createIsoNetworkPacket(packet, sizeof(packet), networkMangement);
 
-    if (result <= 0)
+    if (result <= 0) {
+        fprintf(stderr, "Callhome -> Error creating packet....\n");
         return -1;
+    }
 
     //TODO: Send packet to host,  get response, return negative number on error.
 
@@ -309,14 +355,23 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
     memcpy(netParam->packet, packet, result);
     
     if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+         fprintf(stderr, "Callhome -> Error send and receive failed....\n");
         return -2;
     }
 
-    printf("Parameter key response: \n%s\n", &netParam->response[2]);
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
-    return result;
+    if (result) {
+        fprintf(stderr, "Callhome -> Error extracting response....\n");
+        return -2;
+    }
+
+    if (handleDe39(networkMangement->responseCode, networkMangement->responseDesc)) {
+        return -3;
+    }
+
+    return 0;
 }
 
 static short injectKeys(const NetworkManagement *networkMangement, const int gid)
@@ -367,6 +422,119 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     return 0;
 }
 
+
+
+short uiGetParameters(void)
+{
+    NetworkManagement networkMangement;
+    NetWorkParameters netParam = {0};
+    MerchantData mParam = {0};
+    char terminalSerialNumber[22] = {'\0'};
+    char tid[9] = {'\0'};
+    int maxRetry = 2;
+    int i;
+    int ret;
+    char sessionKey[33] = {'\0'};
+
+    if(readMerchantData(&mParam)) return -2;
+
+     if (!mParam.is_prepped) { //terminal not preped, parameter not allowed
+        gui_messagebox_show("ERROR" , "Please Prep first", "" , "" , 0);
+        return -1;
+    }
+
+    if(mParam.tid[0])
+    {
+        strncpy(tid, mParam.tid, strlen(mParam.tid));
+    }
+
+    memset(&networkMangement, 0x00, sizeof(NetworkManagement));
+    strncpy(networkMangement.terminalId, tid, sizeof(networkMangement.terminalId));
+
+    getNetParams(&netParam, CURRENT_PATFORM, 0);
+
+    //TODO: Get device serial number at runtime
+    getTerminalSn(terminalSerialNumber);
+    strncpy(networkMangement.serialNumber, terminalSerialNumber/*"346-231-236"*/, sizeof(networkMangement.serialNumber));
+    getSessionKey(sessionKey);
+
+    memcpy(networkMangement.sessionKey.clearKey, sessionKey, strlen(sessionKey));
+
+    for (i = 0; i < maxRetry; i++)
+    {
+        if (!getParams(&networkMangement, &netParam))
+            break;
+    }
+
+    if (i == maxRetry) {
+        gui_messagebox_show("FAILED" , "Parameters Failed!", "" , "" , 3000);
+        return -2;
+    }
+
+    saveMerchantData(&mParam);
+    saveParameters(&networkMangement.merchantParameters);
+
+    Util_Beep(1);
+
+    return 0;
+}
+
+short uiCallHome(void)
+{
+    NetworkManagement networkMangement;
+    NetWorkParameters netParam = {0};
+    MerchantData mParam = {0};
+    char terminalSerialNumber[22] = {'\0'};
+    char tid[9] = {'\0'};
+    int maxRetry = 2;
+    int i;
+    int ret;
+    char sessionKey[33] = {'\0'};
+
+    if(readMerchantData(&mParam)) {
+        fprintf(stderr, "Error reading parameters\n");
+        return -2;
+    }
+
+    if (!mParam.is_prepped) { //terminal not preped, parameter not allowed
+        gui_messagebox_show("ERROR" , "Please Prep first", "" , "" , 0);
+        return -1;
+    }
+
+    if(mParam.tid[0])
+    {
+        strncpy(tid, mParam.tid, strlen(mParam.tid));
+    }
+
+    memset(&networkMangement, 0x00, sizeof(NetworkManagement));
+    strncpy(networkMangement.terminalId, tid, sizeof(networkMangement.terminalId));
+
+    getSessionKey(sessionKey);
+
+    memcpy(networkMangement.sessionKey.clearKey, sessionKey, strlen(sessionKey));
+
+    getNetParams(&netParam, CURRENT_PATFORM, 0);
+    
+    addCallHomeData(&networkMangement);
+
+   
+    for (i = 0; i < maxRetry; i++)
+    {
+        if (!sCallHome(&networkMangement, &netParam))
+            break;
+    }
+
+    if (i == maxRetry) {
+         gui_messagebox_show("FAILED" , "Call Home failed", "" , "" , 2000);
+         return -2;
+    }
+
+     Util_Beep(2);
+    return 0;
+}
+
+
+
 short uiHandshake(void)
 {
     NetworkManagement networkMangement;
@@ -399,12 +567,14 @@ short uiHandshake(void)
 
     getNetParams(&netParam, CURRENT_PATFORM, 0);
     
-    gui_messagebox_show("MESSAGE" , "...Master...", "" , "" , 1);
+    
     for (i = 0; i < maxRetry; i++)
     {
         if (!getTmk(&networkMangement, &netParam))
             break;
     }
+
+    gui_messagebox_show("MESSAGE" , "Master Key Ok!", "" , "" , 1000);
 
     if (i == maxRetry)
         return -1;
@@ -412,7 +582,6 @@ short uiHandshake(void)
     //printf("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
     //Sys_Delay(5000);
 
-    gui_messagebox_show("MESSAGE" , "...Session...", "" , "" , 1);
     for (i = 0; i < maxRetry; i++)
     {
         if (!getTsk(&networkMangement, &netParam))
@@ -422,7 +591,9 @@ short uiHandshake(void)
     if (i == maxRetry)
         return -2;
 
-    gui_messagebox_show("MESSAGE" , "...Pin...", "" , "" , 1);
+    gui_messagebox_show("MESSAGE" , "Session Key Ok!", "" , "" , 1000);
+
+    
     for (i = 0; i < maxRetry; i++)
     {
         if (!getTpk(&networkMangement, &netParam))
@@ -431,12 +602,14 @@ short uiHandshake(void)
 
     if (i == maxRetry)
         return -3;
+    
+    gui_messagebox_show("MESSAGE" , "PIN KEY OK", "" , "" , 1000);
 
     //TODO: Get device serial number at runtime
     getTerminalSn(terminalSerialNumber);
     strncpy(networkMangement.serialNumber, terminalSerialNumber/*"346-231-236"*/, sizeof(networkMangement.serialNumber));
 
-    gui_messagebox_show("MESSAGE" , "...Parameter...", "" , "" , 1);
+   
     for (i = 0; i < maxRetry; i++)
     {
         if (!getParams(&networkMangement, &netParam))
@@ -446,18 +619,26 @@ short uiHandshake(void)
     if (i == maxRetry)
         return -4;
 
+     gui_messagebox_show("MESSAGE" , "Parameters Ok!", "" , "" , 1000);
+
     if (injectKeys(&networkMangement, 0))
     {
         return -5;
     }
 
+    gui_messagebox_show("MESSAGE" , "Inject Keys Ok!", "" , "" , 1000);
+
     addCallHomeData(&networkMangement);
 
-    gui_messagebox_show("MESSAGE" , "...Call Home...", "" , "" , 1);
+   
     for (i = 0; i < maxRetry; i++)
     {
         if (!sCallHome(&networkMangement, &netParam))
             break;
+    }
+
+    if (i < maxRetry) {
+         gui_messagebox_show("MESSAGE" , "Call Home Ok", "" , "" , 1000);
     }
 
 
@@ -465,7 +646,11 @@ short uiHandshake(void)
     saveMerchantData(&mParam);
     saveParameters(&networkMangement.merchantParameters);
 
-
+     Util_Beep(2);
     return 0;
 }
+
+
+
+
 

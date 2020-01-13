@@ -22,6 +22,8 @@ extern "C"
 
 
 short uiHandshake(void);
+short uiGetParameters(void);
+short uiCallHome(void);
 
 int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);

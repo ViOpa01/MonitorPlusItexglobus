@@ -41,3 +41,31 @@ int getRecord(void *parameters, const char *filename, const int recordSize, cons
 
     return UFILE_SUCCESS;
 }
+
+
+int removeRecord(const char *filename, const int recordSize)
+{
+    int ret = 0;
+    int fp;
+
+    ret = UFile_OpenCreate(filename, FILE_PRIVATE, FILE_RDONLY, &fp, recordSize); //File open / create
+
+    if (ret != UFILE_SUCCESS)
+    {
+        gui_messagebox_show("FileTest", "File open or create fail", "", "confirm", 0);
+        return ret;
+    }
+
+    ret = UFile_Delete(fp, recordSize);
+
+    if (ret != UFILE_SUCCESS) 
+    {
+         gui_messagebox_show("FileTest", "Unable to delete record", "", "confirm", 0);
+         UFile_Close(fp);
+        return ret;
+    }
+
+    UFile_Close(fp);
+
+    return ret;
+}

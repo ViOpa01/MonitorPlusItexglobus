@@ -26,16 +26,17 @@ extern "C" {
 #define ITEX_TASM_SSL_PORT "443"
 #define DEFAULT_TID "2070AS89"
 
-#define MERCHANT_DETAIL_FILE    "merchant.json"
+
 
 using namespace std;
 
 static void initTamsParameters(NetWorkParameters * netParam)
 {
 
-	netParam->receiveTimeout = 1000;
+	netParam->receiveTimeout = 10000;
 	strncpy(netParam->title, "TAMS", 10);
-	strncpy(netParam->apn, "CMNET", 10);
+	//strncpy(netParam->apn, "CMNET", 10);
+    strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
 	netParam->netLinkTimeout = 30000;
 
     netParam->isHttp = 1;
