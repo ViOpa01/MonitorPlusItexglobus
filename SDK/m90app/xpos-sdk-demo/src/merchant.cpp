@@ -33,9 +33,10 @@ using namespace std;
 static void initTamsParameters(NetWorkParameters * netParam)
 {
 
-	netParam->receiveTimeout = 1000;
+	netParam->receiveTimeout = 10000;
 	strncpy(netParam->title, "TAMS", 10);
-	strncpy(netParam->apn, "CMNET", 10);
+	//strncpy(netParam->apn, "CMNET", 10);
+    strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
 	netParam->netLinkTimeout = 30000;
 
     netParam->isHttp = 1;

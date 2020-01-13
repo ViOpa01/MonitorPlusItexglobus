@@ -710,6 +710,7 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	return result;
 }
 
+
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
@@ -874,6 +875,12 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
 	strncpy(eft->cardSequenceNumber, card_out->pan_sn, sizeof(eft->cardSequenceNumber));
 
+	logHex(card_out->pan_sn, sizeof(card_out->pan_sn), "Pan sequence number");
+
+	//Temp
+	strncpy(eft->cardSequenceNumber, "001", sizeof(eft->cardSequenceNumber));
+    strncpy(eft->serviceRestrictionCode, "221", sizeof(eft->serviceRestrictionCode));
+
 	printf("=========================> 4\n");
 
 	if (!orginalDataRequired(eft))
@@ -898,20 +905,14 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 
 	
-	
+	//getPurchaseRequest(eft);
+
 	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
 	{
 		free(card_in);
 		free(card_out);
 		return -3;
 	}
-
-	
-	
-	netParam->packetSize = result;
-	memcpy(netParam->packet, packet, netParam->packetSize);
-
-	printf("Actual bytes to send -> %d\n", netParam->packetSize);
 
 	netParam->packetSize = result;
 	memcpy(netParam->packet, packet, netParam->packetSize);

@@ -36,12 +36,6 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	memset(&mParam, 0x00, sizeof(MerchantData));
 	readMerchantData(&mParam);
 
-	// NET_EPMS_SSL,
-    // NET_EPMS_PLAIN,
-    // NET_POSVAS_SSL,
-    // NET_POSVAS_PLAIN
-
-
 	if(netType == NET_EPMS_SSL || netType == NET_POSVAS_SSL)
 	{
 		// 196.6.103.72 5042  nibss epms port and ip test environment
@@ -73,7 +67,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	
 	netParam->isHttp = isHttp;
 	netParam->receiveTimeout = 1000;
-	strncpy(netParam->apn, "CMNET", 10);
+	strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
 	netParam->netLinkTimeout = 30000;
 
 	return 0;
@@ -153,6 +147,8 @@ static int allDataReceived(unsigned char *packet, const int bytesRead)
 
     memcpy(bcdLen, packet, tpduSize);
     msgLen = ((bcdLen[0] << 8) + bcdLen[1]) + tpduSize;
+
+	printf("%s:::msgLen -> %d, bytesRead -> %d\n", __FUNCTION__, msgLen, bytesRead);
 
     return (msgLen == bytesRead) ? 1 : 0;
 }
@@ -320,6 +316,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 		{
 			LOG_PRINTF("Ssl connect failed... ret : %d\n", result);
 			comm_ssl_close(COMM_SOCK);
+			Sys_Delay(500);
 			return -4;
 		}
 
@@ -327,15 +324,17 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 		{
 			LOG_PRINTF("comm_func_connect_server Cancel");
 			comm_ssl_close(COMM_SOCK);
+			Sys_Delay(500);
 			return -5;
 		}
 	}
 	else
 	{
-		if (comm_sock_connect(COMM_SOCK, netParam->host, netParam->port)) //  Connect to http server
+		if (comm_sock_connect(sock, netParam->host, netParam->port)) //  Connect to http server
 		{
 			LOG_PRINTF("Socket connect failed...\n");
 			comm_sock_close(COMM_SOCK);
+			Sys_Delay(500);
 			return -6;
 		}
 	}
@@ -350,7 +349,7 @@ static short connectToHost(NetWorkParameters *netParam)
     int nret;	
 	const int nTime = 3;
 
-			
+	//	nret = comm_net_link_ex(netParam->title, netParam->apn, netParam->netLinkTimeout, netParam->apnUser, netParam->apnPassword, authParam);		// Network link with 30s timeout	
 	nret = comm_net_link(netParam->title, netParam->apn, netParam->netLinkTimeout);		// Network link with 30s timeout
 	
 	if (nret != 0)
@@ -521,22 +520,28 @@ static short receivePacket(NetWorkParameters *netParam)
 		}
 
 		if (result == 0) {
-			netParam->responseSize = bytes;
+			//netParam->responseSize = bytes;
 			logHex(netParam->response, netParam->responseSize, "recv");
 			break;
 		} else if (result > 0) {
 			printf("recv: %d bytes received\n", result);
 			bytes += result;
+			if (allDataReceived((unsigned char*) netParam->response, bytes)) break;
 		} else if (result < 0) {
 			printf("Negative receive result -> %d\n", result);
+			if (bytes > 0) break;
 		}
 
 		Sys_Delay(100);
 		
 	}
+	
+	if (bytes > 0) {
+		netParam->responseSize = bytes;
+	} 
 
 	printf("\nrecv result -> %d\n", netParam->responseSize);
-	
+
 	return bytes > 0 ? 0 : -1;
 }
 
@@ -614,6 +619,8 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 		return SENDING_FAILED;
 	}
 
+	Sys_Delay(500);
+
 	puts("Sending Successful!\n");
 
 	if (receivePacket(netParam))
@@ -624,6 +631,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	puts("Receive Successful!\n");
 
 	netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+	Sys_Delay(500);
 	comm_net_unlink(); // Unlink network connection
 	return SEND_RECEIVE_SUCCESSFUL;
 }
