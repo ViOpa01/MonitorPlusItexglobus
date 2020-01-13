@@ -49,11 +49,9 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		// netParam->port = 5004;
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		netParam->port = 5000;
 
-		strncpy(netParam->host, "192.168.43.61", strlen(mParam.nibss_ip));
-		netParam->port = 4444;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
 

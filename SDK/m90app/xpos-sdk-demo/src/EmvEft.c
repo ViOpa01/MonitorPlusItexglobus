@@ -251,7 +251,9 @@ static enum TechMode cardTypeToTechMode(unsigned int cardType)
 
 void populateEchoData(char echoData[256])
 {
-	//TODO: populate echo data	strncpy(eft.echoData, "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300", sizeof(eft.echoData));
+	char de59[] = "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300";
+	//TODO: populate echo data	
+	strncpy(echoData, de59, strlen(de59));
 }
 
 static void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters)
@@ -670,6 +672,7 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 		return handleFailedComms(eft, commsStatus);
 	}
 
+	printf("Response : %s\n", &netParam->response[2]);
 	if (result = getEftOnlineResponse(&hostType, eft, netParam->response, netParam->responseSize))
 	{
 		//Shouldn't happen
@@ -708,6 +711,45 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	}
 
 	return result;
+}
+
+
+
+static void getPurchaseRequest(Eft * eft)
+{
+    //const char *expectedPacket = "0200F23C46D129E09220000000000000002116539983471913195500000000000000010012201232310000071232311220210856210510010004D0000000006539983345399834719131955D210822100116217990000317377942212070HE88FBP205600444741ONYESCOM VENTURES LTD  KD           LANG566AD456A8EAC9DA12E2809F2608CBAFAFBDB481085F9F2701809F10120110A040002A0000000000000000000000FF9F3704983160FC9F360200F0950500002488009A031912209C01009F02060000000001005F2A020566820239009F1A0205669F34034203009F3303E0F8C89F3501229F1E0834363233313233368407A00000000410109F090200029F03060000000000005F340101074V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300015510101511344101BE97C61158EDB7955608F7238DBFD07DA74483E720F5B172F36FDC35DF68CC55";
+    //unsigned char actualPacket[1024];
+    //int result = 0;
+char iccData[] = "9F2608D2A889A502332C919F2701809F10120110A74003020000000000000000000000FF9F3704AF3C74E79F360201D5950500000088009A032001139C01009F02060000000001005F2A020566820239009F1A0205669F34034403029F3303E0F8C89F3501229F1E0834363138343632378407A00000000410109F090200029F03060000000000005F340101";
+    memset(eft, 0x00, sizeof(Eft));
+
+    eft->transType = EFT_PURCHASE;
+    eft->techMode = CHIP_MODE;
+    eft->fromAccount = SAVINGS_ACCOUNT;
+    eft->toAccount = DEFAULT_ACCOUNT;
+    eft->isFallback = 0;
+
+    strncpy(eft->sessionKey, "70BC974F2F01C837EA08E937E57AA791", sizeof(eft->sessionKey));
+
+    strncpy(eft->pan, "5399834500133103", sizeof(eft->pan));
+    strncpy(eft->amount, "000000000100", sizeof(eft->amount));
+    strncpy(eft->yyyymmddhhmmss, "20200113094122", sizeof(eft->yyyymmddhhmmss));
+    strncpy(eft->stan, "000168", sizeof(eft->stan));
+    strncpy(eft->expiryDate, "2207", sizeof(eft->expiryDate));
+    strncpy(eft->merchantType, "5300", sizeof(eft->merchantType));
+    strncpy(eft->cardSequenceNumber, "001", sizeof(eft->cardSequenceNumber));
+    strncpy(eft->posConditionCode, "00", sizeof(eft->posConditionCode));
+    strncpy(eft->posPinCaptureCode, "04", sizeof(eft->posPinCaptureCode));
+    strncpy(eft->track2Data, "5399834500133103D22072210018092200", sizeof(eft->track2Data));
+    strncpy(eft->rrn, "000031943108", sizeof(eft->rrn));
+    strncpy(eft->serviceRestrictionCode, "221", sizeof(eft->serviceRestrictionCode));
+    strncpy(eft->terminalId, "2214KCE2", sizeof(eft->terminalId));
+    strncpy(eft->merchantId, "2214LA391425013", sizeof(eft->merchantId));
+    strncpy(eft->merchantName, "DARAMOLA MICHAEL ADE   LA           LANG", sizeof(eft->merchantName));
+    strncpy(eft->currencyCode, "566", sizeof(eft->currencyCode));
+
+    strncpy(eft->iccData, iccData, sizeof(eft->iccData));
+    strncpy(eft->echoData, "V240m-2G~346-184-627~1.0.6(Thu-Dec-19-11:14:55-2019-)~release-30812300", sizeof(eft->echoData));
 }
 
 
@@ -852,23 +894,31 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//printf("=========================> 2\n");
 	
 
-	
-	// if (card_out->ic_data_len)
-	// {
-	// 	eft->iccDataBcdLen = card_out->ic_data_len;
-	// 	memcpy(eft->iccDataBcd, card_out->ic_data, eft->iccDataBcdLen);
-	// }
+	/*
+	if (card_out->ic_data_len)
+	{
+		eft->iccDataBcdLen = card_out->ic_data_len;
+		memcpy(eft->iccDataBcd, card_out->ic_data, eft->iccDataBcdLen);
+	}
+	*/
+
+	{
+    	char iccData[] = "9F2608D2A889A502332C919F2701809F10120110A74003020000000000000000000000FF9F3704AF3C74E79F360201D5950500000088009A032001139C01009F02060000000001005F2A020566820239009F1A0205669F34034403029F3303E0F8C89F3501229F1E0834363138343632378407A00000000410109F090200029F03060000000000005F340101";
+		//eft->iccDataBcdLen = strlen(iccData);
+
+		memcpy(eft->iccData, iccData, strlen(iccData));
+	}
 
 	//printf("=========================> 3\n");
 
 	
-	if (card_out->pin_len)
-	{
-		eft->pinDataBcdLen = 8;
-		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
+	// if (card_out->pin_len)
+	// {
+	// 	eft->pinDataBcdLen = 8;
+	// 	memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
 
-		logHex(eft->pinDataBcd, eft->pinDataBcdLen, "Pin block");
-	}
+	// 	logHex(eft->pinDataBcd, eft->pinDataBcdLen, "Pin block");
+	// }
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));

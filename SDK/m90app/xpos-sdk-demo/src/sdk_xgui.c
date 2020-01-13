@@ -32,7 +32,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_CASHADVANCE, ""},
 	{MAIN_MENU_PAGE, UI_BALANCE, ""},
 
-	{MAIN_MENU_PAGE, "hot test", ""},
+	{MAIN_MENU_PAGE, "hostTest", ""},
 
 	{MAIN_MENU_PAGE, "My Plain", ""},
 	{MAIN_MENU_PAGE, "My Ssl", ""},
@@ -207,14 +207,19 @@ void hostTest(void)
 	NetWorkParameters netParam;
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 
+
 	char packet[] = "0200F23C46D129E08220000000000000002116539983450013310300100000000000010001130941220001680941220113220753000510010004D0000000006539983345399834500133103D220722100180922000000319431082212214KCE22214LA391425013DARAMOLA MICHAEL ADE   LA           LANG5662809F2608D2A889A502332C919F2701809F10120110A74003020000000000000000000000FF9F3704AF3C74E79F360201D5950500000088009A032001139C01009F02060000000001005F2A020566820239009F1A0205669F34034403029F3303E0F8C89F3501229F1E0834363138343632378407A00000000410109F090200029F03060000000000005F340101070V240m-2G~346-184-627~1.0.6(Thu-Dec-19-11:14:55-2019-)~release-30812300015510101511344101106A3C5C4B707B2CCE8A56AD4AF8DB381E972612AFD06F6A0E1C440E042AC1C2";
 	int len = strlen(packet);
+
+	puts(__FUNCTION__);
 
 	memset(&netParam, 0x00, sizeof(NetWorkParameters));
 
 	memcpy(&netParam.packet[2], packet, len);
 
 	netParam.packetSize = insertTpdu(netParam.packet, len);
+
+	printf("Len -> %02X %02X ---> %d", netParam.packet[0], netParam.packet[1], netParam.packetSize);
 
 	getNetParams(&netParam, CURRENT_PATFORM, 0);
 
@@ -228,7 +233,10 @@ void hostTest(void)
 	} else if(commsStatus == SEND_RECEIVE_SUCCESSFUL)
 	{
 		printf("\nSuccess\n");
+		printf("Response -> %s\n", &netParam.response[2]);
 	}
+
+
 }
 
 static int enableAndDisableAccountSelection()
@@ -313,11 +321,14 @@ static short hanshakeHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PREP_TERMINAL) == 0)
 	{
+		//macTest();
+		
 		if (uiHandshake())
 		{
 			gui_messagebox_show("ERROR", "Prepping failed.", "", "", 3000);
 			//TODO: display prepping failed on screen
 		}
+		
 	}
 	else if (strcmp(pid, UI_GET_PARAMETER) == 0)
 	{
@@ -358,10 +369,12 @@ static int _menu_proc(char *pid)
 	char msg[256];
 	int acctTypeValue = -1;
 
+	printf("pid -> %s\n", pid);
+
 	if (!eftHandler(pid))
 	{
 		return 0;
-	} else if(strcmp(pid, "hot test")) {
+	} else if(!strcmp(pid, "hostTest")) {
 		hostTest();
 	}
 	else if (!hanshakeHandler(pid))
