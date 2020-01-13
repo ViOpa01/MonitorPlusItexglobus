@@ -42,7 +42,6 @@
 #define NIBSS_HOST "197.253.19.75"
 #define NIBSS_PORT  5003
 
-
 static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
 {
 	strncpy(netParam->host, mParam->nibss_ip, strlen(mParam->nibss_ip));
@@ -118,6 +117,7 @@ static int inGetParameters(void *parameters, const char *filename, const int rec
 }
 
 */
+
 int getSessionKey(char sessionKey[33])
 {
     int result = -1;

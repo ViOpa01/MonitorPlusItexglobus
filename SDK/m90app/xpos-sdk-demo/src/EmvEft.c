@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 //#include "upay_print.h" //TODO:
 #include "emvapi/inc/emv_api.h"
@@ -37,6 +38,30 @@ static int first = 0;
 
 #define APP_TRACE(...)
 #define APP_TRACE_BUFF_LOG(...)
+
+static IccDataT nibssIccData[] = {
+	{0x9F26, 1},
+	{0x9F27, 1},
+	{0x9F10, 1},
+	{0x9F37, 1},
+	{0x9F36, 1},
+	{0x95, 1},
+	{0x9A, 1},
+	{0x9C, 1},
+	{0x9F02, 1},
+	{0x5F2A, 1},
+	{0x82, 1},
+	{0x9F1A, 1},
+	{0x9F34, 1},
+	{0x9F33, 1},
+	{0x9F35, 1},
+	{0x9F1E, 1},
+	{0x84, 1},
+	{0x9F09, 1},
+	{0x9F03, 1},
+	{0x5F34, 1},
+	{NULL, NULL},
+};
 
 static void TestSetTermConfig(TERMCONFIG *termconfig)
 {
@@ -93,7 +118,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 {
 	int i = 0;
-	int count = 21;
+	int count = 24;
 
 	APP_TRACE("TestDownloadAID");
 	memset(TerminalApps, 0x00, sizeof(TERMINALAPPLIST));
@@ -140,7 +165,13 @@ static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 	TerminalApps->TermApp[19].AID_Length = 8;
 	memcpy(TerminalApps->TermApp[20].AID, "\xA0\x00\x00\x03\x33\x01\x01", 7);
 	TerminalApps->TermApp[20].AID_Length = 7;
-	for (i = 0; i < 21; i++)
+	memcpy(TerminalApps->TermApp[21].AID, "\xA0\x00\x00\x03\x71\x00\x01", 7);
+	TerminalApps->TermApp[21].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[22].AID, "\xA0\x00\x00\x03\x24\x10\x10", 7);
+	TerminalApps->TermApp[22].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[24].AID, "\xA0\x00\x00\x00\x10\x10\x30", 7);
+	TerminalApps->TermApp[24].AID_Length = 7;
+	for (i = 0; i < 24; i++)
 	{
 		TerminalApps->TermApp[i].bTerminalPriority = 0x03;							  //Terminal priority
 		TerminalApps->TermApp[i].bMaxTargetPercentageInt = 0x00;					  /*Offset randomly selected maximum target percentage*/
@@ -164,6 +195,51 @@ static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 		memcpy(TerminalApps->TermApp[i].TerminalCap, "\xE0\xE1\xC8", 3);			  /* Terminal capability: data format (n 3) */
 		TerminalApps->TermApp[i].cOnlinePinCap = 0x01;								  /* Terminal online pin capability */
 	}
+}
+
+int buildIccData(unsigned char * de55, const IccDataT * iccData, const int size)
+{
+	int i;
+	int pos = 0;
+	int status;
+	
+	for (i = 0; i < size; i++) {
+		unsigned char tlv[256];
+        unsigned char value[256];
+		char asc[256] = {'\0'};
+		unsigned char tagNameBcd[4];
+		unsigned char tlvAscBuf[512] = {'\0'};
+		int length = 0;
+		int tlvLen = 0;
+		
+		if (iccData[i].present == 0 || iccData[i].present == NULL || iccData[i].tag == NULL) continue;
+		
+		sprintf(asc, "%X", iccData[i].tag);
+		
+		length = strlen(asc);
+		Util_Asc2Bcd(asc, tagNameBcd, length);
+		length /= 2;
+		
+		status = EMV_GetKernelData (tagNameBcd, &length, value);
+		
+		if (status) {
+			fprintf(stderr, "%s: tag %X -> %s", __FUNCTION__, iccData[i].tag, status == UEMV_PRM_NOT_FOUND ? "UEMV_PRM_NOT_FOUND" : "UEMV_PRM_FAIL");
+			continue;
+		}
+		
+		if (status = EMV_PackTLVData(asc, value, length, tlv, &tlvLen)) {
+
+			fprintf(stderr, "%s: tag %X -> %s, return : %d ", __FUNCTION__, iccData[i].tag, "ERROR BUILDING TLV", status);
+		}
+
+		// Util_Bcd2Asc(tlv, tlvAscBuf, tlvLen*2);
+		printf("TLV2ASC : %s -> %s\n", asc, tlv);
+		memcpy(&de55[pos], tlv, tlvLen);
+		pos += tlvLen;
+		
+	}
+	
+	return pos;
 }
 
 static void m_DispOffPin(int Count)
@@ -251,7 +327,8 @@ static enum TechMode cardTypeToTechMode(unsigned int cardType)
 
 void populateEchoData(char echoData[256])
 {
-	//TODO: populate echo data	strncpy(eft.echoData, "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300", sizeof(eft.echoData));
+	//TODO: populate echo data	
+	// strncpy(eft.echoData, "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300", sizeof(eft.echoData));
 }
 
 static void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters)
@@ -460,6 +537,8 @@ static short getReversalReason(Eft *eft)
 		"Unspecified",
 		"Completed partially"
 	};
+
+	printf("\nReversal reason\n");
 
 	switch (option = gui_select_page_ex("Select Account Type" , reversal_option_list, 11, 10000, 0))	// if exit : -1, timout : -2
 	{
@@ -718,6 +797,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	int result = -1;
 	unsigned char packet[2048];
 	struct HostType hostType;
+	unsigned char packedIcc[256] = {'\0'};
 
 	st_read_card_in *card_in = 0;
 	st_read_card_out *card_out = 0;
@@ -852,7 +932,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//printf("=========================> 2\n");
 	
 
-	
+	buildIccData(packedIcc, nibssIccData, sizeof(nibssIccData) / sizeof(IccDataT));
+
+
 	// if (card_out->ic_data_len)
 	// {
 	// 	eft->iccDataBcdLen = card_out->ic_data_len;
