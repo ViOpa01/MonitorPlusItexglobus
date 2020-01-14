@@ -885,6 +885,27 @@ short getEmvTlvByTag(unsigned char *tag, const int tagSize, unsigned char *tlv)
 }
 
 
+short getServiceCodeFromTrack2(char * serviceCode, const char * track2)
+{
+	const int len = strlen(track2);
+	int i;
+
+	for (i = 0; i < len; i++) {
+		if (track2[i] == '=' || track2[i] == 'D') {
+			if (strlen(&track2[i]) < 7) {
+				fprintf(stderr, "No service code present\n");
+				return -1;
+			}
+
+			strncpy(serviceCode, &track2[i + 5], 3);
+			return 0;
+		}
+	}
+
+	return -2;
+}
+
+
 short getEmvTagValue(unsigned char * value, unsigned char *tag, const int tagSize)
 {
 	int length = 0;
@@ -1026,6 +1047,8 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//	return ret;
 	//}
 
+	printf("\nCard sequence no : %s\n", card_out->pan_sn);
+
 	if (EMVAPI_RET_ARQC == ret)
 	{
 		//gui_messagebox_show("", "Online Request", "", "ok", 0);
@@ -1152,10 +1175,13 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
-	strncpy(eft->cardSequenceNumber, card_out->pan_sn, sizeof(eft->cardSequenceNumber));
+	strncpy(eft->cardSequenceNumber, "000"/*card_out->pan_sn*/, sizeof(eft->cardSequenceNumber));
 
 	logHex(card_out->pan_sn, sizeof(card_out->pan_sn), "Pan sequence number");
 
+	getServiceCodeFromTrack2(eft->serviceRestrictionCode, card_out->track2);
+
+	/*
 	{
 		char cardSequenceNumber[8] = {'\0'};
 		char serviceRestrictionCode[8] = {'\0'};
@@ -1170,6 +1196,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		strncpy(eft->serviceRestrictionCode, serviceRestrictionCode, sizeof(eft->serviceRestrictionCode));
 
 	}
+	*/
 
 
 	if (!orginalDataRequired(eft))
