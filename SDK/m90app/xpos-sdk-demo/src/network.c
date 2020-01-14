@@ -49,8 +49,11 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = 5000;
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = 5000;
+
+		strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
+		netParam->port = 4444;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
@@ -66,7 +69,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 
 	netParam->isHttp = isHttp;
 	// netParam->receiveTimeout = 1000;
-	netParam->receiveTimeout = 7000;
+	netParam->receiveTimeout = 90000;
 	strncpy(netParam->apn, "CMNET", 10);
 	// strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
 	netParam->netLinkTimeout = 30000;

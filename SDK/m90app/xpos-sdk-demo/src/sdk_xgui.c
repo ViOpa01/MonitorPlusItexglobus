@@ -374,11 +374,7 @@ static int _menu_proc(char *pid)
 	if (!eftHandler(pid))
 	{
 		return 0;
-<<<<<<< HEAD
-	} else if(!strcmp(pid, "hostTest")) {
-=======
 	} else if(!strcmp(pid, "hot test")) {
->>>>>>> 84da3d93f60dab77bd677aee6781b8dbca662d54
 		hostTest();
 	}
 	else if (!hanshakeHandler(pid))
