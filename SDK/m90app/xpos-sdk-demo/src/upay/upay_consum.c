@@ -96,13 +96,13 @@ void TestSetTermConfig(TERMCONFIG *termconfig)
 void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 {
 	int i = 0;
-	int count = 21;
+	int count = 24;
 	if(TerminalApps==0)
 		return;
 
 	APP_TRACE( "TestDownloadAID" );
 	memset(TerminalApps,0x00,sizeof(TERMINALAPPLIST));	
-	TerminalApps->bTermAppCount = 21;//AID length
+	TerminalApps->bTermAppCount = 24;//AID length
 	memcpy(TerminalApps->TermApp[0].AID, "\xA0\x00\x00\x00\x01\x10\x10", 7);//AID
 	TerminalApps->TermApp[0].AID_Length = 7;
 	memcpy(TerminalApps->TermApp[1].AID, "\xA0\x00\x00\x00\x03\x10\x10", 7);
@@ -145,7 +145,14 @@ void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 	TerminalApps->TermApp[19].AID_Length = 7;
 	memcpy(TerminalApps->TermApp[20].AID, "\xA0\x00\x00\x03\x33\x01\x01", 7);
 	TerminalApps->TermApp[20].AID_Length = 7;
-	for(i=0; i<21; i++)
+	memcpy(TerminalApps->TermApp[21].AID, "\xA0\x00\x00\x03\x71\x00\x01", 7);
+	TerminalApps->TermApp[21].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[22].AID, "\xA0\x00\x00\x03\x24\x10\x10", 7);
+	TerminalApps->TermApp[22].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[23].AID, "\xA0\x00\x00\x00\x10\x10\x30", 7);
+	TerminalApps->TermApp[23].AID_Length = 7;
+
+	for(i=0; i<24; i++)
 	{
 		TerminalApps->TermApp[i].bTerminalPriority = 0x03;	//Terminal priority
 		TerminalApps->TermApp[i].bMaxTargetPercentageInt = 0x00;/*Offset randomly selected maximum target percentage*/
