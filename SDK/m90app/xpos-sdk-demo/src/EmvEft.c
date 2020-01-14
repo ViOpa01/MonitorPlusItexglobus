@@ -843,6 +843,90 @@ static void str2bcd(char * str, char * bcd, int size)
 	}
 }
 
+short getEmvTlvByTag(unsigned char *tag, const int tagSize, unsigned char *tlv)
+{
+	int length = 0;
+	byte value[256];
+	int bytes = 0;
+
+	if (EMV_GetKernelData(tag, &length, value))
+	{
+		fprintf(stderr, "Error getting tag 84\n");
+		return 0;
+	}
+	else
+	{
+		int i;
+		char asc[21];
+		unsigned char bcdLen[12];
+
+		memcpy(tlv, tag, tagSize);
+		bytes + tagSize;
+
+		printf("Tag 84 len -> %d\n", length);
+
+		sprintf(asc, "%02X", length);
+		str2bcd(asc, bcdLen, 2);
+
+		tlv[bytes] = bcdLen[0];
+		bytes += 1;
+
+		memcpy(&tlv[bytes], value, length);
+		bytes += length;
+
+		for (i = 0; i < bytes; i++)
+		{
+			printf("%02X", tlv[i]);
+		}
+		puts("\r\n");
+	}
+
+	return bytes;
+}
+
+
+short getEmvTagValue(unsigned char * value, unsigned char *tag, const int tagSize)
+{
+	int length = 0;
+
+	unsigned char tagName[] = {0x9F, 0x30};
+	length = sizeof(tagName);
+	
+	if (EMV_GetKernelData(tagName, &length, value))
+	{
+		fprintf(stderr, "Error getting tag\n");
+		return 0;
+	}
+	
+	return length;
+}
+
+
+void bcdToAsc(char * asc, unsigned char * bcd, const int size)
+{
+	int i;
+	short pos;
+
+	for (i = 0; i < size; i++) {
+		pos += sprintf(&asc[pos], "%02X", bcd[i]);
+	}
+}
+
+short getEmvTagValueAsc(unsigned char *tag, const int tagSize, char * value)
+{
+	char asc[511];
+	unsigned char bcd[256];
+	int length = 0;
+
+	length = getEmvTagValue(bcd, tag, tagSize);
+
+	if (!length) return 0;
+
+    bcdToAsc(value, bcd, length);
+	
+	return length * 2;
+}
+
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
@@ -1072,9 +1156,21 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	logHex(card_out->pan_sn, sizeof(card_out->pan_sn), "Pan sequence number");
 
-	//Temp
-	strncpy(eft->cardSequenceNumber, "001", sizeof(eft->cardSequenceNumber));
-    strncpy(eft->serviceRestrictionCode, "221", sizeof(eft->serviceRestrictionCode));
+	{
+		char cardSequenceNumber[8] = {'\0'};
+		char serviceRestrictionCode[8] = {'\0'};
+
+		unsigned char tag5F34[2] = {0x5F, 0x34};
+		unsigned char tag5F30[2] = {0x5F, 0x30};
+
+		getEmvTagValueAsc(cardSequenceNumber, tag5F34, sizeof(tag5F34));
+		strncpy(eft->cardSequenceNumber, cardSequenceNumber, sizeof(eft->cardSequenceNumber));
+
+		getEmvTagValueAsc(serviceRestrictionCode, tag5F30, sizeof(tag5F30));
+		strncpy(eft->serviceRestrictionCode, serviceRestrictionCode, sizeof(eft->serviceRestrictionCode));
+
+	}
+
 
 	if (!orginalDataRequired(eft))
 	{
