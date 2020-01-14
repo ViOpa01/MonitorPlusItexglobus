@@ -530,24 +530,13 @@ static short getReversalReason(Eft *eft)
 	//TODO: Let the user select reversal reason from the list of option, then
 	//set reversal reason respectively e.g
 
-		// TIMEOUT_WAITING_FOR_RESPONSE,
-        // CUSTOMER_CANCELLATION,
-        // CHANGE_DISPENSED,
-        // CARD_ISSUER_UNAVAILABLE,
-        // UNDER_FLOOR_LIMIT,
-        // PIN_VERIFICATION_FAILURE,
-        // IOU_RECEIPT_PRINTED,
-        // OVER_FLOOR_LIMIT,
-        // NEGATIVE_CARD,
-        // UNSPECIFIED_NO_ACTION_TAKEN,
-        // COMPLETED_PARTIALLY,
 
 	int option = -1;
 	char *reversal_option_list[] = {
-		"Response timeout"
+		"Response timeout",
 		"Customer cancellation",
 		"Change dispensed",
-		"Card Issuer not available",
+		"Issuer not available",
 		"Underfloor limit",
 		"Pin verification failure",
 		"IOU Receipt printed",
@@ -557,10 +546,9 @@ static short getReversalReason(Eft *eft)
 		"Completed partially"
 	};
 
-	printf("\nReversal reason\n");
-
-	switch (option = gui_select_page_ex("Select Account Type" , reversal_option_list, 11, 10000, 0))	// if exit : -1, timout : -2
+	switch (option = gui_select_page_ex("Reversal Reason" , reversal_option_list, 11, 10000, 0))	// if exit : -1, timout : -2
 	{
+		printf("\nReversal reason\n");
 		case -1:
 		case -2:
 			return -1;
@@ -603,19 +591,6 @@ static short getReversalReason(Eft *eft)
 	};
 	
 	return -1;
-}
-
-static void initNibssParameters(NetWorkParameters * netParam, const MerchantData * mParam)
-{
-	strncpy(netParam->host, mParam->nibss_ip, strlen(mParam->nibss_ip));
-	netParam->port = mParam->nibss_port;
-	netParam->isSsl = 1;
-	netParam->isHttp = 0;
-	netParam->receiveTimeout = 1000;
-	strncpy(netParam->title, "Nibss", 10);
-	strncpy(netParam->apn, "CMNET", 10);
-	netParam->netLinkTimeout = 30000;
-
 }
 
 static void logNetworkParameters(NetWorkParameters * netWorkParameters)

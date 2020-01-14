@@ -374,7 +374,11 @@ static int _menu_proc(char *pid)
 	if (!eftHandler(pid))
 	{
 		return 0;
+<<<<<<< HEAD
 	} else if(!strcmp(pid, "hostTest")) {
+=======
+	} else if(!strcmp(pid, "hot test")) {
+>>>>>>> 84da3d93f60dab77bd677aee6781b8dbca662d54
 		hostTest();
 	}
 	else if (!hanshakeHandler(pid))
@@ -480,6 +484,79 @@ static int _menu_proc(char *pid)
 	else if (strcmp(pid, "My Ssl") == 0)
 	{
 		//sendAndReceiveDemoRequest(1, 443);
+	}
+	else if (!strcmp(pid, UI_REPRINT_BY_DATE))
+	{
+		//TODO: @Pius 
+		// get and reprint by date transaction
+	}
+	else if (!strcmp(pid, UI_REPRINT_BY_RRN))
+	{
+		
+		int result;
+		char rrn[13] = {'\0'};
+		gui_clear_dc();
+		if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
+		{
+			printf("rrn input failed ret : %d\n", result);
+			return result;
+		}
+
+		printf("rrn : %s\n", rrn);
+
+		//TODO: @Pius 
+		// get and reprint by rrn transaction
+		
+
+
+
+		return 0;
+	}
+	else if (!strcmp(pid, UI_REPRINT_TODAY))
+	{
+		//TODO: @Pius 
+		// get today's date
+		// get and reprint all today's transaction
+	}
+	else if (!strcmp(pid, UI_EOD_ALL_TRANS))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for all type of trans
+	}
+	else if (!strcmp(pid, UI_EOD_CASHADVANCE))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for cashAdvance trans
+	}
+	else if (!strcmp(pid, UI_EOD_CASHBACK))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for cashBack trans
+	}
+	else if (!strcmp(pid, UI_EOD_PURCHASE))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for Purchase trans
+	}
+	else if (!strcmp(pid, UI_EOD_PREAUTH))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for preAuth trans
+	}
+	else if (!strcmp(pid, UI_EOD_COMPLETION))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for completion trans
+	}
+	else if (!strcmp(pid, UI_EOD_REVERSAL))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for reversal trans
+	}
+	else if (!strcmp(pid, UI_EOD_REFUND))
+	{
+		//TODO: @Pius 
+		// get and reprint EOD for refund trans
 	}
 	else if (!strcmp(pid, UI_ACCNT_SELECTION))
 	{
