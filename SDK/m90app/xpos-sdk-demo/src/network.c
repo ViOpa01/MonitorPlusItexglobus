@@ -367,7 +367,7 @@ static short connectToHost(NetWorkParameters *netParam)
 		return -2;
 	}
 
-	Sys_Delay(1000);
+	//Sys_Delay(1000);
 
 	for (i = 0; i < nTime; i++)
 	{
@@ -533,7 +533,7 @@ static short receivePacket(NetWorkParameters *netParam)
 			if (bytes > 0) break;
 		}
 
-		Sys_Delay(100);
+		//Sys_Delay(100);
 		
 	}
 	
@@ -620,7 +620,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 		return SENDING_FAILED;
 	}
 
-	Sys_Delay(500);
+	//Sys_Delay(500);
 
 	puts("Sending Successful!\n");
 
@@ -632,7 +632,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	puts("Receive Successful!\n");
 
 	netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
-	Sys_Delay(500);
+	//Sys_Delay(500);
 	comm_net_unlink(); // Unlink network connection
 	return SEND_RECEIVE_SUCCESSFUL;
 }

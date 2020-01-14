@@ -20,7 +20,6 @@ extern "C"
 
 #define CURRENT_PATFORM NET_POSVAS_PLAIN
 
-
 short uiHandshake(void);
 short uiGetParameters(void);
 short uiCallHome(void);
