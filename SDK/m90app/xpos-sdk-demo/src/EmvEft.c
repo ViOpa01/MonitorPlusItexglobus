@@ -894,13 +894,37 @@ short getEmvTlvByTag(unsigned char *tag, const int tagSize, unsigned char *tlv)
 }
 
 
+short getServiceCodeFromTrack2(char * serviceCode, const char * track2)
+{
+	const int len = strlen(track2);
+	int i;
+
+	for (i = 0; i < len; i++) {
+		if (track2[i] == '=' || track2[i] == 'D') {
+			if (strlen(&track2[i]) < 7) {
+				fprintf(stderr, "No service code present\n");
+				return -1;
+			}
+
+			strncpy(serviceCode, &track2[i + 4], 3);
+			return 0;
+		}
+	}
+
+	return -2;
+}
+
+
 short getEmvTagValue(unsigned char * value, unsigned char *tag, const int tagSize)
 {
 	int length = 0;
 
-	if (EMV_GetKernelData(tag, &length, value))
+	unsigned char tagName[] = {0x9F, 0x30};
+	length = sizeof(tagName);
+
+	if (EMV_GetKernelData(tagName, &length, value))
 	{
-		fprintf(stderr, "Error getting tag 84\n");
+		fprintf(stderr, "Error getting tag\n");
 		return 0;
 	}
 	
@@ -1162,6 +1186,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	logHex(card_out->pan_sn, sizeof(card_out->pan_sn), "Pan sequence number");
 
+	getServiceCodeFromTrack2(eft->serviceRestrictionCode, card_out->track2);
+
+	/*
 	{
 		char cardSequenceNumber[8] = {'\0'};
 		char serviceRestrictionCode[8] = {'\0'};
@@ -1176,6 +1203,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		strncpy(eft->serviceRestrictionCode, serviceRestrictionCode, sizeof(eft->serviceRestrictionCode));
 
 	}
+	*/
 
 
 	if (!orginalDataRequired(eft))
