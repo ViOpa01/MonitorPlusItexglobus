@@ -28,6 +28,8 @@ int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);
 int getSessionKey(char sessionKey[33]);
 
+short handleDe39(char * responseCode, char * responseDesc);
+
 
 
 #ifdef __cplusplus

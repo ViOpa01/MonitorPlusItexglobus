@@ -69,7 +69,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 
 	netParam->isHttp = isHttp;
 	// netParam->receiveTimeout = 1000;
-	netParam->receiveTimeout = 90000;
+	netParam->receiveTimeout = 30000;
 	strncpy(netParam->apn, "CMNET", 10);
 	// strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
 	netParam->netLinkTimeout = 30000;

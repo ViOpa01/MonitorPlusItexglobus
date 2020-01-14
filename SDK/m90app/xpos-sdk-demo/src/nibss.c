@@ -143,7 +143,7 @@ int saveParameters(const MerchantParameters *merchantParameters)
     return result;
 }
 
-static short handleDe39(char * responseCode, char * responseDesc)
+short handleDe39(char * responseCode, char * responseDesc)
 {
     if (strncmp(responseCode, "00", 2)) {
         gui_messagebox_show(responseCode , responseDesc, "" , "" , 0);   
