@@ -384,12 +384,9 @@ static short autoReversal(Eft *eft)
 		return -2;
 	}
 
-	if (strncmp(eft->responseCode, "00", 2))
-	{
-
-		//TODO Error: display eft->responseDesc on the screen.
-		return -3;
-	}
+	if (handleDe39(eft->responseCode, eft->responseDesc)) {
+        return -3;
+    }
 
 	//no need to handle hostType for reversal, not sure.
 
@@ -730,6 +727,15 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus)
 }
 
 
+/**
+ * Function: processPacketOnline
+ * Usage: processPacketOnline(...);
+ * --------------------------------
+ * @return 1 declined transtion.
+ * @return negative error occured.
+ * @return 0, approved.
+ */
+
 static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParameters *netParam)
 {
 	int result = -1;
@@ -753,6 +759,11 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 			sprintf(eft->message, "%s", "Manual Reversal Adviced(2)");
 		}
 		return -7;
+	}
+
+	if (handleDe39(eft->responseCode, eft->responseDesc))
+	{
+		return 1;
 	}
 
 	return 0;
@@ -1116,14 +1127,17 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	free(card_in);
 	free(card_out);
 
+	if (result < 0) { //Error occured, 
+		return -5;
+	}
+
 	if (!result) //Successfull
 	{
 		if (result = iccUpdate(eft, &hostType))
 		{
 			sprintf(eft->message, "%s", autoReversal(eft) ? "Reversal Adviced(ICC)" : "Trans Reversed(ICC)");
+			result = -6;
 		}
-
-		result = -6;
 	}
 
 	//TODO: save transactions

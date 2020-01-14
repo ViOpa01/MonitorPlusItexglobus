@@ -26,7 +26,7 @@
 
 
 
-#define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA" //POSVAS LIVE
+//#define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA" //POSVAS LIVE
 #define PTAD_KEY "DBCC87EE50A6810682FAD28B1190F578" //EPMS LIVE KEYS
 //#define PTAD_KEY "DBEECACCB4210977ACE73A1D873CA59F" //TEST KEY
 
@@ -143,7 +143,7 @@ int saveParameters(const MerchantParameters *merchantParameters)
     return result;
 }
 
-static short handleDe39(char * responseCode, char * responseDesc)
+short handleDe39(char * responseCode, char * responseDesc)
 {
     if (strncmp(responseCode, "00", 2)) {
         gui_messagebox_show(responseCode , responseDesc, "" , "" , 0);   
