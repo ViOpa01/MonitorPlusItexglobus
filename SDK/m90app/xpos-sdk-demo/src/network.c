@@ -41,6 +41,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 		// 196.6.103.72 5042  nibss epms port and ip test environment
 		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
 		netParam->port = mParam.nibss_port;
+
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
 
@@ -49,11 +50,11 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		// netParam->port = 5000;
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		netParam->port = 5004;
 
-		strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
-		netParam->port = 4444;
+		// strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
+		// netParam->port = 4444;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
@@ -289,6 +290,9 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	int result;
 	int sock = 0;
 
+	char *ip = "197.253.19.75";
+	int port = 5003;
+
 	m_connect_tick = Sys_TimerOpen(30000);
 	m_connect_exit = 0;
 	m_connect_time = i + 1;
@@ -315,8 +319,10 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 		
 
 		//TODO: Check callback later.
-
-		if (result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc))
+		result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc);
+		LOG_PRINTF("Ssl connect ret : %d\n", result);
+		
+		if (result)
 		{
 			LOG_PRINTF("Ssl connect failed... ret : %d\n", result);
 			comm_ssl_close(COMM_SOCK);
@@ -494,7 +500,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	unsigned int tick = Sys_TimerOpen(timeover);
 	
 
-	/*
+	
 	bytes = http_recv_buff(netParam->title, netParam->response, size, tick, timeover, netParam->isSsl);
 
 	if (bytes > 0) {
@@ -502,7 +508,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	} else {
 		return -1;
 	}
-	*/
+	
 
 
 	/*
@@ -510,7 +516,7 @@ static short receivePacket(NetWorkParameters *netParam)
 				return index;
 	}
 	*/
-	
+	/*
 	while (1) 
 	{
 		if (netParam->isSsl)
@@ -543,10 +549,11 @@ static short receivePacket(NetWorkParameters *netParam)
 	if (bytes > 0) {
 		netParam->responseSize = bytes;
 	} 
-
+	*/
 	printf("\nrecv result -> %d\n", netParam->responseSize);
 
 	return bytes > 0 ? 0 : -1;
+	
 }
 
 /*

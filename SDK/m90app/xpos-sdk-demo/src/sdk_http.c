@@ -616,8 +616,8 @@ static void https_test()
 	printf("connect server ret= %d,%s:%d\r\n" , ret , ip , port);
 
 	if(ret == 0){
-		comm_ssl_send(COMM_SOCK , buff ,  strlen(buff));	// Send http request		
-		printf("send buff:%s\r\n", buff);
+		ret = comm_ssl_send(COMM_SOCK , buff ,  strlen(buff));	// Send http request		
+		printf("send buff:%s, ret : %d\r\n", buff, ret);
 		ret = http_recv("Https", recv, 2048, 30000, 1);		// Receive http response
 		if (ret == 0)
 		{

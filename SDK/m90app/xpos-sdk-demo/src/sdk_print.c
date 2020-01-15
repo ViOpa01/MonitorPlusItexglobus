@@ -289,6 +289,7 @@ const char  raw[] ={
 };
 
 
+
 void creat_bmp()
 {
 	int ret = 0;
