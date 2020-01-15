@@ -49,11 +49,12 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		// netParam->port = 5000;
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		netParam->port = 5004; //resolve POSVAS PLAIN 
+		///netParam->port = mParam.nibss_plain_port; //EPMS
 
-		strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
-		netParam->port = 4444;
+		// strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
+		// netParam->port = 4444;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
@@ -72,7 +73,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	netParam->receiveTimeout = 30000;
 	strncpy(netParam->apn, "CMNET", 10);
 	// strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
-	netParam->netLinkTimeout = 30000;
+	netParam->netLinkTimeout = 1000;
 
 	return 0;
 
@@ -294,7 +295,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	m_connect_time = i + 1;
 
 	sprintf(tmp, "Connecting (%d) ...", i + 1);
-	comm_page_set_page("Http", tmp, 1);
+	comm_page_set_page(netParam->title, tmp, 1);
 
 	//comm_page_set_page("COM", tmp , 1);
 
@@ -494,7 +495,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	unsigned int tick = Sys_TimerOpen(timeover);
 	
 
-	/*
+	
 	bytes = http_recv_buff(netParam->title, netParam->response, size, tick, timeover, netParam->isSsl);
 
 	if (bytes > 0) {
@@ -502,7 +503,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	} else {
 		return -1;
 	}
-	*/
+	
 
 
 	/*
@@ -511,6 +512,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	}
 	*/
 	
+	/*
 	while (1) 
 	{
 		if (netParam->isSsl)
@@ -545,6 +547,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	} 
 
 	printf("\nrecv result -> %d\n", netParam->responseSize);
+	*/
 
 	return bytes > 0 ? 0 : -1;
 }
