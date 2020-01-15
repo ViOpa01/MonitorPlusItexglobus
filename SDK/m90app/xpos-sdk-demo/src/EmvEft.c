@@ -16,6 +16,8 @@
 #include "log.h"
 #include "merchant.h"
 
+#include "sdk_security.h"
+
 typedef enum
 {
 	NO = '0',
@@ -45,20 +47,20 @@ static IccDataT nibssIccData[] = {
 	{0x9F10, 1},
 	{0x9F37, 1},
 	{0x9F36, 1},
-	{0x95, 1},
-	{0x9A, 1},
-	{0x9C, 1},
+	{0x95,   1},
+	{0x9A,   1},
+	{0x9C,   1},
 	{0x9F02, 1},
 	{0x5F2A, 1},
-	{0x82, 1},
+	{0x82,   1},
 	{0x9F1A, 1},
 	{0x9F34, 1},
 	{0x9F33, 1},
 	{0x9F35, 1},
-	{0x9F1E, 1},
-	{0x84, 1},
+	{0x9F1E, 0},
+	{0x84,   1},
 	{0x9F09, 1},
-	//{0x9F06, 1},
+	{0x9F06, 0},
 	{0x9F03, 1},
 	{0x5F34, 1},
 	{NULL, NULL},
@@ -651,6 +653,7 @@ void eftTrans(const enum TransType transType)
 	strncpy(eft.posConditionCode, POS_CONDITION_CODE, sizeof(eft.posConditionCode));
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
 
+	strcpy(netParam.title, transTypeToTitle(transType));
 	performEft(&eft, &netParam, transTypeToTitle(transType));
 
 	//TODO: @PIUS -> convert eft struct to sql query and save it on DB.
@@ -948,6 +951,7 @@ short getEmvTagValueAsc(unsigned char *tag, const int tagSize, char * value)
 	return length * 2;
 }
 
+
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
@@ -956,6 +960,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	unsigned char packet[2048] = {0x00};
 	struct HostType hostType;
 	unsigned char packedIcc[256] = {'\0'};
+	char pinblock[32] = {'\0'};
 
 	st_read_card_in *card_in = 0;
 	st_read_card_out *card_out = 0;
@@ -978,11 +983,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -1;
 	}
 
-
 	card_in->pin_input=1;
 	card_in->pin_max_len=12;
 	card_in->key_pid = 1;//1 KF_MKSK 2 KF_DUKPT
-	card_in->pin_mksk_gid=1;//The key index of MKSK; -1 is not encrypt
+	card_in->pin_mksk_gid=0;//The key index of MKSK; -1 is not encrypt
 	card_in->pin_dukpt_gid=-1;//The key index of DUKPT PIN KEY
 	card_in->des_mode = 0;//0 ECB, 1 CBC
 	card_in->data_dukpt_gid=-1;//The key index of DUPKT Track data KEY
@@ -1079,6 +1083,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return 0;
 	}
 
+	sec_encrypt_pin_proc(SEC_MKSK_FIELD, SEC_PIN_FORMAT0, 0, card_out->pan, pinblock, 0);
+	logHex(pinblock, 8, "2::Pin block");
+
+
 	//printf("\n=========================> 1\n");
 
 	if ((eft->techMode = cardTypeToTechMode(card_out->card_type)) == UNKNOWN_MODE)
@@ -1140,37 +1148,12 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -3;
 	}
 
-
-	/*
-	{
-    	char iccData[] = "9F2608D2A889A502332C919F2701809F10120110A74003020000000000000000000000FF9F3704AF3C74E79F360201D5950500000088009A032001139C01009F02060000000001005F2A020566820239009F1A0205669F34034403029F3303E0F8C89F3501229F1E0834363138343632378407A00000000410109F090200029F03060000000000005F340101";
-		//eft->iccDataBcdLen = strlen(iccData);
-
-		memcpy(eft->iccData, iccData, strlen(iccData));
-	}
-
-
-
-	buildIccData(packedIcc, nibssIccData, sizeof(nibssIccData) / sizeof(IccDataT));
-	*/
-
-
-	// if (card_out->ic_data_len)
-	// {
-	// 	eft->iccDataBcdLen = card_out->ic_data_len;
-	// 	memcpy(eft->iccDataBcd, card_out->ic_data, eft->iccDataBcdLen);
-	// }
-
-	//printf("=========================> 3\n");
-
-	
 	if (card_out->pin_len)
 	{
 		eft->pinDataBcdLen = 8;
 		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
-
-		logHex(eft->pinDataBcd, eft->pinDataBcdLen, "Pin block");
 	}
+	
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));

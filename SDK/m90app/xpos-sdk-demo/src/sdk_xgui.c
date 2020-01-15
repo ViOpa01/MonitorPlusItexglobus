@@ -317,17 +317,23 @@ static short eftHandler(const char *pid)
 	return 0;
 }
 
+#include "sdk_security.h"
+
 static short hanshakeHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PREP_TERMINAL) == 0)
 	{
 		//macTest();
 		
+		//testMsk();
+		
+		
 		if (uiHandshake())
 		{
 			gui_messagebox_show("ERROR", "Prepping failed.", "", "", 3000);
 			//TODO: display prepping failed on screen
 		}
+		
 		
 	}
 	else if (strcmp(pid, UI_GET_PARAMETER) == 0)

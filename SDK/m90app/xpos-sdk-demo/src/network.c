@@ -50,11 +50,11 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = 5004;
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = 5004;
 
-		// strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
-		// netParam->port = 4444;
+		strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
+		netParam->port = 4444;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
@@ -73,7 +73,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	netParam->receiveTimeout = 30000;
 	strncpy(netParam->apn, "CMNET", 10);
 	// strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
-	netParam->netLinkTimeout = 30000;
+	netParam->netLinkTimeout = 1000;
 
 	return 0;
 
@@ -298,7 +298,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	m_connect_time = i + 1;
 
 	sprintf(tmp, "Connecting (%d) ...", i + 1);
-	comm_page_set_page("Http", tmp, 1);
+	comm_page_set_page(netParam->title, tmp, 1);
 
 	//comm_page_set_page("COM", tmp , 1);
 
@@ -403,6 +403,7 @@ static short sendPacket(NetWorkParameters *netParam)
 	if (netParam->isSsl)
 	{
 		result = comm_ssl_send(COMM_SOCK, netParam->packet, netParam->packetSize);
+		return result;
 	}
 	else
 	{
@@ -410,6 +411,7 @@ static short sendPacket(NetWorkParameters *netParam)
 	}
 
 	printf("Send Result : %d\n", result);
+
 
 	return result > 0 ? 0 : -1;
 }
@@ -448,6 +450,8 @@ static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int t
 		}else{
 			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)(recvBuff + curRecvLen), maxLen-curRecvLen , 700);
 		}
+
+		printf("nret is : %d\n", nret);
 
 		if (nret >0){
 			tick2 = Sys_TimerOpen(1000);
@@ -516,6 +520,7 @@ static short receivePacket(NetWorkParameters *netParam)
 				return index;
 	}
 	*/
+	
 	/*
 	while (1) 
 	{

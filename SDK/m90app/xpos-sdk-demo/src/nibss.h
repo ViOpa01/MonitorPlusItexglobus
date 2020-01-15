@@ -18,7 +18,9 @@ extern "C"
 #include "network.h"
 
 
-#define CURRENT_PATFORM NET_POSVAS_PLAIN
+#define CURRENT_PATFORM NET_POSVAS_SSL
+//#define CURRENT_PATFORM NET_EPMS_PLAIN
+//
 
 short uiHandshake(void);
 short uiGetParameters(void);

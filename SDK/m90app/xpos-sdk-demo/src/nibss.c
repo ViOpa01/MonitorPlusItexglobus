@@ -26,13 +26,12 @@
 #include "itexFile.h"
 #include "util.h"
 #include "logo.h"
+#include "network.h"
 
 
 
 
-#define PTAD_KEY "F9F6FF09D77B6A78595541DB63D821FA" //POSVAS LIVE
-// #define PTAD_KEY "DBCC87EE50A6810682FAD28B1190F578" //EPMS LIVE KEYS
-//#define PTAD_KEY "DBEECACCB4210977ACE73A1D873CA59F" //TEST KEY
+
 
 #define MERCHANT_FILE "MerchantParams.dat"
 #define SESSION_KEY_FILE "SessionKey.dat"
@@ -66,6 +65,21 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->deviceModel, "H9", sizeof(networkMangement->deviceModel));
     strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Verifone\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
+}
+
+static const char * platformToKey(const enum NetType netType)
+{
+    switch (netType) {
+        case NET_POSVAS_SSL: case NET_POSVAS_PLAIN:
+            return "F9F6FF09D77B6A78595541DB63D821FA";
+
+        case NET_EPMS_PLAIN: case NET_EPMS_SSL:
+            return "DBCC87EE50A6810682FAD28B1190F578";
+
+        default:
+            return "DBEECACCB4210977ACE73A1D873CA59F";
+
+    }
 }
 
 int getSessionKey(char sessionKey[33])
@@ -134,6 +148,7 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
 
+    strcpy(netParam->title, "MASTER KEY");
     if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
         return -2;
     }
@@ -179,6 +194,7 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
+    strcpy(netParam->title, "SESSION KEY");
     if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
         return -2;
     }
@@ -219,6 +235,8 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
+
+    strcpy(netParam->title, "PIN KEY");
     if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
         return -2;
     }
@@ -259,6 +277,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
 
+    strcpy(netParam->title, "PARAMETERS");
     if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
         return -2;
     }
@@ -304,6 +323,7 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
     
+    strcpy(netParam->title, "CALLHOME");
     if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
          fprintf(stderr, "Callhome -> Error send and receive failed....\n");
         return -2;
@@ -324,13 +344,100 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
     return 0;
 }
 
+
+static void showHexData(char*title,  char * data, int size)
+{
+	char msg[256]={0};
+	int i;
+
+	for(i = 0;i < size; i ++){
+		sprintf(msg + strlen(msg), "%02X ", data[i]);
+	}
+	gui_messagebox_show(title, msg, "", "confirm" , 0);
+}
+
+static short injectKeys(const NetworkManagement *networkMangement, const int gid)
+{
+		// Test key in plaintext
+	//char maink[TEST_GUI_KEY_SIZE] ={0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11};
+	char pink[16] ={0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22};
+	char mack[16] ={0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33};
+	char magk[16] ={0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44};
+	char ind[16] = {0x12,0x34};
+
+
+
+	char keyciphertext[16];
+	char outd[16];
+	char kvc[8];		//kvc is Key plaintext encryption eight 0x00
+	//int gid =0;		// Key index 0-9
+
+	char pinblock[32]={0};
+	char expectedPinblock[32];
+	char ksn[32]={0};
+	int ret;
+	int pinlen = 6;
+	int timeover = 30000;
+	char *pan = "5178685092355984";
+
+
+	// Save the terminal master key plaintext
+	mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, networkMangement->masterKey.clearKeyBcd, kvc);	
+
+	//Here you can check the kvc, it is main key plaintext encryption eight 0x00,
+	//showHexData("MAIN KEY KVC", kvc , 4);
+
+	// Simulate server encryption key
+	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)networkMangement->pinKey.clearKeyBcd, (char *)keyciphertext);
+	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)&networkMangement->pinKey.clearKeyBcd[8], (char *)keyciphertext+8);
+
+    printf("Clear pin key -> '%s'\n", networkMangement->pinKey.clearKey);
+
+	//Save the pin key ciphertext
+	mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, keyciphertext, kvc);
+
+	//Here you can check the kvc, it is pin key plaintext encryption eight 0x00,
+	//showHexData("PIN KEY KVC", kvc , 4);
+
+
+	// Same save magkey and mackey
+	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)mack, (char *)keyciphertext);
+	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)mack+8, (char *)keyciphertext+8);
+
+	mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, keyciphertext, kvc);
+
+
+	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)magk, (char *)keyciphertext);
+	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)magk+8, (char *)keyciphertext+8);
+	mksk_save_encrypted_key(MKSK_MAGDEC_TYPE, gid, keyciphertext, kvc);
+
+
+    /*
+    while (1) {
+        //Pin Operations
+        sec_set_pin_mode(1, 6);
+        ret = _input_pin_page("input pin", 0, pinlen, timeover);
+        if(ret == 0){
+            sec_encrypt_pin_proc(SEC_MKSK_FIELD, SEC_PIN_FORMAT0, 0, pan, pinblock, 0);
+        }
+        sec_set_pin_mode(0, 0);
+        
+        showHexData("pinblock", pinblock, 16);
+        showHexData("ksn", ksn, 10);
+    }
+    */
+    
+	
+    return 0;
+}
+
+/*
 static short injectKeys(const NetworkManagement *networkMangement, const int gid)
 {
     char kvc[8]; //kvc is Key plaintext encryption eight 0x00
 
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, networkMangement->masterKey.clearKeyBcd, kvc);
-
 
     if (memcmp(kvc, networkMangement->masterKey.checkValueBcd, networkMangement->masterKey.checkValueBcdLen))
     { //This will never happen.
@@ -343,11 +450,11 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
         return -1;
     }
     
-
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, networkMangement->pinKey.encryptedKeyBcd, kvc);
 
-    
+    printf("Pin Key -> %s, kcv -> %s", networkMangement->pinKey.clearKey, networkMangement->pinKey.checkValue);
+
     if (memcmp(kvc, networkMangement->pinKey.checkValueBcd, networkMangement->pinKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
@@ -356,11 +463,9 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
         return -2;
     }
     
-
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, networkMangement->sessionKey.encryptedKeyBcd, kvc);
 
-    
     if (memcmp(kvc, networkMangement->sessionKey.checkValueBcd, networkMangement->sessionKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
@@ -371,6 +476,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     
     return 0;
 }
+*/
 
 
 
@@ -597,7 +703,7 @@ short uiHandshake(void)
     strncpy(networkMangement.terminalId, tid, sizeof(networkMangement.terminalId));
 
     //Master key requires clear ptad key
-    strncpy(networkMangement.clearPtadKey, PTAD_KEY, sizeof(networkMangement.clearPtadKey));
+    strncpy(networkMangement.clearPtadKey, platformToKey(CURRENT_PATFORM), sizeof(networkMangement.clearPtadKey));
 
     getNetParams(&netParam, CURRENT_PATFORM, 0);
     

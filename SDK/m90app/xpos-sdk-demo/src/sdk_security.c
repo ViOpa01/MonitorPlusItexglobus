@@ -55,7 +55,7 @@ void mkskTest()
 	char pink[TEST_GUI_KEY_SIZE] ={0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22};
 	char mack[TEST_GUI_KEY_SIZE] ={0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33};
 	char magk[TEST_GUI_KEY_SIZE] ={0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44};
-	char ind[16] = {0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55};
+	char ind[16] = {0x12,0x34};
 
 	char keyciphertext[TEST_GUI_KEY_SIZE];
 	char outd[16];
@@ -97,7 +97,7 @@ void mkskTest()
 	showHexData("ENCRYPT", outd , sizeof(ind));
 
 	// Use the pin key to decrypt data
-	mksk_3des_run(MKSK_PINENC_TYPE, gid, MKSK_ENCRYPT, ind, sizeof(ind), outd);
+	mksk_3des_run(MKSK_PINENC_TYPE, gid, MKSK_DECRYPT, ind, sizeof(ind), outd);
 	showHexData("DECRYPT", outd , sizeof(ind));
 
 }
@@ -105,7 +105,7 @@ void mkskTest()
 
 
 
-static int _input_pin_page(char *title, int min, int max, int timeover)
+int _input_pin_page(char *title, int min, int max, int timeover)
 {
 	st_gui_message pmsg;
 	int len = 0;
@@ -167,7 +167,70 @@ static int _input_pin_page(char *title, int min, int max, int timeover)
 	return ret ;
 }
 
+void testMsk(void)
+{
+		// Test key in plaintext
+	char maink[TEST_GUI_KEY_SIZE] ={0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11};
+	char pink[TEST_GUI_KEY_SIZE] ={0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22};
+	char mack[TEST_GUI_KEY_SIZE] ={0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33};
+	char magk[TEST_GUI_KEY_SIZE] ={0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44};
+	char ind[16] = {0x12,0x34};
 
+	char keyciphertext[TEST_GUI_KEY_SIZE];
+	char outd[16];
+	char kvc[8];		//kvc is Key plaintext encryption eight 0x00
+	int gid =0;		// Key index 0-9
+
+	char pinblock[32]={0};
+	char expectedPinblock[32];
+	char ksn[32]={0};
+	int ret;
+	int pinlen = 6;
+	int timeover = 30000;
+	char *pan = "6223676590001877823";
+
+	// Save the terminal master key plaintext
+	mksk_save_plaintext_key(MKSK_MAINKEY_TYPE, gid, maink, kvc);	
+
+	//Here you can check the kvc, it is main key plaintext encryption eight 0x00,
+	//showHexData("MAIN KEY KVC", kvc , 4);
+
+	// Simulate server encryption key
+	Util_Des(2, maink, (char *)pink, (char *)keyciphertext);
+	Util_Des(2, maink, (char *)pink+8, (char *)keyciphertext+8);
+
+
+	//Save the pin key ciphertext
+	mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, keyciphertext, kvc);
+
+	//Here you can check the kvc, it is pin key plaintext encryption eight 0x00,
+	//showHexData("PIN KEY KVC", kvc , 4);
+
+
+	// Same save magkey and mackey
+	Util_Des(2, maink, (char *)mack, (char *)keyciphertext);
+	Util_Des(2, maink, (char *)mack+8, (char *)keyciphertext+8);
+
+	mksk_save_encrypted_key(MKSK_MACENC_TYPE, gid, keyciphertext, kvc);
+
+
+	Util_Des(2, maink, (char *)magk, (char *)keyciphertext);
+	Util_Des(2, maink, (char *)magk+8, (char *)keyciphertext+8);
+	mksk_save_encrypted_key(MKSK_MAGDEC_TYPE, gid, keyciphertext, kvc);
+
+
+	//Pin Operations
+	sec_set_pin_mode(1, 6);
+	ret = _input_pin_page("input pin", 0, pinlen, timeover);
+	if(ret == 0){
+		sec_encrypt_pin_proc(SEC_MKSK_FIELD, SEC_PIN_FORMAT0, 0, pan, pinblock, 0);
+	}
+	sec_set_pin_mode(0, 0);
+	
+	showHexData("pinblock", pinblock, 16);
+	showHexData("ksn", ksn, 10);
+
+}
 
 void PinTest()
 {
