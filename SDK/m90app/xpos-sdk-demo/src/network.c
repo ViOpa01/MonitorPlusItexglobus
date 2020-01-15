@@ -41,6 +41,7 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 		// 196.6.103.72 5042  nibss epms port and ip test environment
 		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
 		netParam->port = mParam.nibss_port;
+
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
 
@@ -49,12 +50,11 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = 5004; //resolve POSVAS PLAIN 
-		///netParam->port = mParam.nibss_plain_port; //EPMS
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = 5004;
 
-		// strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
-		// netParam->port = 4444;
+		strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
+		netParam->port = 4444;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
@@ -290,6 +290,9 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	int result;
 	int sock = 0;
 
+	char *ip = "197.253.19.75";
+	int port = 5003;
+
 	m_connect_tick = Sys_TimerOpen(30000);
 	m_connect_exit = 0;
 	m_connect_time = i + 1;
@@ -316,8 +319,10 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 		
 
 		//TODO: Check callback later.
-
-		if (result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc))
+		result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc);
+		LOG_PRINTF("Ssl connect ret : %d\n", result);
+		
+		if (result)
 		{
 			LOG_PRINTF("Ssl connect failed... ret : %d\n", result);
 			comm_ssl_close(COMM_SOCK);
@@ -398,6 +403,7 @@ static short sendPacket(NetWorkParameters *netParam)
 	if (netParam->isSsl)
 	{
 		result = comm_ssl_send(COMM_SOCK, netParam->packet, netParam->packetSize);
+		return result;
 	}
 	else
 	{
@@ -405,6 +411,7 @@ static short sendPacket(NetWorkParameters *netParam)
 	}
 
 	printf("Send Result : %d\n", result);
+
 
 	return result > 0 ? 0 : -1;
 }
@@ -443,6 +450,8 @@ static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int t
 		}else{
 			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)(recvBuff + curRecvLen), maxLen-curRecvLen , 700);
 		}
+
+		printf("nret is : %d\n", nret);
 
 		if (nret >0){
 			tick2 = Sys_TimerOpen(1000);
@@ -545,11 +554,11 @@ static short receivePacket(NetWorkParameters *netParam)
 	if (bytes > 0) {
 		netParam->responseSize = bytes;
 	} 
-
-	printf("\nrecv result -> %d\n", netParam->responseSize);
 	*/
+	printf("\nrecv result -> %d\n", netParam->responseSize);
 
 	return bytes > 0 ? 0 : -1;
+	
 }
 
 /*
