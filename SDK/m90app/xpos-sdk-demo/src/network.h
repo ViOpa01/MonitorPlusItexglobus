@@ -7,7 +7,14 @@ typedef enum NetType {
     NET_EPMS_SSL,
     NET_EPMS_PLAIN,
     NET_POSVAS_SSL,
-    NET_POSVAS_PLAIN
+    NET_POSVAS_PLAIN,
+
+    NET_EPMS_SSL_TEST,
+    NET_EPMS_PLAIN_TEST,
+    NET_POSVAS_SSL_TEST,
+    NET_POSVAS_PLAIN_TEST,
+    
+    UPSL_DIRECT_TEST,
 
 }NetType;
 
@@ -41,8 +48,20 @@ typedef struct NetWorkParameters
 	int verificationLevel; //0 no verification, 1: verify
 } NetWorkParameters;
 
+
+/**
+ * Function: netLink
+ * usage: netLink(&netparam);
+ * --------------------------
+ *
+ */
+
+short netLink(NetWorkParameters *netParam);
+
 short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp);
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
+
+
 
 #endif 
 

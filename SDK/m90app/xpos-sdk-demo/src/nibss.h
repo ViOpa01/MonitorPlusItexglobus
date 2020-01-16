@@ -30,6 +30,9 @@ int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);
 int getSessionKey(char sessionKey[33]);
 
+
+short isDevMode(const enum NetType netType);
+
 short handleDe39(char * responseCode, char * responseDesc);
 
 

@@ -50,16 +50,28 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		netParam->port = mParam.nibss_plain_port;
 		// netParam->port = 5004;
 
-		strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
-		netParam->port = 4444;
+		//Echo server
+		//strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
+		//netParam->port = 4444;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
 
 		printf("Plain: EMPS/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
+
+	}else if(netType == NET_EPMS_SSL_TEST) {
+
+	}else if(netType == NET_EPMS_PLAIN_TEST) {
+
+	}else if(netType == NET_POSVAS_SSL_TEST) {
+
+	}else if(netType == NET_POSVAS_PLAIN_TEST) {
+
+	}else if(netType == UPSL_DIRECT_TEST) {
 
 	}
 	else 
@@ -67,10 +79,9 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 		printf("Uknown Host\n");
 	}
 
-
 	netParam->isHttp = isHttp;
 	// netParam->receiveTimeout = 1000;
-	netParam->receiveTimeout = 30000;
+	netParam->receiveTimeout = 90000;
 	strncpy(netParam->apn, "CMNET", 10);
 	// strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
 	netParam->netLinkTimeout = 1000;
@@ -353,14 +364,20 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 }
 
 
+short netLink(NetWorkParameters *netParam)
+{
+	//TODO: maybe try many times.
+	//nret = comm_net_link_ex(netParam->title, netParam->apn, netParam->netLinkTimeout, netParam->apnUser, netParam->apnPassword, authParam);		// Network link with 30s timeout	
+	return comm_net_link(netParam->title, netParam->apn, netParam->netLinkTimeout);
+}
+
 static short connectToHost(NetWorkParameters *netParam)
 {
     int i;
     int nret;	
 	const int nTime = 3;
 
-	//	nret = comm_net_link_ex(netParam->title, netParam->apn, netParam->netLinkTimeout, netParam->apnUser, netParam->apnPassword, authParam);		// Network link with 30s timeout	
-	nret = comm_net_link(netParam->title, netParam->apn, netParam->netLinkTimeout);		// Network link with 30s timeout
+	nret = netLink(netParam);		// Network link with 30s timeout
 	
 	if (nret != 0)
 	{

@@ -68,6 +68,28 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
 }
 
+/*
+,
+    ,
+    ,
+    ,
+    
+    ,
+*/
+
+short isDevMode(const enum NetType netType)
+{
+    switch (netType) {
+        case NET_EPMS_SSL_TEST: case NET_EPMS_PLAIN_TEST: 
+        case NET_POSVAS_SSL_TEST: NET_POSVAS_PLAIN_TEST:
+        case UPSL_DIRECT_TEST:
+            return 1;
+
+        default: 
+            return 0;
+    }
+}
+
 static const char * platformToKey(const enum NetType netType)
 {
     switch (netType) {
@@ -77,8 +99,15 @@ static const char * platformToKey(const enum NetType netType)
         case NET_EPMS_PLAIN: case NET_EPMS_SSL:
             return "DBCC87EE50A6810682FAD28B1190F578";
 
-        default:
+        case NET_EPMS_SSL_TEST: case NET_EPMS_PLAIN_TEST: 
+        case NET_POSVAS_SSL_TEST: NET_POSVAS_PLAIN_TEST:
             return "DBEECACCB4210977ACE73A1D873CA59F";
+
+        case UPSL_DIRECT_TEST:
+            return ""; //TODO: add upsl key
+
+        default:
+            return NULL;
 
     }
 }

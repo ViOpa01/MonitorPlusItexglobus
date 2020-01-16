@@ -87,7 +87,7 @@ void logHex(unsigned char * data, const int size, const char * title)
     char * asc = (char *) calloc(ascLen, sizeof(char));
 
     Util_Bcd2Asc((char *) data, asc, ascLen - 1);
-    fprintf(stderr, "%s -> %s", title, asc);
+    fprintf(stderr, "%s -> %s\r\n", title, asc);
 
     free(asc);
 }
