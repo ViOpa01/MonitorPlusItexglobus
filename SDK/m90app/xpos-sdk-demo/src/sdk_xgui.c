@@ -323,9 +323,9 @@ static short hanshakeHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PREP_TERMINAL) == 0)
 	{
-		//macTest();
-		
-		//testMsk();
+		if (isDevMode(CURRENT_PATFORM)) {
+			//TODO: Get terminal Id.
+		}
 		
 		
 		if (uiHandshake())

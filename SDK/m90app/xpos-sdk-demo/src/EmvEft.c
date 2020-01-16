@@ -666,6 +666,7 @@ void eftTrans(const enum TransType transType)
 
 	strcpy(netParam.title, transTypeToTitle(transType));
 
+	//TODO, put the netLink below on a thread.
 	netLink(&netParam);
 	performEft(&eft, &netParam, transTypeToTitle(transType));
 
