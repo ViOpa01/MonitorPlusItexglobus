@@ -1125,6 +1125,19 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	//printf("=========================> 2\n");
 
+	{
+		char panSeqNumber[4] = {'\0'};
+		int length = 0;
+		byte value[256];
+		EMV_GetKernelData("\x5f\x34", &length, value);
+		logHex(value, length, "PAN SEQ.");
+
+		panSeqNumber[0] = '0';
+		Util_Bcd2Asc((char *)value, &panSeqNumber[1], length * 2);
+		strncpy(eft->cardSequenceNumber, panSeqNumber/*card_out->pan_sn*/, sizeof(eft->cardSequenceNumber));
+		printf("Pan seq asc ; %s\n", eft->cardSequenceNumber);
+
+	}
 
 	{
 		char tag84[1] = {0x84};
@@ -1184,7 +1197,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
-	strncpy(eft->cardSequenceNumber, "000"/*card_out->pan_sn*/, sizeof(eft->cardSequenceNumber));
 
 	logHex(card_out->pan_sn, sizeof(card_out->pan_sn), "Pan sequence number");
 

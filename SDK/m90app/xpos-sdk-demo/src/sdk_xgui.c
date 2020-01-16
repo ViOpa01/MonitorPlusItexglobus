@@ -32,7 +32,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_CASHADVANCE, ""},
 	{MAIN_MENU_PAGE, UI_BALANCE, ""},
 
-	{MAIN_MENU_PAGE, "hostTest", ""},
+	{MAIN_MENU_PAGE, "Sales", ""},
 
 	{MAIN_MENU_PAGE, "My Plain", ""},
 	{MAIN_MENU_PAGE, "My Ssl", ""},
@@ -394,6 +394,10 @@ static int _menu_proc(char *pid)
 		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());
 		sprintf(msg + strlen(msg), "emv:%s\r\n", EMV_GetVersion());
 		gui_messagebox_show("Version", msg, "", "confirm", 0);
+	}
+	else if (strcmp(pid, "Sales") == 0)
+	{
+		upay_consum();
 	}
 	else if (strcmp(pid, "CodePay") == 0)
 	{

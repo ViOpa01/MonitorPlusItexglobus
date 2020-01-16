@@ -364,6 +364,7 @@ loop_card:
 	APP_TRACE("trackb:%s\r\n", card_out->track2);
 	APP_TRACE("trackc:%s\r\n", card_out->track3);
 	APP_TRACE("pan:%s\r\n", card_out->pan);
+	APP_TRACE("pan sequence:%s\r\n", card_out->pan_sn);
 	APP_TRACE("expdate:%s\r\n", card_out->exp_data);
 	APP_TRACE_BUFF_LOG(card_out->pin_block, sizeof(card_out->pin_block), "pin_block:");
 	APP_TRACE("vChName:%s\r\n", card_out->vChName);
