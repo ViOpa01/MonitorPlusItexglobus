@@ -1292,6 +1292,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	result = processPacketOnline(eft, &hostType, netParam);
 
+
+	//For testing purpose
+	autoReversal(eft);
+
 	printf("\nResult Before IccUpdate -> %d, Icc data len -> %d\n", result, hostType.iccDataBcdLen);
 
 	free(card_in);
