@@ -7,13 +7,16 @@
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
 #include "libapi_xpos/inc/libapi_util.h"
+#include "libapi_xpos/inc/libapi_system.h"
 #include "libapi_xpos/inc/libapi_security.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "network.h"
+#include "Receipt.h"
 #include "util.h"
 #include "EmvEft.h"
 #include "nibss.h"
 #include "log.h"
+#include "appInfo.h"
 #include "merchant.h"
 
 #include "sdk_security.h"
@@ -359,7 +362,16 @@ static enum TechMode cardTypeToTechMode(unsigned int cardType)
 
 void populateEchoData(char echoData[256])
 {
-	char de59[] = "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300";
+	// char de59[] = "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300";
+
+	char terminalSn[22] = {'\0'};
+	char de59[80] = {'\0'};
+	char dt[15] = {'\0'};
+
+	getTerminalSn(terminalSn);
+	Sys_GetDateTime(dt);
+
+	sprintf(de59, "%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
 	//TODO: populate echo data	
 	strncpy(echoData, de59, strlen(de59));
 }
@@ -673,6 +685,7 @@ void eftTrans(const enum TransType transType)
 	//TODO: @PIUS -> convert eft struct to sql query and save it on DB.
 	//e.g if saveEft(&eft) ..
 	//TODO: @PIUS -> print eft receipt from DB.
+	printEftReceipt(&eft);
 	
 }
 
@@ -1134,8 +1147,50 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 		panSeqNumber[0] = '0';
 		Util_Bcd2Asc((char *)value, &panSeqNumber[1], length * 2);
-		strncpy(eft->cardSequenceNumber, panSeqNumber/*card_out->pan_sn*/, sizeof(eft->cardSequenceNumber));
+		strncpy(eft->cardSequenceNumber, panSeqNumber, sizeof(eft->cardSequenceNumber));
 		printf("Pan seq asc ; %s\n", eft->cardSequenceNumber);
+
+	}
+
+	{
+		char tsi[4] = {'\0'};
+		int length = 0;
+		byte value[256];
+		EMV_GetKernelData("\x9B", &length, value);
+		logHex(value, length, "TSI");
+
+		
+		Util_Bcd2Asc((char *)value, tsi, length * 2);
+		strncpy(eft->tsi, tsi, sizeof(eft->tsi));
+		printf("TSI : %s\n", eft->tsi);
+
+	}
+
+	{
+		char tvr[6] = {'\0'};
+		int length = 0;
+		byte value[256];
+		EMV_GetKernelData("\x95", &length, value);
+		logHex(value, length, "TVR");
+
+		
+		Util_Bcd2Asc((char *)value, tvr, length * 2);
+		strncpy(eft->tvr, tvr, sizeof(eft->tvr));
+		printf("TVR : %s\n", eft->tvr);
+
+	}
+
+	{
+		char aid[18] = {'\0'};
+		int length = 0;
+		byte value[256];
+		EMV_GetKernelData("\x9F\x06", &length, value);
+		logHex(value, length, "AID");
+
+		
+		Util_Bcd2Asc((char *)value, aid, length * 2);
+		strncpy(eft->aid, aid, sizeof(eft->aid));
+		printf("AID : %s\n", eft->aid);
 
 	}
 

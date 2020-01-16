@@ -252,9 +252,8 @@ void macTest(void);
 
 int normalizeIccData(unsigned char *normalizedBcd, unsigned char *de55, const int de55Size, const IccDataT *iccDataDetails, const int detailsSize);
 
+#endif
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

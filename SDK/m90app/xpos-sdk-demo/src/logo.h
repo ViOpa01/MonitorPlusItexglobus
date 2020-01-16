@@ -1,7 +1,6 @@
 #ifndef LOGO__H
 #define LOGO__H
 
-#define LOGOIMG "logo.bmp"
 /*
 unsigned char Skye[]=
 {   
@@ -1691,7 +1690,7 @@ unsigned char Skye[]=
 */
 
 
-const char  Skye[] ={
+static  char  Skye[] ={
 	0X42, 0X4D, 0X1E, 0X11, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X3E, 0X00, 0X00, 0X00, 0X28, 0X00, 
 	0X00, 0X00, 0XB4, 0X00, 0X00, 0X00, 0XB4, 0X00, 0X00, 0X00, 0X01, 0X00, 0X01, 0X00, 0X00, 0X00, 
 	0X00, 0X00, 0XE0, 0X10, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 
@@ -1968,11 +1967,6 @@ const char  Skye[] ={
 	0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XF0, 0X00, 
 
 };
-
-#define DOTTEDLINE		"--------------------------------"
-
-#define DOUBLELINE		"================================"
-
 
 
 #endif

@@ -92,5 +92,57 @@ void logHex(unsigned char * data, const int size, const char * title)
     free(asc);
 }
 
+void getDate(char *buff)
+{
+	char d[32] = {0};
+	Sys_GetDateTime(d);
+	sprintf(buff, "%c%c%c%c-%c%c-%c%c", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+}
+
+void getTime(char *buff)
+{
+	char d[32] = {0};
+	Sys_GetDateTime(d);
+	sprintf(buff, "%c%c:%c%c:%c%c", d[8], d[9], d[10], d[11], d[12], d[13]);
+}
+
+void getDateAndTime(char *yyyymmddhhmmss)
+{
+    Sys_GetDateTime(yyyymmddhhmmss);
+    yyyymmddhhmmss[14] = '\0';
+}
+
+void MaskPan(char *pszInPan, char *pszOutPan)
+{
+	int  iPanLen, iCnt, index;
+	char  szBuffer[40], szTemp[50];
+
+	iPanLen = strlen((char *)pszInPan);
+	iCnt = index = 0;
+
+	memset(szTemp,0,sizeof(szTemp));
+	memset(szBuffer,0,sizeof(szBuffer));
+	while(iCnt < iPanLen)
+	{
+		if (iCnt<6 || iCnt+4>= iPanLen)
+		{
+			szBuffer[index] = pszInPan[iCnt];
+		}
+		else
+		{
+			szBuffer[index] = 'X';
+		}
+		iCnt++;
+		index++;
+	}
+	iCnt = index = 0;
+
+	if (pszOutPan != NULL)
+	{
+		sprintf((char *)pszOutPan,szBuffer);
+	}
+
+}
+
 
 

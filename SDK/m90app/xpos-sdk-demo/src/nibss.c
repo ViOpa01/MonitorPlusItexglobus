@@ -23,14 +23,11 @@
 #include "nibss.h"
 #include "network.h"
 #include "merchant.h"
+#include "Receipt.h"
 #include "itexFile.h"
 #include "util.h"
-#include "logo.h"
 #include "network.h"
 #include "appInfo.h"
-
-
-
 
 
 
@@ -43,7 +40,7 @@
 // Port : POSVAS -> 5003(ssl), 5004(plain)
 
 // defined here this temporarily 
-#define NIBSS_IS_SSL 1
+#define NIBSS_IS_SSL 1Skye
 #define NIBSS_HOST "197.253.19.75"
 #define NIBSS_PORT  5003
 
@@ -617,103 +614,6 @@ short uiCallHome(void)
     return 0;
 }
 
-static void creat_bmp()
-{
-	int ret = 0;
-	int fp;
-	ret = UFile_OpenCreate(LOGOIMG, FILE_PRIVATE, FILE_CREAT, &fp, 0);//File open / create
-	if( ret == UFILE_SUCCESS){
-		UFile_Write(fp, Skye, sizeof(Skye));
-		UFile_Close(fp);
-	}
-	else{
-		gui_messagebox_show( "PrintTest" , "File open or create fail" , "" , "confirm" , 0);
-	}
-}
-
-static void printLine(char * head, char* val)
-{
-	UPrint_SetFont(8, 2, 2);
-	UPrint_Str(head, 1, 0);
-	UPrint_Str(val, 1, 1);
-}
-
-static void printDottedLine()
-{
-    UPrint_SetFont(8, 2, 2);
-    UPrint_Str(DOTTEDLINE, 2, 1);
-}
-
-static void printHandshakeReceipt(MerchantData *mParam)
-{
-    int ret = 0; 
-	char dt[14] = {'\0'};
-	char filename[128] = {0};
-    char buff[64] = {'\0'};
-	
-    getDateTime(dt);
-    sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
-	creat_bmp();
-	// Prompt is printing
-	gui_begin_batch_paint();			
-	gui_clear_dc();
-	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
-	gui_end_batch_paint();
-
-    ret = UPrint_Init();
-
-	if (ret == UPRN_OUTOF_PAPER)
-	{
-		gui_messagebox_show( "Print" , "No paper" , "" , "confirm" , 0);
-	}
-
-	UPrint_SetFont(8, 2, 2);
-    UPrint_Str(mParam->address, 2, 1);
-
-    printLine("TID : ", mParam->tid);
-    printLine("DATE TIME   : ", buff);
-    printDottedLine();
-
-    
-    sprintf(filename, "xxxx\\%s", LOGOIMG);
-	UPrint_BitMap(filename, 1);//print image
-	// UPrint_Feed(20);
-
-    UPrint_SetFont(4, 2, 2);
-    UPrint_StrBold("************", 1, 4, 1);
-	UPrint_StrBold("SUCCESSFUL", 1, 4, 1);//Centered large font print title,empty 4 lines
-    UPrint_StrBold("************", 1, 4, 1);
-    printDottedLine();
-
-    sprintf(buff, "%s %s", APP_NAME, APP_VER);
-    UPrint_StrBold(buff, 1, 4, 1);
-    UPrint_StrBold("iisysgroup.com", 1, 4, 1);
-
-    UPrint_Feed(108);
-
-	ret = UPrint_Start();
-	if (ret == UPRN_SUCCESS)
-	{
-		gui_messagebox_show( "Print" , "Print Success" , "" , "confirm" , 0);
-	}
-	else if (ret == UPRN_OUTOF_PAPER)
-	{
-		gui_messagebox_show( "Print" , "No paper" , "" , "confirm" , 0);
-	}
-	else if (ret == UPRN_FILE_FAIL)
-	{
-		gui_messagebox_show( "Print" , "Open File Fail" , "" , "confirm" , 0);
-	}
-	else if (ret == UPRN_DEV_FAIL)
-	{
-		gui_messagebox_show( "Print" , "Printer device failure" , "" , "confirm" , 0);
-	}
-	else
-	{
-		gui_messagebox_show( "Print" , "Printer unknown fault" , "" , "confirm" , 0);
-	}
-}
-
 short uiHandshake(void)
 {
     NetworkManagement networkMangement;
@@ -827,6 +727,7 @@ short uiHandshake(void)
 
     Util_Beep(2);
     printHandshakeReceipt(&mParam);
+;
     return 0;
 }
 
