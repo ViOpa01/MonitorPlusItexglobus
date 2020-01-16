@@ -151,7 +151,7 @@ int saveMerchantDataXml(const char* merchantXml)
 
     } else {
         ret = saveMerchantData(&merchant);
-        gui_messagebox_show("VIOLATION", "This Terminal does not belong to Itex", "", "", 0);
+        gui_messagebox_show("VIOLATION", "The Terminal is not mapped", "", "", 0);
         return -1;
     }    
     

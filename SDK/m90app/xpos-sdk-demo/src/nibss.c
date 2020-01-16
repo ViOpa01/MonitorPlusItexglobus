@@ -27,6 +27,7 @@
 #include "util.h"
 #include "logo.h"
 #include "network.h"
+#include "appInfo.h"
 
 
 
@@ -61,8 +62,8 @@ static void addGenericNetworkFields(NetworkManagement *networkMangement)
 static void addCallHomeData(NetworkManagement *networkMangement)
 {
     //TODO: get the values at runtime, the hardcoded data will still work
-    strncpy(networkMangement->appVersion, "1.0.6", sizeof(networkMangement->appVersion));
-    strncpy(networkMangement->deviceModel, "H9", sizeof(networkMangement->deviceModel));
+    strncpy(networkMangement->appVersion, APP_VER, sizeof(networkMangement->appVersion));
+    strncpy(networkMangement->deviceModel, APP_MODEL, sizeof(networkMangement->deviceModel));
     strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Verifone\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
 }
@@ -185,8 +186,6 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
     printf("Master key response: \n%s\n", &netParam->response[2]);
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
-
-    printf("********\n");   // Log to know where issue is
 
     if (handleDe39(networkMangement->responseCode, networkMangement->responseDesc)) {
         return -3;
@@ -639,6 +638,12 @@ static void printLine(char * head, char* val)
 	UPrint_Str(val, 1, 1);
 }
 
+static void printDottedLine()
+{
+    UPrint_SetFont(8, 2, 2);
+    UPrint_Str(DOTTEDLINE, 2, 1);
+}
+
 static void printHandshakeReceipt(MerchantData *mParam)
 {
     int ret = 0; 
@@ -667,17 +672,22 @@ static void printHandshakeReceipt(MerchantData *mParam)
 
     printLine("TID : ", mParam->tid);
     printLine("DATE TIME   : ", buff);
-    UPrint_Str(DOTTEDLINE, 2, 1);
+    printDottedLine();
 
     
-   
     sprintf(filename, "xxxx\\%s", LOGOIMG);
 	UPrint_BitMap(filename, 1);//print image
 	// UPrint_Feed(20);
 
     UPrint_SetFont(4, 2, 2);
+    UPrint_StrBold("************", 1, 4, 1);
 	UPrint_StrBold("SUCCESSFUL", 1, 4, 1);//Centered large font print title,empty 4 lines
-    UPrint_Str(DOTTEDLINE, 2, 1);
+    UPrint_StrBold("************", 1, 4, 1);
+    printDottedLine();
+
+    sprintf(buff, "%s %s", APP_NAME, APP_VER);
+    UPrint_StrBold(buff, 1, 4, 1);
+    UPrint_StrBold("iisysgroup.com", 1, 4, 1);
 
     UPrint_Feed(108);
 
