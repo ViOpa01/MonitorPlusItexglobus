@@ -19,7 +19,7 @@ extern "C"
 
 
 #define CURRENT_PATFORM NET_POSVAS_SSL
-//#define CURRENT_PATFORM NET_EPMS_PLAIN
+// #define CURRENT_PATFORM NET_EPMS_PLAIN
 //
 
 short uiHandshake(void);
@@ -29,6 +29,9 @@ short uiCallHome(void);
 int getParameters(MerchantParameters * merchantParameters);
 int saveParameters(const MerchantParameters * merchantParameters);
 int getSessionKey(char sessionKey[33]);
+
+
+short isDevMode(const enum NetType netType);
 
 short handleDe39(char * responseCode, char * responseDesc);
 

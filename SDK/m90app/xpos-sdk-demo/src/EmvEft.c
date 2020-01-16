@@ -202,6 +202,17 @@ static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 }
 
 
+void bcdToAsc(char * asc, unsigned char * bcd, const int size)
+{
+	int i;
+	short pos;
+
+	for (i = 0; i < size; i++) {
+		pos += sprintf(&asc[pos], "%02X", bcd[i]);
+	}
+}
+
+
 int buildIccData(unsigned char * de55, const IccDataT * iccData, const int size)
 {
 	int i;
@@ -654,6 +665,8 @@ void eftTrans(const enum TransType transType)
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
 
 	strcpy(netParam.title, transTypeToTitle(transType));
+
+	netLink(&netParam);
 	performEft(&eft, &netParam, transTypeToTitle(transType));
 
 	//TODO: @PIUS -> convert eft struct to sql query and save it on DB.
@@ -744,7 +757,7 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 	}
 
 	printf("Response : %s\n", &netParam->response[2]);
-	if (result = getEftOnlineResponse(&hostType, eft, netParam->response, netParam->responseSize))
+	if (result = getEftOnlineResponse(hostType, eft, netParam->response, netParam->responseSize))
 	{
 		//Shouldn't happen
 		printf("Critical Error");
@@ -755,6 +768,8 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 		return -7;
 	}
 
+	printf("Icc Data Bcd Len7 -> %d\n",  hostType->iccDataBcdLen);
+
 	if (handleDe39(eft->responseCode, eft->responseDesc))
 	{
 		return 1;
@@ -763,22 +778,46 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 	return 0;
 }
 
+
+/*
+ ASCII2BCD(eft->responseCode, hostType->AuthResp, sizeof(hostType->AuthResp));
+    hostType->Info_Included_Data[0] |= INPUT_ONLINE_AC;
+
+    hostType->AuthorizationCodeLen = strlen(eft->authorizationCode) / 2;
+    ASCII2BCD(eft->authorizationCode, hostType->AuthorizationCode, hostType->AuthorizationCodeLen);
+    hostType->Info_Included_Data[0] |= INPUT_ONLINE_AUTHCODE;
+*/
+
 static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 {
 	int result = -1;
 	int onlineResult = -1;
-	unsigned char iccData[256];
-	int iccDataLen = hostType->iccDataBcdLen;
+	unsigned char iccDataBcd[256];
+    char iccData[511] = {'\0'};
+	short iccDataLen = hostType->iccDataBcdLen;
 
 	onlineResult = strncmp(eft->responseCode, "00", 2) ? -1 : 1;
-	memcpy(iccData, hostType->iccDataBcd, iccDataLen);
+	memcpy(iccDataBcd, hostType->iccDataBcd, iccDataLen);
 
-	
-	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AUTHCODE) {
-		memcpy(&iccData[iccDataLen], hostType->AuthorizationCode, hostType->AuthorizationCodeLen);
+	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AUTHCODE) 
+	{
+		printf("Lenght of auth code -> %d\n", hostType->AuthorizationCodeLen);
+		memcpy(&iccDataBcd[iccDataLen], hostType->AuthorizationCode, hostType->AuthorizationCodeLen);
 		iccDataLen += hostType->AuthorizationCodeLen;
+
+		logHex(hostType->AuthorizationCode, hostType->AuthorizationCodeLen, "Authorization Code");
 	}
-	
+
+	logHex(iccDataBcd, iccDataLen, "ICC DATA BCD");
+
+	iccDataLen *= 2; //Convert to asc len;
+	Util_Bcd2Asc(iccDataBcd, (char *) iccData, iccDataLen);
+
+	//bcdToAsc(iccData, iccDataBcd, iccDataLen);
+	 //Now asc
+
+	printf("Onine result -> %d\nIcc Data -> %s\nresponse code -> %s\n", onlineResult, iccData, eft->responseCode);
+
 	result = emv_online_resp_proc(onlineResult, eft->responseCode, iccData, iccDataLen);
 	
 	if (result != EMVAPI_RET_TC)
@@ -788,7 +827,6 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 
 	return result;
 }
-
 
 
 static void getPurchaseRequest(Eft * eft)
@@ -923,17 +961,6 @@ short getEmvTagValue(unsigned char * value, unsigned char *tag, const int tagSiz
 	}
 	
 	return length;
-}
-
-
-void bcdToAsc(char * asc, unsigned char * bcd, const int size)
-{
-	int i;
-	short pos;
-
-	for (i = 0; i < size; i++) {
-		pos += sprintf(&asc[pos], "%02X", bcd[i]);
-	}
 }
 
 short getEmvTagValueAsc(unsigned char *tag, const int tagSize, char * value)
@@ -1083,8 +1110,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return 0;
 	}
 
-	sec_encrypt_pin_proc(SEC_MKSK_FIELD, SEC_PIN_FORMAT0, 0, card_out->pan, pinblock, 0);
-	logHex(pinblock, 8, "2::Pin block");
 
 
 	//printf("\n=========================> 1\n");
@@ -1220,6 +1245,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	result = processPacketOnline(eft, &hostType, netParam);
 
+	printf("\nResult Before IccUpdate -> %d, Icc data len -> %d\n", result, hostType.iccDataBcdLen);
 
 	free(card_in);
 	free(card_out);
@@ -1237,6 +1263,17 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		}
 	}
 
+	printf("Result After IccUpdate -> %d\n", result);
+
+	short handleDe39(char * responseCode, char * responseDesc)
+{
+    if (strncmp(responseCode, "00", 2)) {
+        gui_messagebox_show(responseCode , responseDesc, "" , "" , 0);   
+      return -1;
+    }
+
+    return 0;
+}
 	//TODO: save transactions
 	//TODO: print eft receipt
 

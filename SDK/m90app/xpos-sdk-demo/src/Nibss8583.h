@@ -39,7 +39,7 @@ typedef struct HostType
     unsigned char *ScriptCritData[512];
     unsigned short LenScriptUnCrit;
     unsigned char ScriptUnCritData[512];
-    unsigned char AuthorizationCode[6];
+    unsigned char AuthorizationCode[8];
     int AuthorizationCodeLen;
     char Result_referral;
     char AuthResp_Referral[2];
