@@ -32,7 +32,7 @@ typedef struct IccDataT
 typedef struct HostType
 {
     char OnlineResult;
-    unsigned char AuthResp[2];
+    unsigned char AuthResp[3];
     unsigned char LenAuth;
     unsigned char AuthData[512];
     unsigned short LenScriptCrit;

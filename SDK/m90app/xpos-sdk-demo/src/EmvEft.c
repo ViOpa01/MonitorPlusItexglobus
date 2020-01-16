@@ -757,7 +757,6 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 		return handleFailedComms(eft, commsStatus);
 	}
 
-	printf("Response : %s\n", &netParam->response[2]);
 	if (result = getEftOnlineResponse(hostType, eft, netParam->response, netParam->responseSize))
 	{
 		//Shouldn't happen
@@ -767,13 +766,6 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 			sprintf(eft->message, "%s", "Manual Reversal Adviced(2)");
 		}
 		return -7;
-	}
-
-	printf("Icc Data Bcd Len7 -> %d\n",  hostType->iccDataBcdLen);
-
-	if (handleDe39(eft->responseCode, eft->responseDesc))
-	{
-		return 1;
 	}
 
 	return 0;
@@ -797,19 +789,16 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
     char iccData[511] = {'\0'};
 	short iccDataLen = hostType->iccDataBcdLen;
 
-	onlineResult = strncmp(eft->responseCode, "00", 2) ? -1 : 1;
+	onlineResult = strncmp(eft->responseCode, "00", 2) ? -1 : 0;
 	memcpy(iccDataBcd, hostType->iccDataBcd, iccDataLen);
 
-	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AUTHCODE) 
+	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AC) 
 	{
-		printf("Lenght of auth code -> %d\n", hostType->AuthorizationCodeLen);
-		memcpy(&iccDataBcd[iccDataLen], hostType->AuthorizationCode, hostType->AuthorizationCodeLen);
-		iccDataLen += hostType->AuthorizationCodeLen;
-
-		logHex(hostType->AuthorizationCode, hostType->AuthorizationCodeLen, "Authorization Code");
+		memcpy(&iccDataBcd[iccDataLen], hostType->AuthResp, sizeof(hostType->AuthResp));
+		iccDataLen += sizeof(hostType->AuthResp);
 	}
 
-	logHex(iccDataBcd, iccDataLen, "ICC DATA BCD");
+	logHex(iccDataBcd, iccDataLen, "ICC DATA");
 
 	iccDataLen *= 2; //Convert to asc len;
 	Util_Bcd2Asc(iccDataBcd, (char *) iccData, iccDataLen);
@@ -989,6 +978,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	struct HostType hostType;
 	unsigned char packedIcc[256] = {'\0'};
 	char pinblock[32] = {'\0'};
+	char display[65] = {'\0'};
 
 	st_read_card_in *card_in = 0;
 	st_read_card_out *card_out = 0;
@@ -1079,8 +1069,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//	return ret;
 	//}
 
-	printf("\nCard sequence no : %s\n", card_out->pan_sn);
-
 	if (EMVAPI_RET_ARQC == ret)
 	{
 		//gui_messagebox_show("", "Online Request", "", "ok", 0);
@@ -1111,10 +1099,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return 0;
 	}
 
-
-
-	//printf("\n=========================> 1\n");
-
 	if ((eft->techMode = cardTypeToTechMode(card_out->card_type)) == UNKNOWN_MODE)
 	{ //will never happen
 		free(card_in);
@@ -1122,8 +1106,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 		return -2;
 	}
-
-	//printf("=========================> 2\n");
 
 	{
 		char panSeqNumber[4] = {'\0'};
@@ -1197,9 +1179,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
-
-	logHex(card_out->pan_sn, sizeof(card_out->pan_sn), "Pan sequence number");
-
 	getServiceCodeFromTrack2(eft->serviceRestrictionCode, card_out->track2);
 
 	/*
@@ -1278,17 +1257,14 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	printf("Result After IccUpdate -> %d\n", result);
 
-	short handleDe39(char * responseCode, char * responseDesc)
-{
-    if (strncmp(responseCode, "00", 2)) {
-        gui_messagebox_show(responseCode , responseDesc, "" , "" , 0);   
-      return -1;
-    }
-
-    return 0;
-}
 	//TODO: save transactions
-	//TODO: print eft receipt
+	//TODO: print eft receipt(customer copy)
+
+	sprintf(display, "%s\n%s", eft->responseDesc, "Print Merchant Copy?");
+	if (gui_messagebox_show(transTypeToTitle(eft->transType), display, "No" , "Yes" , 0) == 1) {
+		//TODO: print eft receipt(Merchant copy)
+	}
+
 
 	return result;
 }
