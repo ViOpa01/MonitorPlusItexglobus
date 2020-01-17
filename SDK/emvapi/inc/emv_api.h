@@ -1,5 +1,19 @@
 #pragma once
 #include "pub/pub.h"
+//reference to emv_interface.h
+#define MODE_API_UNKNOW			0x00
+#define	MODE_API_PBOC			0x01
+#define MODE_API_VCPS			0x02
+#define MODE_API_QPBOC			MODE_API_VCPS
+#define MODE_API_MSD			0x04
+#define MODE_API_PBOC_EC		0x10		
+#define	MODE_API_RF				0x20	
+#define	MODE_API_DPAS			0x30		
+#define	MODE_API_AMEX			0x40		
+#define MODE_API_M_CHIP			0x21	//MasterCard CHIP mode
+#define MODE_API_M_STRIPE		0x22	//MasterCard MagStripe mode
+#define MODE_API_R_LEGACY		0x23	//RUPAY LEGACY mode
+#define MODE_API_R_NON_LEGACY	0x24	//RUPAY NON LEGACY mode
 
 enum{
 	READ_CARD_RET_CANCEL,  
@@ -20,6 +34,7 @@ typedef struct __st_read_card_in{
 	char title[32];
 	int trans_type;
 	char amt[32];
+	char other_amt[32];
 	int card_mode;
 	int card_timeover;
 	int pin_input;
@@ -54,9 +69,10 @@ typedef struct __st_read_card_out{
 	char track3[TRACK_MAX_LENTH];
 	int track3_len;
 	char vChName[45 +1];
+	int nEmvMode;
 }st_read_card_out;
 
-#define EMVAPI_VER				"EMVAPI_2019-12-19_RSJ"	
+#define EMVAPI_VER				"EMVAPI_2020-01-10_XP"	
 //Transaction Result Code
 #define EMVAPI_RET_TC	 0	 //TC Approval
 #define EMVAPI_RET_ARQC	 1	 //Request Online
@@ -88,7 +104,7 @@ LIB_EXPORT int emv_read_card(st_read_card_in *card_in, st_read_card_out *card_ou
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:ruansj
 Functions:Process of emv online resp proc
-Input : nOnlineRes : 0--online success  -1--online fail 
+Input : nOnlineRes : 0--online success  -1--online fail  -2--Not online
 		sResp39: Online Response Code
 		sField55: contain 91/8A/71/72 Tag Data
 		nFieldLen : sField55 Length
@@ -98,6 +114,15 @@ return:
 		EMVAPI_RET_AAR	 -2	 //Terminate
 *************************************************************************************/
 LIB_EXPORT int emv_online_resp_proc(int nOnlineRes,char *sResp39,char *sField55,int nFieldLen);
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:wuxp
+Functions:Free EMV global buffer
+Input : Nothing
+return: Nothing
+*************************************************************************************/
+LIB_EXPORT void EMV_online_cardemv_free(void);
 
 LIB_EXPORT int emv_card_begin(st_read_card_in *card_in);
 LIB_EXPORT int emv_card_loop( int card_mode );
