@@ -240,7 +240,9 @@ typedef struct NetworkManagement
 } NetworkManagement;
 
 unsigned int transTypeToCode(const enum TransType transType);
-char *transTypeToTitle(const enum TransType transType);
+const char * transTypeToTitle(const enum TransType transType);
+const char * transTypeToMti(const enum TransType transType);
+unsigned int accountTypeToCode(const enum AccountType type);
 
 int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
 int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);

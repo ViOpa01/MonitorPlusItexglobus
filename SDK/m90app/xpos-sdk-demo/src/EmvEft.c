@@ -50,18 +50,18 @@ static IccDataT nibssIccData[] = {
 	{0x9F10, 1},
 	{0x9F37, 1},
 	{0x9F36, 1},
-	{0x95,   1},
-	{0x9A,   1},
-	{0x9C,   1},
+	{0x95, 1},
+	{0x9A, 1},
+	{0x9C, 1},
 	{0x9F02, 1},
 	{0x5F2A, 1},
-	{0x82,   1},
+	{0x82, 1},
 	{0x9F1A, 1},
 	{0x9F34, 1},
 	{0x9F33, 1},
 	{0x9F35, 1},
 	{0x9F1E, 0},
-	{0x84,   1},
+	{0x84, 1},
 	{0x9F09, 1},
 	{0x9F06, 0},
 	{0x9F03, 1},
@@ -204,45 +204,47 @@ static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 	}
 }
 
-
-void bcdToAsc(char * asc, unsigned char * bcd, const int size)
+void bcdToAsc(char *asc, unsigned char *bcd, const int size)
 {
 	int i;
 	short pos;
 
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size; i++)
+	{
 		pos += sprintf(&asc[pos], "%02X", bcd[i]);
 	}
 }
 
-
-int buildIccData(unsigned char * de55, const IccDataT * iccData, const int size)
+int buildIccData(unsigned char *de55, const IccDataT *iccData, const int size)
 {
 	int i;
 	int pos = 0;
 	int status;
-	
-	for (i = 0; i < size; i++) {
+
+	for (i = 0; i < size; i++)
+	{
 		unsigned char tlv[256];
-        unsigned char value[256];
+		unsigned char value[256];
 		char asc[256] = {'\0'};
 		unsigned char tagNameBcd[4];
 		unsigned char tlvAscBuf[512] = {'\0'};
 		int length = 0;
 		int tlvLen = 0;
 		int tagLen = 0;
-		
-		if (iccData[i].present == 0 || iccData[i].present == NULL || iccData[i].tag == NULL) continue;
-		
+
+		if (iccData[i].present == 0 || iccData[i].present == NULL || iccData[i].tag == NULL)
+			continue;
+
 		sprintf(asc, "%X", iccData[i].tag);
-		
+
 		tagLen = strlen(asc);
 		Util_Asc2Bcd(asc, tagNameBcd, length);
 		tagLen /= 2;
-		
-		status = EMV_GetKernelData (asc, &length, value);
-		
-		if (status) {
+
+		status = EMV_GetKernelData(asc, &length, value);
+
+		if (status)
+		{
 			fprintf(stderr, "%s: tag %X -> %s", __FUNCTION__, iccData[i].tag, status == UEMV_PRM_NOT_FOUND ? "UEMV_PRM_NOT_FOUND" : "UEMV_PRM_FAIL");
 			continue;
 		}
@@ -257,8 +259,6 @@ int buildIccData(unsigned char * de55, const IccDataT * iccData, const int size)
 
 		printf("Tag -> %s, Value -> %s\n", asc, tlvAscBuf);
 
-
-
 		/*
 		if (status = EMV_PackTLVData(tagNameBcd, value, length, tlv, &tlvLen)) {
 			fprintf(stderr, "%s: tag %X -> %s, return : %d ", __FUNCTION__, iccData[i].tag, "ERROR BUILDING TLV", status);
@@ -271,9 +271,8 @@ int buildIccData(unsigned char * de55, const IccDataT * iccData, const int size)
 		memcpy(&de55[pos], tlv, tlvLen);
 		pos += tlvLen;
 		*/
-		
 	}
-	
+
 	return pos;
 }
 
@@ -372,7 +371,7 @@ void populateEchoData(char echoData[256])
 	Sys_GetDateTime(dt);
 
 	sprintf(de59, "%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
-	//TODO: populate echo data	
+	//TODO: populate echo data
 	strncpy(echoData, de59, strlen(de59));
 }
 
@@ -384,20 +383,46 @@ static void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParam
 	strncpy(eft->currencyCode, merchantParameters->currencyCode, sizeof(eft->currencyCode));
 }
 
-static short autoReversal(Eft *eft)
+static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 {
 	int result = -1;
 	unsigned char response[2048];
+	unsigned char packet[2048];
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 	const int maxTry = 3;
 	int i;
 	struct HostType hostType;
 
+	//copy original MTI first before setting transaction type to reversal.
+	strncpy(eft->originalMti, transTypeToMti(eft->transType), sizeof(eft->originalMti));
+	
+	//copy original date time first before setting the current date time.
+	strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
+	Sys_GetDateTime(eft->yyyymmddhhmmss);
+
+	/*
+    strncpy(eft.forwardingInstitutionIdCode, "557694", sizeof(eft.forwardingInstitutionIdCode));
+    //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
+	*/
+
+	eft->transType = EFT_REVERSAL;
+	eft->reversalReason = TIMEOUT_WAITING_FOR_RESPONSE;
+
+	//Here..
+	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
+	{
+		fprintf(stderr, "Error creating reversal packet...\n");
+		return -3;
+	}
+
+	netParam->packetSize = result;
+	memcpy(netParam->packet, packet, netParam->packetSize);
+	sprintf(&netParam->packet[netParam->packetSize], "\r\n");
+	netParam->packetSize += 2;
+
 	for (i = 0; i < maxTry; i++)
 	{
-		//TODO: Send packet to host, return commsStatus
-		if (commsStatus == SEND_RECEIVE_SUCCESSFUL)
-			break;
+			if (sendAndRecvPacket(netParam) == SEND_RECEIVE_SUCCESSFUL) break;
 	}
 
 	if (i == maxTry)
@@ -405,14 +430,15 @@ static short autoReversal(Eft *eft)
 
 	//TODO: populate respose
 
-	if (result = getEftOnlineResponse(&hostType, eft, response, sizeof(response)))
+	if (result = getEftOnlineResponse(&hostType, eft, netParam->response, netParam->responseSize))
 	{
 		return -2;
 	}
 
-	if (handleDe39(eft->responseCode, eft->responseDesc)) {
-        return -3;
-    }
+	if (handleDe39(eft->responseCode, eft->responseDesc))
+	{
+		return -3;
+	}
 
 	//no need to handle hostType for reversal, not sure.
 
@@ -433,39 +459,37 @@ static enum AccountType getAccountType(void)
 		"Default",
 		"Credit",
 		"Universal",
-		"Investment"
-	};
+		"Investment"};
 
 	readMerchantData(&mParam);
-	if(mParam.account_selection != 1)
+	if (mParam.account_selection != 1)
 		return DEFAULT_ACCOUNT;
 
-	switch (option = gui_select_page_ex("Select Account Type" , account_type_list, 6, 10000, 0))	// if exit : -1, timout : -2
+	switch (option = gui_select_page_ex("Select Account Type", account_type_list, 6, 10000, 0)) // if exit : -1, timout : -2
 	{
-		case -1:
-		case -2:
-			return ACCOUNT_END;
-		case 0:
+	case -1:
+	case -2:
+		return ACCOUNT_END;
+	case 0:
 		// return 0x10;
-			return SAVINGS_ACCOUNT;
-		case 1:
+		return SAVINGS_ACCOUNT;
+	case 1:
 		// return 0x20;
-			return CURRENT_ACCOUNT;
-		case 2:
+		return CURRENT_ACCOUNT;
+	case 2:
 		// return 0x00;
-			return DEFAULT_ACCOUNT;
-		case 3:
+		return DEFAULT_ACCOUNT;
+	case 3:
 		// return 0x30;
-			return CREDIT_ACCOUNT;
-		case 4:
+		return CREDIT_ACCOUNT;
+	case 4:
 		// return 0x40;
-			return UNIVERSAL_ACCOUNT;
-		case 5:
+		return UNIVERSAL_ACCOUNT;
+	case 5:
 		// return 0x50;
-			return INVESTMENT_ACCOUNT;
-		default:
-			return DEFAULT_ACCOUNT;
-
+		return INVESTMENT_ACCOUNT;
+	default:
+		return DEFAULT_ACCOUNT;
 	}
 
 	return DEFAULT_ACCOUNT; //I need to be removed.
@@ -497,14 +521,14 @@ static short uiGetRrn(char rrn[13])
 {
 	//TODO: Get rrn from user for reversal, or refund, or completion.
 	int result;
-	
+
 	// Timeout : -3
 	// Cancel  : -2
 	// Fail    : -1
 	// success  : no of byte(character) entered
 
 	gui_clear_dc();
-	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
+	if ((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
 	{
 		printf("rrn input failed ret : %d\n", result);
 		printf("rrn %s\n", rrn);
@@ -543,7 +567,6 @@ static short getReversalReason(Eft *eft)
 	//TODO: Let the user select reversal reason from the list of option, then
 	//set reversal reason respectively e.g
 
-
 	int option = -1;
 	char *reversal_option_list[] = {
 		"Response timeout",
@@ -556,63 +579,60 @@ static short getReversalReason(Eft *eft)
 		"Overfloor limit",
 		"Negative Card",
 		"Unspecified",
-		"Completed partially"
-	};
+		"Completed partially"};
 
-	switch (option = gui_select_page_ex("Reversal Reason" , reversal_option_list, 11, 10000, 0))	// if exit : -1, timout : -2
+	switch (option = gui_select_page_ex("Reversal Reason", reversal_option_list, 11, 10000, 0)) // if exit : -1, timout : -2
 	{
 		printf("\nReversal reason\n");
-		case -1:
-		case -2:
-			return -1;
-		case 0:
-			eft->reversalReason =  TIMEOUT_WAITING_FOR_RESPONSE;
-			return 0;	
-		case 1:
-			eft->reversalReason =  CUSTOMER_CANCELLATION;
-			return 0;
-		case 2:
-			eft->reversalReason =  CHANGE_DISPENSED;
-			return 0;
-		case 3:
-			eft->reversalReason =  CARD_ISSUER_UNAVAILABLE;
-			return 0;
-		case 4:
-			eft->reversalReason =  UNDER_FLOOR_LIMIT;
-			return 0;
-		case 5:
-			eft->reversalReason =  PIN_VERIFICATION_FAILURE;
-			return 0;
-		case 6:
-			eft->reversalReason =  IOU_RECEIPT_PRINTED;
-			return 0;
-		case 7:
-			eft->reversalReason =  OVER_FLOOR_LIMIT;
-			return 0;
-		case 8:
-			eft->reversalReason =  NEGATIVE_CARD;
-			return 0;
-		case 9:
-			eft->reversalReason =  UNSPECIFIED_NO_ACTION_TAKEN;
-			return 0;
-		case 10:
-			eft->reversalReason =  COMPLETED_PARTIALLY;
-			return 0;
-		default:
-			return -1;
-
+	case -1:
+	case -2:
+		return -1;
+	case 0:
+		eft->reversalReason = TIMEOUT_WAITING_FOR_RESPONSE;
+		return 0;
+	case 1:
+		eft->reversalReason = CUSTOMER_CANCELLATION;
+		return 0;
+	case 2:
+		eft->reversalReason = CHANGE_DISPENSED;
+		return 0;
+	case 3:
+		eft->reversalReason = CARD_ISSUER_UNAVAILABLE;
+		return 0;
+	case 4:
+		eft->reversalReason = UNDER_FLOOR_LIMIT;
+		return 0;
+	case 5:
+		eft->reversalReason = PIN_VERIFICATION_FAILURE;
+		return 0;
+	case 6:
+		eft->reversalReason = IOU_RECEIPT_PRINTED;
+		return 0;
+	case 7:
+		eft->reversalReason = OVER_FLOOR_LIMIT;
+		return 0;
+	case 8:
+		eft->reversalReason = NEGATIVE_CARD;
+		return 0;
+	case 9:
+		eft->reversalReason = UNSPECIFIED_NO_ACTION_TAKEN;
+		return 0;
+	case 10:
+		eft->reversalReason = COMPLETED_PARTIALLY;
+		return 0;
+	default:
+		return -1;
 	};
-	
+
 	return -1;
 }
 
-static void logNetworkParameters(NetWorkParameters * netWorkParameters)
+static void logNetworkParameters(NetWorkParameters *netWorkParameters)
 {
 	puts("\n\nEft.......\n");
-    LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
-    LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
-    LOG_PRINTF("NetLink Timeout -> %d, Recv Timeout -> %d, title -> %s", netWorkParameters->netLinkTimeout,  netWorkParameters->receiveTimeout, netWorkParameters->title);
-
+	LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
+	LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
+	LOG_PRINTF("NetLink Timeout -> %d, Recv Timeout -> %d, title -> %s", netWorkParameters->netLinkTimeout, netWorkParameters->receiveTimeout, netWorkParameters->title);
 }
 
 void eftTrans(const enum TransType transType)
@@ -647,12 +667,10 @@ void eftTrans(const enum TransType transType)
 		return;
 	}
 
-
 	getNetParams(&netParam, CURRENT_PATFORM, 0);
 
-	
 	//TODO: get tid, eft.terminalId
-	if(mParam.tid[0])
+	if (mParam.tid[0])
 	{
 		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
 	}
@@ -686,7 +704,6 @@ void eftTrans(const enum TransType transType)
 	//e.g if saveEft(&eft) ..
 	//TODO: @PIUS -> print eft receipt from DB.
 	printEftReceipt(&eft);
-	
 }
 
 static short amountRequired(const Eft *eft)
@@ -725,7 +742,7 @@ static long long getAmount(Eft *eft, const char *title)
 	return amount;
 }
 
-short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus)
+short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus, NetWorkParameters *netParam)
 {
 	switch (commsStatus)
 	{
@@ -738,7 +755,7 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus)
 		return -2;
 
 	case RECEIVING_FAILED:
-		sprintf(eft->message, "%s", autoReversal(eft) ? "Manual Reversal Adviced(1)" : "Trans Reversed");
+		sprintf(eft->message, "%s", autoReversal(eft, netParam) ? "Manual Reversal Adviced(1)" : "Trans Reversed");
 		return -3;
 
 	default:
@@ -746,7 +763,6 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus)
 		return -4;
 	}
 }
-
 
 /**
  * Function: processPacketOnline
@@ -767,14 +783,14 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 
 	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
 	{
-		return handleFailedComms(eft, commsStatus);
+		return handleFailedComms(eft, commsStatus, netParam);
 	}
 
 	if (result = getEftOnlineResponse(hostType, eft, netParam->response, netParam->responseSize))
 	{
 		//Shouldn't happen
 		printf("Critical Error");
-		if (autoReversal(eft))
+		if (autoReversal(eft, netParam))
 		{
 			sprintf(eft->message, "%s", "Manual Reversal Adviced(2)");
 		}
@@ -783,7 +799,6 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 
 	return 0;
 }
-
 
 /*
  ASCII2BCD(eft->responseCode, hostType->AuthResp, sizeof(hostType->AuthResp));
@@ -799,13 +814,13 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	int result = -1;
 	int onlineResult = -1;
 	unsigned char iccDataBcd[256];
-    char iccData[511] = {'\0'};
+	char iccData[511] = {'\0'};
 	short iccDataLen = hostType->iccDataBcdLen;
 
 	onlineResult = strncmp(eft->responseCode, "00", 2) ? -1 : 0;
 	memcpy(iccDataBcd, hostType->iccDataBcd, iccDataLen);
 
-	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AC) 
+	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AC)
 	{
 		memcpy(&iccDataBcd[iccDataLen], hostType->AuthResp, sizeof(hostType->AuthResp));
 		iccDataLen += sizeof(hostType->AuthResp);
@@ -814,15 +829,15 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	logHex(iccDataBcd, iccDataLen, "ICC DATA");
 
 	iccDataLen *= 2; //Convert to asc len;
-	Util_Bcd2Asc(iccDataBcd, (char *) iccData, iccDataLen);
+	Util_Bcd2Asc(iccDataBcd, (char *)iccData, iccDataLen);
 
 	//bcdToAsc(iccData, iccDataBcd, iccDataLen);
-	 //Now asc
+	//Now asc
 
 	printf("Onine result -> %d\nIcc Data -> %s\nresponse code -> %s\n", onlineResult, iccData, eft->responseCode);
 
 	result = emv_online_resp_proc(onlineResult, eft->responseCode, iccData, iccDataLen);
-	
+
 	if (result != EMVAPI_RET_TC)
 	{
 		return result;
@@ -831,59 +846,61 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	return result;
 }
 
-
-static void getPurchaseRequest(Eft * eft)
+static void getPurchaseRequest(Eft *eft)
 {
-    //const char *expectedPacket = "0200F23C46D129E09220000000000000002116539983471913195500000000000000010012201232310000071232311220210856210510010004D0000000006539983345399834719131955D210822100116217990000317377942212070HE88FBP205600444741ONYESCOM VENTURES LTD  KD           LANG566AD456A8EAC9DA12E2809F2608CBAFAFBDB481085F9F2701809F10120110A040002A0000000000000000000000FF9F3704983160FC9F360200F0950500002488009A031912209C01009F02060000000001005F2A020566820239009F1A0205669F34034203009F3303E0F8C89F3501229F1E0834363233313233368407A00000000410109F090200029F03060000000000005F340101074V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300015510101511344101BE97C61158EDB7955608F7238DBFD07DA74483E720F5B172F36FDC35DF68CC55";
-    //unsigned char actualPacket[1024];
-    //int result = 0;
-char iccData[] = "9F2608D2A889A502332C919F2701809F10120110A74003020000000000000000000000FF9F3704AF3C74E79F360201D5950500000088009A032001139C01009F02060000000001005F2A020566820239009F1A0205669F34034403029F3303E0F8C89F3501229F1E0834363138343632378407A00000000410109F090200029F03060000000000005F340101";
-    memset(eft, 0x00, sizeof(Eft));
+	//const char *expectedPacket = "0200F23C46D129E09220000000000000002116539983471913195500000000000000010012201232310000071232311220210856210510010004D0000000006539983345399834719131955D210822100116217990000317377942212070HE88FBP205600444741ONYESCOM VENTURES LTD  KD           LANG566AD456A8EAC9DA12E2809F2608CBAFAFBDB481085F9F2701809F10120110A040002A0000000000000000000000FF9F3704983160FC9F360200F0950500002488009A031912209C01009F02060000000001005F2A020566820239009F1A0205669F34034203009F3303E0F8C89F3501229F1E0834363233313233368407A00000000410109F090200029F03060000000000005F340101074V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300015510101511344101BE97C61158EDB7955608F7238DBFD07DA74483E720F5B172F36FDC35DF68CC55";
+	//unsigned char actualPacket[1024];
+	//int result = 0;
+	char iccData[] = "9F2608D2A889A502332C919F2701809F10120110A74003020000000000000000000000FF9F3704AF3C74E79F360201D5950500000088009A032001139C01009F02060000000001005F2A020566820239009F1A0205669F34034403029F3303E0F8C89F3501229F1E0834363138343632378407A00000000410109F090200029F03060000000000005F340101";
+	memset(eft, 0x00, sizeof(Eft));
 
-    eft->transType = EFT_PURCHASE;
-    eft->techMode = CHIP_MODE;
-    eft->fromAccount = SAVINGS_ACCOUNT;
-    eft->toAccount = DEFAULT_ACCOUNT;
-    eft->isFallback = 0;
+	eft->transType = EFT_PURCHASE;
+	eft->techMode = CHIP_MODE;
+	eft->fromAccount = SAVINGS_ACCOUNT;
+	eft->toAccount = DEFAULT_ACCOUNT;
+	eft->isFallback = 0;
 
-    strncpy(eft->sessionKey, "70BC974F2F01C837EA08E937E57AA791", sizeof(eft->sessionKey));
+	strncpy(eft->sessionKey, "70BC974F2F01C837EA08E937E57AA791", sizeof(eft->sessionKey));
 
-    strncpy(eft->pan, "5399834500133103", sizeof(eft->pan));
-    strncpy(eft->amount, "000000000100", sizeof(eft->amount));
-    strncpy(eft->yyyymmddhhmmss, "20200113094122", sizeof(eft->yyyymmddhhmmss));
-    strncpy(eft->stan, "000168", sizeof(eft->stan));
-    strncpy(eft->expiryDate, "2207", sizeof(eft->expiryDate));
-    strncpy(eft->merchantType, "5300", sizeof(eft->merchantType));
-    strncpy(eft->cardSequenceNumber, "001", sizeof(eft->cardSequenceNumber));
-    strncpy(eft->posConditionCode, "00", sizeof(eft->posConditionCode));
-    strncpy(eft->posPinCaptureCode, "04", sizeof(eft->posPinCaptureCode));
-    strncpy(eft->track2Data, "5399834500133103D22072210018092200", sizeof(eft->track2Data));
-    strncpy(eft->rrn, "000031943108", sizeof(eft->rrn));
-    strncpy(eft->serviceRestrictionCode, "221", sizeof(eft->serviceRestrictionCode));
-    strncpy(eft->terminalId, "2214KCE2", sizeof(eft->terminalId));
-    strncpy(eft->merchantId, "2214LA391425013", sizeof(eft->merchantId));
-    strncpy(eft->merchantName, "DARAMOLA MICHAEL ADE   LA           LANG", sizeof(eft->merchantName));
-    strncpy(eft->currencyCode, "566", sizeof(eft->currencyCode));
+	strncpy(eft->pan, "5399834500133103", sizeof(eft->pan));
+	strncpy(eft->amount, "000000000100", sizeof(eft->amount));
+	strncpy(eft->yyyymmddhhmmss, "20200113094122", sizeof(eft->yyyymmddhhmmss));
+	strncpy(eft->stan, "000168", sizeof(eft->stan));
+	strncpy(eft->expiryDate, "2207", sizeof(eft->expiryDate));
+	strncpy(eft->merchantType, "5300", sizeof(eft->merchantType));
+	strncpy(eft->cardSequenceNumber, "001", sizeof(eft->cardSequenceNumber));
+	strncpy(eft->posConditionCode, "00", sizeof(eft->posConditionCode));
+	strncpy(eft->posPinCaptureCode, "04", sizeof(eft->posPinCaptureCode));
+	strncpy(eft->track2Data, "5399834500133103D22072210018092200", sizeof(eft->track2Data));
+	strncpy(eft->rrn, "000031943108", sizeof(eft->rrn));
+	strncpy(eft->serviceRestrictionCode, "221", sizeof(eft->serviceRestrictionCode));
+	strncpy(eft->terminalId, "2214KCE2", sizeof(eft->terminalId));
+	strncpy(eft->merchantId, "2214LA391425013", sizeof(eft->merchantId));
+	strncpy(eft->merchantName, "DARAMOLA MICHAEL ADE   LA           LANG", sizeof(eft->merchantName));
+	strncpy(eft->currencyCode, "566", sizeof(eft->currencyCode));
 
-    strncpy(eft->iccData, iccData, sizeof(eft->iccData));
-    strncpy(eft->echoData, "V240m-2G~346-184-627~1.0.6(Thu-Dec-19-11:14:55-2019-)~release-30812300", sizeof(eft->echoData));
+	strncpy(eft->iccData, iccData, sizeof(eft->iccData));
+	strncpy(eft->echoData, "V240m-2G~346-184-627~1.0.6(Thu-Dec-19-11:14:55-2019-)~release-30812300", sizeof(eft->echoData));
 }
-
 
 static int asc2bcd(char asc)
 {
-	if(asc >='0' && asc <= '9') return asc - '0';
-	if(asc >='A' && asc <= 'F') return asc - 'A' + 10;
-	if(asc >='a' && asc <= 'f') return asc - 'a' + 10;
+	if (asc >= '0' && asc <= '9')
+		return asc - '0';
+	if (asc >= 'A' && asc <= 'F')
+		return asc - 'A' + 10;
+	if (asc >= 'a' && asc <= 'f')
+		return asc - 'a' + 10;
 
 	return 0;
 }
 
-static void str2bcd(char * str, char * bcd, int size)
+static void str2bcd(char *str, char *bcd, int size)
 {
 	int i;
-	for(i = 0; i < size / 2; i++){
-		bcd[i] = (asc2bcd(str[2 * i ]) <<4) + ( asc2bcd(str[ 2 * i +1]) & 0x0F);
+	for (i = 0; i < size / 2; i++)
+	{
+		bcd[i] = (asc2bcd(str[2 * i]) << 4) + (asc2bcd(str[2 * i + 1]) & 0x0F);
 	}
 }
 
@@ -928,15 +945,17 @@ short getEmvTlvByTag(unsigned char *tag, const int tagSize, unsigned char *tlv)
 	return bytes;
 }
 
-
-short getServiceCodeFromTrack2(char * serviceCode, const char * track2)
+short getServiceCodeFromTrack2(char *serviceCode, const char *track2)
 {
 	const int len = strlen(track2);
 	int i;
 
-	for (i = 0; i < len; i++) {
-		if (track2[i] == '=' || track2[i] == 'D') {
-			if (strlen(&track2[i]) < 7) {
+	for (i = 0; i < len; i++)
+	{
+		if (track2[i] == '=' || track2[i] == 'D')
+		{
+			if (strlen(&track2[i]) < 7)
+			{
 				fprintf(stderr, "No service code present\n");
 				return -1;
 			}
@@ -949,24 +968,23 @@ short getServiceCodeFromTrack2(char * serviceCode, const char * track2)
 	return -2;
 }
 
-
-short getEmvTagValue(unsigned char * value, unsigned char *tag, const int tagSize)
+short getEmvTagValue(unsigned char *value, unsigned char *tag, const int tagSize)
 {
 	int length = 0;
 
 	unsigned char tagName[] = {0x9F, 0x30};
 	length = sizeof(tagName);
-	
+
 	if (EMV_GetKernelData(tagName, &length, value))
 	{
 		fprintf(stderr, "Error getting tag\n");
 		return 0;
 	}
-	
+
 	return length;
 }
 
-short getEmvTagValueAsc(unsigned char *tag, const int tagSize, char * value)
+short getEmvTagValueAsc(unsigned char *tag, const int tagSize, char *value)
 {
 	char asc[511];
 	unsigned char bcd[256];
@@ -974,13 +992,13 @@ short getEmvTagValueAsc(unsigned char *tag, const int tagSize, char * value)
 
 	length = getEmvTagValue(bcd, tag, tagSize);
 
-	if (!length) return 0;
+	if (!length)
+		return 0;
 
-    bcdToAsc(value, bcd, length);
-	
+	bcdToAsc(value, bcd, length);
+
 	return length * 2;
 }
-
 
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
@@ -1014,15 +1032,15 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -1;
 	}
 
-	card_in->pin_input=1;
-	card_in->pin_max_len=12;
-	card_in->key_pid = 1;//1 KF_MKSK 2 KF_DUKPT
-	card_in->pin_mksk_gid=0;//The key index of MKSK; -1 is not encrypt
-	card_in->pin_dukpt_gid=-1;//The key index of DUKPT PIN KEY
-	card_in->des_mode = 0;//0 ECB, 1 CBC
-	card_in->data_dukpt_gid=-1;//The key index of DUPKT Track data KEY
-	card_in->pin_timeover=60000;
-	
+	card_in->pin_input = 1;
+	card_in->pin_max_len = 12;
+	card_in->key_pid = 1;		  //1 KF_MKSK 2 KF_DUKPT
+	card_in->pin_mksk_gid = 0;	//The key index of MKSK; -1 is not encrypt
+	card_in->pin_dukpt_gid = -1;  //The key index of DUKPT PIN KEY
+	card_in->des_mode = 0;		  //0 ECB, 1 CBC
+	card_in->data_dukpt_gid = -1; //The key index of DUPKT Track data KEY
+	card_in->pin_timeover = 60000;
+
 	strcpy(card_in->title, title);
 	strcpy(card_in->card_page_msg, "Please insert/swipe"); //Swipe interface prompt information, a line of 20 characters, up to two lines, automatic branch.
 
@@ -1131,7 +1149,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		Util_Bcd2Asc((char *)value, &panSeqNumber[1], length * 2);
 		strncpy(eft->cardSequenceNumber, panSeqNumber, sizeof(eft->cardSequenceNumber));
 		printf("Pan seq asc ; %s\n", eft->cardSequenceNumber);
-
 	}
 
 	{
@@ -1141,11 +1158,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		EMV_GetKernelData("\x9B", &length, value);
 		logHex(value, length, "TSI");
 
-		
 		Util_Bcd2Asc((char *)value, tsi, length * 2);
 		strncpy(eft->tsi, tsi, sizeof(eft->tsi));
 		printf("TSI : %s\n", eft->tsi);
-
 	}
 
 	{
@@ -1155,11 +1170,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		EMV_GetKernelData("\x95", &length, value);
 		logHex(value, length, "TVR");
 
-		
 		Util_Bcd2Asc((char *)value, tvr, length * 2);
 		strncpy(eft->tvr, tvr, sizeof(eft->tvr));
 		printf("TVR : %s\n", eft->tvr);
-
 	}
 
 	{
@@ -1169,23 +1182,22 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		EMV_GetKernelData("\x9F\x06", &length, value);
 		logHex(value, length, "AID");
 
-		
 		Util_Bcd2Asc((char *)value, aid, length * 2);
 		strncpy(eft->aid, aid, sizeof(eft->aid));
 		printf("AID : %s\n", eft->aid);
-
 	}
 
 	{
 		char tag84[1] = {0x84};
 		int length = 0;
 		byte value[256];
-		
 
 		if (EMV_GetKernelData(tag84, &length, value))
 		{
 			fprintf(stderr, "Error getting tag 84\n");
-		} else {
+		}
+		else
+		{
 			char tag84Tlv[34];
 			int bytes;
 			int i;
@@ -1197,7 +1209,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 			tag84Tlv[0] = tag84[0];
 			bytes = 1;
 
-			sprintf(asc,  "%02X", length);
+			sprintf(asc, "%02X", length);
 			str2bcd(asc, bcdLen, 2);
 
 			tag84Tlv[1] = bcdLen[0];
@@ -1210,16 +1222,18 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 			memcpy(&card_out->ic_data[card_out->ic_data_len], tag84Tlv, bytes);
 			card_out->ic_data_len += bytes;
 
-			for (i = 0; i < bytes; i++) {
+			for (i = 0; i < bytes; i++)
+			{
 				printf("%02X", tag84Tlv[i]);
 			}
 			puts("\r\n");
 		}
 	}
-	
+
 	eft->iccDataBcdLen = normalizeIccData(eft->iccDataBcd, card_out->ic_data, card_out->ic_data_len, nibssIccData, sizeof(nibssIccData) / sizeof(IccDataT));
 
-	if (eft->iccDataBcdLen <= 0) {
+	if (eft->iccDataBcdLen <= 0)
+	{
 		fprintf("Error building Icc data\n", eft->iccDataBcdLen);
 		return -3;
 	}
@@ -1229,7 +1243,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		eft->pinDataBcdLen = 8;
 		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
 	}
-	
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
@@ -1253,7 +1266,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 	*/
 
-
 	if (!orginalDataRequired(eft))
 	{
 		Sys_GetDateTime(eft->yyyymmddhhmmss);
@@ -1274,8 +1286,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//TODO: print receipt from DB
 	//upay_print_proc(&card_info);	//TODO:		// Printout
 
-
-	
 	//getPurchaseRequest(eft);
 
 	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
@@ -1292,16 +1302,13 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	result = processPacketOnline(eft, &hostType, netParam);
 
-
-	//For testing purpose
-	autoReversal(eft);
-
 	printf("\nResult Before IccUpdate -> %d, Icc data len -> %d\n", result, hostType.iccDataBcdLen);
 
 	free(card_in);
 	free(card_out);
 
-	if (result < 0) { //Error occured, 
+	if (result < 0)
+	{ //Error occured,
 		return -5;
 	}
 
@@ -1309,7 +1316,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	{
 		if (result = iccUpdate(eft, &hostType))
 		{
-			sprintf(eft->message, "%s", autoReversal(eft) ? "Reversal Adviced(ICC)" : "Trans Reversed(ICC)");
+			sprintf(eft->message, "%s", autoReversal(eft, netParam) ? "Reversal Adviced(ICC)" : "Trans Reversed(ICC)");
 			result = -6;
 		}
 	}
@@ -1320,10 +1327,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//TODO: print eft receipt(customer copy)
 
 	sprintf(display, "%s\n%s", eft->responseDesc, "Print Merchant Copy?");
-	if (gui_messagebox_show(transTypeToTitle(eft->transType), display, "No" , "Yes" , 0) == 1) {
+	if (gui_messagebox_show(transTypeToTitle(eft->transType), display, "No", "Yes", 0) == 1)
+	{
 		//TODO: print eft receipt(Merchant copy)
 	}
-
 
 	return result;
 }
