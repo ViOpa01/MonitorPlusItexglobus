@@ -1000,6 +1000,45 @@ short getEmvTagValueAsc(unsigned char *tag, const int tagSize, char *value)
 	return length * 2;
 }
 
+short emvGetKernelData(char *ascValue, const unsigned char *tag)
+{
+	int length = 0;
+	byte value[256];
+
+	if (EMV_GetKernelData(tag, &length, value))
+	{
+		fprintf(stderr, "Error getting tag %02X...\n", tag[0]);
+		return -1;
+	}
+
+	Util_Bcd2Asc((char *)value, ascValue, length * 2);
+
+	return 0;
+}
+
+short addIccTagsToEft(Eft * eft) 
+{
+	eft->cardSequenceNumber[0] = '0';
+    if (emvGetKernelData(&eft->cardSequenceNumber[1], "\x5f\x34")) {
+		return -3;
+	}
+	printf("Pan seq asc %s\n", eft->cardSequenceNumber);
+
+	if (emvGetKernelData(eft->tsi, "\x9B")) {
+		return -4;
+	}
+
+	if (emvGetKernelData(eft->tvr, "\x95")) {
+		return -5;
+	}
+
+	if (emvGetKernelData(eft->aid, "\x9F\x06")) {
+		return -6;
+	}
+
+	return 0;
+}
+
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
@@ -1138,53 +1177,8 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -2;
 	}
 
-	{
-		char panSeqNumber[4] = {'\0'};
-		int length = 0;
-		byte value[256];
-		EMV_GetKernelData("\x5f\x34", &length, value);
-		logHex(value, length, "PAN SEQ.");
-
-		panSeqNumber[0] = '0';
-		Util_Bcd2Asc((char *)value, &panSeqNumber[1], length * 2);
-		strncpy(eft->cardSequenceNumber, panSeqNumber, sizeof(eft->cardSequenceNumber));
-		printf("Pan seq asc ; %s\n", eft->cardSequenceNumber);
-	}
-
-	{
-		char tsi[4] = {'\0'};
-		int length = 0;
-		byte value[256];
-		EMV_GetKernelData("\x9B", &length, value);
-		logHex(value, length, "TSI");
-
-		Util_Bcd2Asc((char *)value, tsi, length * 2);
-		strncpy(eft->tsi, tsi, sizeof(eft->tsi));
-		printf("TSI : %s\n", eft->tsi);
-	}
-
-	{
-		char tvr[6] = {'\0'};
-		int length = 0;
-		byte value[256];
-		EMV_GetKernelData("\x95", &length, value);
-		logHex(value, length, "TVR");
-
-		Util_Bcd2Asc((char *)value, tvr, length * 2);
-		strncpy(eft->tvr, tvr, sizeof(eft->tvr));
-		printf("TVR : %s\n", eft->tvr);
-	}
-
-	{
-		char aid[18] = {'\0'};
-		int length = 0;
-		byte value[256];
-		EMV_GetKernelData("\x9F\x06", &length, value);
-		logHex(value, length, "AID");
-
-		Util_Bcd2Asc((char *)value, aid, length * 2);
-		strncpy(eft->aid, aid, sizeof(eft->aid));
-		printf("AID : %s\n", eft->aid);
+	if (addIccTagsToEft(eft)) {
+		return -3;
 	}
 
 	{
@@ -1248,23 +1242,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	strncpy(eft->track2Data, card_out->track2, sizeof(eft->track2Data));
 	strncpy(eft->expiryDate, card_out->exp_data, sizeof(eft->expiryDate));
 	getServiceCodeFromTrack2(eft->serviceRestrictionCode, card_out->track2);
-
-	/*
-	{
-		char cardSequenceNumber[8] = {'\0'};
-		char serviceRestrictionCode[8] = {'\0'};
-
-		unsigned char tag5F34[2] = {0x5F, 0x34};
-		unsigned char tag5F30[2] = {0x5F, 0x30};
-
-		getEmvTagValueAsc(cardSequenceNumber, tag5F34, sizeof(tag5F34));
-		strncpy(eft->cardSequenceNumber, cardSequenceNumber, sizeof(eft->cardSequenceNumber));
-
-		getEmvTagValueAsc(serviceRestrictionCode, tag5F30, sizeof(tag5F30));
-		strncpy(eft->serviceRestrictionCode, serviceRestrictionCode, sizeof(eft->serviceRestrictionCode));
-
-	}
-	*/
 
 	if (!orginalDataRequired(eft))
 	{
