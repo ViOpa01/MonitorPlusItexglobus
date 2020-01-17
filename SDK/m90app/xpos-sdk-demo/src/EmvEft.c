@@ -332,7 +332,7 @@ static short isReversal(const Eft *eft)
 	return eft->transType == EFT_REVERSAL;
 }
 
-static enum TechMode cardTypeToTechMode(unsigned int cardType)
+static enum TechMode cardTypeToTechMode(const int cardType, const int mode)
 {
 	switch (cardType)
 	{
@@ -346,7 +346,7 @@ static enum TechMode cardTypeToTechMode(unsigned int cardType)
 		return CHIP_MODE;
 
 	case READ_CARD_RET_RF:
-		return CONTACTLESS_MODE;
+		return (mode == MODE_API_M_STRIPE) ? CONTACTLESS_MAGSTRIPE_MODE : CONTACTLESS_MODE;
 
 	case READ_CARD_RET_TIMEOVER:
 		return UNKNOWN_MODE;
@@ -501,8 +501,25 @@ static short accountTypeRequired(const enum TransType transType)
 
 	switch (transType)
 	{
-	case EFT_BALANCE:
+	//case EFT_BALANCE:
 	case EFT_REVERSAL:
+	case EFT_REFUND:
+		return 0;
+
+	default:
+		return 1;
+	}
+}
+
+static short iccUpdateRequired(const enum TransType transType)
+{
+	switch (transType)
+	{
+	//case EFT_BALANCE:
+	case EFT_REVERSAL:
+	case EFT_REFUND:
+	case EFT_BALANCE:
+	case EFT_PREAUTH: //Added because Icc update is currently failing for this, might need to fix it later.
 		return 0;
 
 	default:
@@ -558,6 +575,9 @@ static short getOriginalDataFromDb(Eft *eft)
 	strncpy(eft->forwardingInstitutionIdCode, "557694", sizeof(eft->forwardingInstitutionIdCode));
 	strncpy(eft->originalYyyymmddhhmmss, "20191220123231", sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
 	strncpy(eft->authorizationCode, "", sizeof(eft->authorizationCode));
+	//Original from account.
+	//Original to account.
+	//Original transaction type.
 
 	return 0; //Success																						   //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
 }
@@ -719,10 +739,12 @@ static long long getAmount(Eft *eft, const char *title)
 	char amountTitle[45] = {'\0'};
 	const int maxLen = 9;
 
-	if (!amountRequired(eft))
+	if (!amountRequired(eft)) {
+		sprintf(eft->amount, "%012lld", amount);
 		return 0;
+	}
 
-	sprintf(amountTitle, "%s Amount", title);
+	sprintf(amountTitle, "%s Amount", isCashback(eft) ? "PURCHASE" : title);
 	amount = inputamount_page(amountTitle, maxLen, 90000);
 	if (amount <= 0)
 		return -1;
@@ -817,7 +839,7 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	char iccData[511] = {'\0'};
 	short iccDataLen = hostType->iccDataBcdLen;
 
-	onlineResult = strncmp(eft->responseCode, "00", 2) ? -1 : 0;
+	onlineResult = isApprovedResponse(eft->responseCode) ? 0 : -1;
 	memcpy(iccDataBcd, hostType->iccDataBcd, iccDataLen);
 
 	if (hostType->Info_Included_Data[0] & INPUT_ONLINE_AC)
@@ -1067,9 +1089,11 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	if (card_in->trans_type == -1)
 	{
-		printf("Unknow transaction type");
+		printf("\nUnknow transaction type\n");
 		return -1;
 	}
+
+	puts("==================> 1");
 
 	card_in->pin_input = 1;
 	card_in->pin_max_len = 12;
@@ -1080,8 +1104,14 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	card_in->data_dukpt_gid = -1; //The key index of DUPKT Track data KEY
 	card_in->pin_timeover = 60000;
 
+	puts("==================> 2");
+
 	strcpy(card_in->title, title);
 	strcpy(card_in->card_page_msg, "Please insert/swipe"); //Swipe interface prompt information, a line of 20 characters, up to two lines, automatic branch.
+
+
+    puts("==================> 3");
+
 
 	if (accountTypeRequired(eft->transType))
 	{
@@ -1090,15 +1120,19 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 			return -1;
 	}
 
+	puts("==================> 4");
+
 	//ret = input_num_page(card_in.amt, "input the amount", 1, 9, 0, 0, 1);		// Enter the amount
 	//if(ret != INPUT_NUM_RET_OK) return -1;
 
 	namt = getAmount(eft, title);
-	if (namt <= 0)
+	if (namt < 0)
 	{
 		free(card_in);
 		return -1;
 	}
+
+	puts("==================> 5");
 
 	sprintf(card_in->amt, "%lld", namt);
 
@@ -1139,6 +1173,8 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//	return ret;
 	//}
 
+	puts("==================> 6");
+
 	if (EMVAPI_RET_ARQC == ret)
 	{
 		//gui_messagebox_show("", "Online Request", "", "ok", 0);
@@ -1169,13 +1205,17 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return 0;
 	}
 
-	if ((eft->techMode = cardTypeToTechMode(card_out->card_type)) == UNKNOWN_MODE)
+	puts("==================> 7");
+
+	if ((eft->techMode = cardTypeToTechMode(card_out->card_type, card_out->nEmvMode)) == UNKNOWN_MODE)
 	{ //will never happen
 		free(card_in);
 		free(card_out);
 
 		return -2;
 	}
+
+	puts("==================> 8");
 
 	if (addIccTagsToEft(eft)) {
 		return -3;
@@ -1289,10 +1329,14 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -5;
 	}
 
-	if (!result) //Successfull
+	
+	if (!result && isApprovedResponse(eft->responseCode) && iccUpdateRequired(eft->transType)) //Successfull
 	{
-		if (result = iccUpdate(eft, &hostType))
+		result = iccUpdate(eft, &hostType);
+		
+		if (result)
 		{
+			printf("Icc Update failed with %d\ndoing auto reversal...\n", result);
 			sprintf(eft->message, "%s", autoReversal(eft, netParam) ? "Reversal Adviced(ICC)" : "Trans Reversed(ICC)");
 			result = -6;
 		}

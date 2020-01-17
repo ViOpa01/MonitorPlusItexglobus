@@ -244,6 +244,8 @@ const char * transTypeToTitle(const enum TransType transType);
 const char * transTypeToMti(const enum TransType transType);
 unsigned int accountTypeToCode(const enum AccountType type);
 
+short isApprovedResponse(const char responseCode[3]);
+
 int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
 int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);
 int extractNetworkManagmentResponse(NetworkManagement *networkMangement, const char *response, const int size);

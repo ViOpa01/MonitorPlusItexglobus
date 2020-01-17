@@ -468,7 +468,7 @@ static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int t
 			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)(recvBuff + curRecvLen), maxLen-curRecvLen , 700);
 		}
 
-		printf("nret is : %d\n", nret);
+		//printf("nret is : %d\n", nret);
 
 		if (nret >0){
 			tick2 = Sys_TimerOpen(1000);
@@ -480,7 +480,7 @@ static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int t
 			}
 		}else if(Sys_TimerCheck(tick2) == 0 && ssl_flag==1){
 			mf_ssl_recv3(COMM_SOCK);
-			printf("----------mf_ssl_recv3\r\n");
+			//printf("----------mf_ssl_recv3\r\n");
 			tick2 = Sys_TimerOpen(1000);
 		}
 	}
