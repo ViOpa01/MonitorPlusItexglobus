@@ -49,8 +49,9 @@ static void printFooter()
 
 	sprintf(buff, "%s %s", APP_NAME, APP_VER);
     UPrint_StrBold(buff, 1, 4, 1);
-    UPrint_StrBold("iisysgroup.com", 1, 4, 1);
-	// If something else to be printed
+	UPrint_StrBold("POWERED BY ITEX", 1, 4, 1);
+    UPrint_StrBold("www.iisysgroup.com", 1, 4, 1);
+	UPrint_StrBold("0700-2255-4839", 1, 4, 1);
 
 	UPrint_Feed(108);
 }
