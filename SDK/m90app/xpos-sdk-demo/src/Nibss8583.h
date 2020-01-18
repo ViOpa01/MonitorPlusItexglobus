@@ -243,18 +243,19 @@ unsigned int transTypeToCode(const enum TransType transType);
 const char * transTypeToTitle(const enum TransType transType);
 const char * transTypeToMti(const enum TransType transType);
 unsigned int accountTypeToCode(const enum AccountType type);
-
+short decodeProcessingCode(enum TransType * transType, enum AccountType * fromAccount, enum AccountType * toAccount, const char processingCode[7]);
 short isApprovedResponse(const char responseCode[3]);
+int normalizeIccData(unsigned char *normalizedBcd, unsigned char *de55, const int de55Size, const IccDataT *iccDataDetails, const int detailsSize);
 
 int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
 int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);
 int extractNetworkManagmentResponse(NetworkManagement *networkMangement, const char *response, const int size);
 int getEftOnlineResponse(HostType *hostType, Eft *eft, unsigned char *response, const int size);
 
+
 short verifyMac(const unsigned char *packet, const int packetSize, char key[65], char expectedMac[65]);
 void macTest(void);
 
-int normalizeIccData(unsigned char *normalizedBcd, unsigned char *de55, const int de55Size, const IccDataT *iccDataDetails, const int detailsSize);
 
 #endif
 

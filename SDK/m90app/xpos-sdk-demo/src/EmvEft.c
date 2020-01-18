@@ -19,6 +19,10 @@
 #include "merchant.h"
 
 #include "sdk_security.h"
+#include "EftDbImpl.h"
+
+//Approved transaction will be reversed if icc update failed.
+#define DEV_MODE
 
 typedef enum
 {
@@ -212,67 +216,6 @@ void bcdToAsc(char *asc, unsigned char *bcd, const int size)
 	{
 		pos += sprintf(&asc[pos], "%02X", bcd[i]);
 	}
-}
-
-int buildIccData(unsigned char *de55, const IccDataT *iccData, const int size)
-{
-	int i;
-	int pos = 0;
-	int status;
-
-	for (i = 0; i < size; i++)
-	{
-		unsigned char tlv[256];
-		unsigned char value[256];
-		char asc[256] = {'\0'};
-		unsigned char tagNameBcd[4];
-		unsigned char tlvAscBuf[512] = {'\0'};
-		int length = 0;
-		int tlvLen = 0;
-		int tagLen = 0;
-
-		if (iccData[i].present == 0 || iccData[i].present == NULL || iccData[i].tag == NULL)
-			continue;
-
-		sprintf(asc, "%X", iccData[i].tag);
-
-		tagLen = strlen(asc);
-		Util_Asc2Bcd(asc, tagNameBcd, length);
-		tagLen /= 2;
-
-		status = EMV_GetKernelData(asc, &length, value);
-
-		if (status)
-		{
-			fprintf(stderr, "%s: tag %X -> %s", __FUNCTION__, iccData[i].tag, status == UEMV_PRM_NOT_FOUND ? "UEMV_PRM_NOT_FOUND" : "UEMV_PRM_FAIL");
-			continue;
-		}
-
-		memcpy(&de55[pos], tagNameBcd, length);
-		pos += tagLen;
-
-		memcpy(&de55[pos], value, length);
-		pos += length;
-
-		Util_Bcd2Asc(value, tlvAscBuf, length * 2);
-
-		printf("Tag -> %s, Value -> %s\n", asc, tlvAscBuf);
-
-		/*
-		if (status = EMV_PackTLVData(tagNameBcd, value, length, tlv, &tlvLen)) {
-			fprintf(stderr, "%s: tag %X -> %s, return : %d ", __FUNCTION__, iccData[i].tag, "ERROR BUILDING TLV", status);
-		}
-		
-
-		
-		Util_Bcd2Asc(tlv, tlvAscBuf, tlvLen*2);
-		printf("TLV2ASC : %s -> %s\n", asc, tlvAscBuf);
-		memcpy(&de55[pos], tlv, tlvLen);
-		pos += tlvLen;
-		*/
-	}
-
-	return pos;
 }
 
 static void m_DispOffPin(int Count)
@@ -561,15 +504,13 @@ void getRrn(char rrn[13])
 
 static short getOriginalDataFromDb(Eft *eft)
 {
-	//TODO: @PIUS ->
-	//TODO: Use eft->rrn to get old data and populate the struct
-	strncpy(eft->originalMti, "0200", sizeof(eft->originalMti)); //The mti of the equivalent(original) purchase transaction.
-	strncpy(eft->forwardingInstitutionIdCode, "557694", sizeof(eft->forwardingInstitutionIdCode));
-	strncpy(eft->originalYyyymmddhhmmss, "20191220123231", sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
-	strncpy(eft->authorizationCode, "", sizeof(eft->authorizationCode));
-	//Original from account.
-	//Original to account.
-	//Original transaction type.
+	if (getEft(eft)) {
+		//TODO: Display couldn't find transaction with rrn eft->rrn
+		return -1;
+	}
+
+	printf("OriginalMti -> %s\nFISC -> %s\nOriginal Datetime -> %s\nAuthCode -> %s\n", 
+	eft->originalMti, eft->forwardingInstitutionIdCode, eft->originalYyyymmddhhmmss, eft->authorizationCode);
 
 	return 0; //Success																						   //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
 }
@@ -707,11 +648,6 @@ void eftTrans(const enum TransType transType)
 	//TODO, put the netLink below on a thread.
 	netLink(&netParam);
 	performEft(&eft, &netParam, transTypeToTitle(transType));
-
-	//TODO: @PIUS -> convert eft struct to sql query and save it on DB.
-	//e.g if saveEft(&eft) ..
-	//TODO: @PIUS -> print eft receipt from DB.
-	printEftReceipt(&eft);
 }
 
 static short amountRequired(const Eft *eft)
@@ -1320,26 +1256,34 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	
 	if (!result && isApprovedResponse(eft->responseCode) && iccUpdateRequired(eft->transType)) //Successfull
 	{
-		result = iccUpdate(eft, &hostType);
-		
-		if (result)
+		int status = 0;
+
+		status = iccUpdate(eft, &hostType);
+
+		#if defined(DEV_MODE) 
 		{
-			printf("Icc Update failed with %d\ndoing auto reversal...\n", result);
-			sprintf(eft->message, "%s", autoReversal(eft, netParam) ? "Reversal Adviced(ICC)" : "Trans Reversed(ICC)");
-			result = -6;
+			
+			//Calling auto reversal will change transType to EFT_REVERSAL, hence reversal receipt will be printed
+			//Also reversal leg will be saved on the db and Reversal Adviced shall be displayed on the receipt.
+
+			result = status;
+			if (result)
+			{
+				printf("Icc Update failed with %d\ndoing auto reversal...\n", result);
+				sprintf(eft->message, "%s", autoReversal(eft, netParam) ? "Reversal Adviced(ICC)" : "Trans Reversed(ICC)");
+				result = -6;
+			}
 		}
+		#endif
+	}
+
+	if (saveEft(eft)) {
+		fprintf(stderr, "Error saving transaction...\n");
 	}
 
 	printf("Result After IccUpdate -> %d\n", result);
 
-	//TODO: save transactions
-	//TODO: print eft receipt(customer copy)
-
-	sprintf(display, "%s\n%s", eft->responseDesc, "Print Merchant Copy?");
-	if (gui_messagebox_show(transTypeToTitle(eft->transType), display, "No", "Yes", 0) == 1)
-	{
-		//TODO: print eft receipt(Merchant copy)
-	}
+	printEftReceipt(&eft);
 
 	return result;
 }

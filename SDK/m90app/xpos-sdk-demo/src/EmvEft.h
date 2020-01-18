@@ -20,7 +20,6 @@ extern "C"
 
 
 void eftTrans(const enum TransType transType);
-int buildIccData(unsigned char * de55, const IccDataT * iccData, const int size);
 
 #ifdef __cplusplus
 }

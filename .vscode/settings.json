@@ -3,6 +3,7 @@
         "libapi_file.h": "c",
         "nibss8583.h": "c",
         "emveft.h": "c",
-        "nibss.h": "c"
+        "nibss.h": "c",
+        "emvdbutil.h": "c"
     }
 }

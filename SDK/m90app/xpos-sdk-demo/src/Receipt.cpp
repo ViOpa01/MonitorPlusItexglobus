@@ -178,8 +178,25 @@ int printEftReceipt(Eft *eft)
 	
 	printFooter();
 
+	if (*eft->message) {
+		//TODO print message on receipt.
+	}
+
+	if (strncmp(eft->responseCode, "00", 2)) { 
+		char declinedMessage[65];
+
+		sprintf(declinedMessage, "%s: %s", eft->responseCode, eft->responseDesc);
+
+		//TODO: declinedMessage on receipt.
+	}
+
 	ret = UPrint_Start(); // Output to printer
 	getPrinterStatus(ret);
+
+	if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
+	{
+		UPrint_Start();
+	}
 
 	return 0;
 }
