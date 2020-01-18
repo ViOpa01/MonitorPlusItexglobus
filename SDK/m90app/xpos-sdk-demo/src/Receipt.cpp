@@ -150,7 +150,7 @@ int printEftReceipt(Eft *eft)
 
 	UPrint_SetDensity(3); //Set print density to 3 normal
 	UPrint_SetFont(7, 2, 2);
-	if (strcmp(eft->responseCode, "00") == 0)
+	if (isApprovedResponse(eft->responseCode))
 	{
 		UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
 	}
