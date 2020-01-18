@@ -13,6 +13,7 @@ extern "C" {
 #include "util.h"
 #include "logo.h"
 #include "itexFile.h"
+#include "remoteLogo.h"
 #include "libapi_xpos/inc/libapi_print.h"
 #include "libapi_xpos/inc/libapi_file.h"
 #include "libapi_xpos/inc/libapi_gui.h"
@@ -122,6 +123,7 @@ int printEftReceipt(Eft *eft)
 	char dt[14] = {'\0'};
 	char buff[64] = {'\0'};
 	char maskedPan[25] = {'\0'};
+	char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
 
     getParameters(&parameter);
@@ -136,6 +138,9 @@ int printEftReceipt(Eft *eft)
 	{
 		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
 	}
+
+	sprintf(filename, "xxxx\\%s", BANKLOGO);
+	UPrint_BitMap(filename, 1);//print image
 	
 	UPrint_SetFont(8, 2, 2);
     UPrint_Str(eft->merchantName, 2, 1);
@@ -219,7 +224,7 @@ void printHandshakeReceipt(MerchantData *mParam)
     printDottedLine();
 
     
-    sprintf(filename, "xxxx\\%s", LOGOIMG);
+    sprintf(filename, "xxxx\\%s", BANKLOGO);
 	UPrint_BitMap(filename, 1);//print image
 	// UPrint_Feed(20);
 

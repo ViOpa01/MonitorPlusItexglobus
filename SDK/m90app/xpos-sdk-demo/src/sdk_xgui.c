@@ -12,6 +12,7 @@
 #include "network.h"
 #include "menu_list.h"
 #include "merchant.h"
+#include "remoteLogo.h"
 
 #define LOGOIMG "xxxx\\logo2.bmp"
 
@@ -23,14 +24,14 @@
 // and the second parameter is set when the name is duplicated.
 static const st_gui_menu_item_def _menu_def[] = {
 
-	{MAIN_MENU_PAGE, UI_PURCHASE, ""},
-	{MAIN_MENU_PAGE, UI_CASHBACK, ""},
-	{MAIN_MENU_PAGE, UI_PREAUTH, ""},
+	{MAIN_MENU_PAGE, UI_PURCHASE,   ""},
+	{MAIN_MENU_PAGE, UI_PREAUTH,    ""},
 	{MAIN_MENU_PAGE, UI_COMPLETION, ""},
-	{MAIN_MENU_PAGE, UI_REVERSAL, ""},
-	{MAIN_MENU_PAGE, UI_REFUND, ""},
+	{MAIN_MENU_PAGE, UI_CASHBACK,   ""},
 	{MAIN_MENU_PAGE, UI_CASHADVANCE, ""},
-	{MAIN_MENU_PAGE, UI_BALANCE, ""},
+	{MAIN_MENU_PAGE, UI_REVERSAL,   ""},
+	{MAIN_MENU_PAGE, UI_REFUND,     ""},
+	{MAIN_MENU_PAGE, UI_BALANCE,    ""},
 
 	{MAIN_MENU_PAGE, "Sales", ""},
 
@@ -512,9 +513,6 @@ static int _menu_proc(char *pid)
 
 		//TODO: @Pius 
 		// get and reprint by rrn transaction
-		
-
-
 
 		return 0;
 	}
@@ -569,6 +567,41 @@ static int _menu_proc(char *pid)
 		int ret = -1;
 		ret = enableAndDisableAccountSelection();
 		printf("Enable / Disable ret : %d\n", ret);
+	}
+	else if (!strcmp(pid, UI_DOWNLOAD_LOGO))
+	{
+		MerchantData mParam = {0};
+		int nTry = 3;
+		int i = 0;
+
+		if(readMerchantData(&mParam)) return -1;
+
+		if (!mParam.is_prepped) { //terminal not preped, parameter not allowed
+			gui_messagebox_show("ERROR" , "Please Prep first", "" , "" , 0);
+			return -1;
+    	}
+
+		if(!mParam.tid[0])
+		{
+			printf("Empty TID\n");
+			return -1;
+		}
+
+		for(i = 0; i < nTry; i++)
+		{
+			if(!downloadRemoteLogo(mParam.tid))
+			{
+				printf("Image donloaded successfully\n");
+				gui_messagebox_show("MESSAGE" , "Logo downloaded", "" , "" , 0);
+				break;
+			}
+		}
+		
+		if(i == nTry)
+		{
+			gui_messagebox_show("ERROR", "Logo download failed!!!\n Try again", "", "", 0);
+			return -1;
+		}
 	}
 
 	return 0;

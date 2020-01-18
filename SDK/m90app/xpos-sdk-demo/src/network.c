@@ -301,9 +301,6 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	int result;
 	int sock = 0;
 
-	char *ip = "197.253.19.75";
-	int port = 5003;
-
 	m_connect_tick = Sys_TimerOpen(30000);
 	m_connect_exit = 0;
 	m_connect_time = i + 1;

@@ -69,3 +69,11 @@ int removeRecord(const char *filename, const int recordSize)
 
     return ret;
 }
+
+int removeFile(const char *filename)
+{
+    int ret = 0;
+    ret = UFile_Remove(filename, FILE_PRIVATE);
+    
+    return ret;
+}
