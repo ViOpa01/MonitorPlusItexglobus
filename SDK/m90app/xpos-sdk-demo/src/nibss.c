@@ -28,6 +28,7 @@
 #include "util.h"
 #include "network.h"
 #include "appInfo.h"
+#include "remoteLogo.h"
 
 
 
@@ -510,7 +511,7 @@ short uiGetParameters(void)
 
     if(readMerchantData(&mParam)) return -2;
 
-     if (!mParam.is_prepped) { //terminal not preped, parameter not allowed
+    if (!mParam.is_prepped) { //terminal not preped, parameter not allowed
         gui_messagebox_show("ERROR" , "Please Prep first", "" , "" , 0);
         return -1;
     }
@@ -717,6 +718,17 @@ short uiHandshake(void)
     saveParameters(&networkMangement.merchantParameters);
 
     Util_Beep(2);
+
+    for (i = 0; i < maxRetry; i++)
+    {
+        if (!downloadRemoteLogo(mParam.tid))
+            break;
+    }
+
+    if (i < maxRetry) {
+         gui_messagebox_show("MESSAGE" , "Logo Ok", "" , "" , 1000);
+    }
+
     printHandshakeReceipt(&mParam);
 ;
     return 0;

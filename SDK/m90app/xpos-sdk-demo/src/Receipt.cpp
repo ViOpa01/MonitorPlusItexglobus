@@ -13,6 +13,7 @@ extern "C" {
 #include "util.h"
 #include "logo.h"
 #include "itexFile.h"
+#include "remoteLogo.h"
 #include "libapi_xpos/inc/libapi_print.h"
 #include "libapi_xpos/inc/libapi_file.h"
 #include "libapi_xpos/inc/libapi_gui.h"
@@ -49,8 +50,9 @@ static void printFooter()
 
 	sprintf(buff, "%s %s", APP_NAME, APP_VER);
     UPrint_StrBold(buff, 1, 4, 1);
-    UPrint_StrBold("iisysgroup.com", 1, 4, 1);
-	// If something else to be printed
+	UPrint_StrBold("POWERED BY ITEX", 1, 4, 1);
+    UPrint_StrBold("www.iisysgroup.com", 1, 4, 1);
+	UPrint_StrBold("0700-2255-4839", 1, 4, 1);
 
 	UPrint_Feed(108);
 }
@@ -101,17 +103,37 @@ static void getPrinterStatus(const int status)
 	}
 }
 
-static void creat_bmp()
+static char* transTypeToString(enum TransType type)
 {
-	int ret = 0;
-	int fp;
-	ret = UFile_OpenCreate(LOGOIMG, FILE_PRIVATE, FILE_CREAT, &fp, 0);//File open / create
-	if( ret == UFILE_SUCCESS){
-		UFile_Write(fp, Skye, sizeof(Skye));
-		UFile_Close(fp);
-	}
-	else{
-		gui_messagebox_show( "PrintTest" , "File open or create fail" , "" , "confirm" , 0);
+
+	switch (type)
+	{
+	case EFT_PURCHASE :
+		return "PURCHASE";
+		
+	case EFT_PREAUTH :
+		return "PREAUTHORIZATION";
+	
+	case EFT_COMPLETION :
+		return "COMPLETION";
+
+	case EFT_REVERSAL :
+		return "REVERSAL";
+
+	case EFT_REFUND :
+		return "REFUND";
+
+	case EFT_CASHBACK :
+		return "CASHBACK";
+
+	case EFT_CASHADVANCE :
+		return "CASHADVANCE";
+
+	case EFT_BALANCE :
+		return "BALANCE";
+	
+	default:
+		return "NULL";
 	}
 }
 
@@ -121,6 +143,7 @@ int printEftReceipt(Eft *eft)
 	char dt[14] = {'\0'};
 	char buff[64] = {'\0'};
 	char maskedPan[25] = {'\0'};
+	char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
 
     getParameters(&parameter);
@@ -135,12 +158,17 @@ int printEftReceipt(Eft *eft)
 	{
 		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
 	}
+
+	sprintf(filename, "xxxx\\%s", BANKLOGO);
+	UPrint_BitMap(filename, 1);//print image
 	
 	UPrint_SetFont(8, 2, 2);
     UPrint_Str(eft->merchantName, 2, 1);
     printLine("MID : ", eft->merchantId);
     printLine("DATE TIME   : ", buff);
     printDottedLine();
+
+	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
 
 	UPrint_SetDensity(3); //Set print density to 3 normal
 	UPrint_SetFont(7, 2, 2);
@@ -212,7 +240,7 @@ void printHandshakeReceipt(MerchantData *mParam)
     getParameters(&parameter);
     getDateAndTime(dt);
     sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
-	creat_bmp();
+
 	// Prompt is printing
 	gui_begin_batch_paint();			
 	gui_clear_dc();
@@ -235,7 +263,7 @@ void printHandshakeReceipt(MerchantData *mParam)
     printDottedLine();
 
     
-    sprintf(filename, "xxxx\\%s", LOGOIMG);
+    sprintf(filename, "xxxx\\%s", BANKLOGO);
 	UPrint_BitMap(filename, 1);//print image
 	// UPrint_Feed(20);
 

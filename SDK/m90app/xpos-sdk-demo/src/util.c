@@ -65,7 +65,7 @@ int getContentLength(char *heads)
 
 	return -1;
 }
-
+/*
 int getHttpStatusCode(char *heads)
 {	
 	char *rescode = (char *)strstr( heads ," " );
@@ -79,7 +79,7 @@ int getHttpStatusCode(char *heads)
 
 	return -1;
 }
-
+*/
 
 void logHex(unsigned char * data, const int size, const char * title)
 {
@@ -144,5 +144,93 @@ void MaskPan(char *pszInPan, char *pszOutPan)
 
 }
 
+
+int getHttpStatusCode(const char* response)
+{
+    char* token;
+    char delim[] = " ";
+
+    char responseCopy[16] = { 0 };
+
+    // Make a copy of the response but avoid copying the whole thing
+    strncpy(responseCopy, response, sizeof(responseCopy) - 1);
+
+    // The first token is the http version
+    token = strtok(responseCopy, delim);
+
+    // The second token is the status code
+    token = strtok(NULL, delim);
+    if (!token)
+        return -1;
+
+    return atoi(token);
+}
+
+// Returns pointer to terminating null character in response argument if body not found
+const char* bodyPointer(const char* response)
+{
+    size_t i;
+    const size_t len = strlen(response);
+
+    for (i = 0; i < len - 2; i++, response++) {
+        if (*response != '\n')
+            continue;
+        else if (*(response + 1) == '\r' && *(response + 2) == '\n')
+            return (response + 3);
+    }
+
+    return NULL; // Index of null terminating character is returned
+}
+
+int bodyIndex(const char* response)
+{
+    size_t i;
+    const size_t len = strlen(response);
+
+    for (i = 0; i < len - 2; i++) {
+        if (*(response + i) != '\n')
+            continue;
+        else if (*(response + i + 1) == '\r' && *(response + i + 2) == '\n')
+            return i + 3;
+    }
+
+    return len;
+}
+
+/*
+int getContentLength(void* userdata, const char* tag, const int tag_len, const char* value, const int val_len)
+{
+    int* i;
+    int index;
+    int space;
+    const char* trimVal;
+	char hKey[256 + 1] = {0};
+	char hValue[1024 + 1] = {0};
+
+    i = (int *)userdata;
+
+    // Convert to lower case while trimming
+    for (index = 0; index < tag_len; ++index) {
+        hKey[index] = tolower(*(tag + index));
+    }
+
+    //trim leading whitespace before picking value
+    space = 0;
+    while (space < val_len && isspace(*(value + space)))
+        ++space;
+
+    //
+    for (index = 0; space < val_len; ++space, ++index) {
+        hValue[index] = tolower(*(value + space));
+    }
+
+	if (!strcmp("content-length", hKey)) {
+		*i = atoi(hValue);
+        return -1;	// done
+    }
+
+	return 0;
+}
+*/
 
 

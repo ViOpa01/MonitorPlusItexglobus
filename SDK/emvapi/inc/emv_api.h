@@ -88,8 +88,8 @@ typedef struct __st_read_card_out{
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:zhiyu
 Functions:Process of emv card trans
-Input : card_in£ºThe parameter of EMV trans
-Output : card_out£ºOut buffer of EMV trans
+Input : card_inï¿½ï¿½The parameter of EMV trans
+Output : card_outï¿½ï¿½Out buffer of EMV trans
 return: 
      	EMVAPI_RET_TC	 0	 //TC
 		EMVAPI_RET_ARQC	 1	 //ARQC
