@@ -65,15 +65,6 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
 }
 
-/*
-,
-    ,
-    ,
-    ,
-    
-    ,
-*/
-
 short isDevMode(const enum NetType netType)
 {
     switch (netType) {

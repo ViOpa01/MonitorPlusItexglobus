@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-//#include "upay_print.h" //TODO:
 #include "emvapi/inc/emv_api.h"
 #include "libapi_xpos/inc/def.h"
 #include "libapi_xpos/inc/libapi_emv.h"
@@ -371,7 +370,6 @@ void populateEchoData(char echoData[256])
 	Sys_GetDateTime(dt);
 
 	sprintf(de59, "%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
-	//TODO: populate echo data
 	strncpy(echoData, de59, strlen(de59));
 }
 
@@ -428,8 +426,6 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	if (i == maxTry)
 		return -1;
 
-	//TODO: populate respose
-
 	if (result = getEftOnlineResponse(&hostType, eft, netParam->response, netParam->responseSize))
 	{
 		return -2;
@@ -447,9 +443,6 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 
 static enum AccountType getAccountType(void)
 {
-	//TODO: Display a menu to prompt for account type and return any of the following respectively.
-	//Return ACCOUNT_END if the user cancel the operation
-
 	int option = -1;
 	MerchantData mParam = {'\0'};
 
@@ -498,6 +491,7 @@ static enum AccountType getAccountType(void)
 static short accountTypeRequired(const enum TransType transType)
 {
 	//TODO: we might need to check device configuration to know if account is required or not.
+	
 
 	switch (transType)
 	{
@@ -536,7 +530,6 @@ static short orginalDataRequired(const Eft *eft)
 
 static short uiGetRrn(char rrn[13])
 {
-	//TODO: Get rrn from user for reversal, or refund, or completion.
 	int result;
 
 	// Timeout : -3
@@ -561,7 +554,6 @@ void getRrn(char rrn[13])
 {
 	char yyyymmddhhmmss[15] = {'\0'};
 
-	//TODO: create rrn
 	Sys_GetDateTime(yyyymmddhhmmss);
 	strncpy(rrn, &yyyymmddhhmmss[2], 12);
 	rrn[12] = 0;
@@ -584,9 +576,6 @@ static short getOriginalDataFromDb(Eft *eft)
 
 static short getReversalReason(Eft *eft)
 {
-	//TODO: Let the user select reversal reason from the list of option, then
-	//set reversal reason respectively e.g
-
 	int option = -1;
 	char *reversal_option_list[] = {
 		"Response timeout",
@@ -689,7 +678,6 @@ void eftTrans(const enum TransType transType)
 
 	getNetParams(&netParam, CURRENT_PATFORM, 0);
 
-	//TODO: get tid, eft.terminalId
 	if (mParam.tid[0])
 	{
 		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
