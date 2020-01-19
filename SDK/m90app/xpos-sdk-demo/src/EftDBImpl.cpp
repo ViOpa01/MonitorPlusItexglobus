@@ -46,9 +46,9 @@ short getEft(Eft * eft)
     std::vector<std::map<std::string, std::string> > vec_map;
 
     std::map<std::string, std::string> dbmap;
-    txtype = toEMVDBTransactionType(eft->transType);
+    //txtype = toEMVDBTransactionType(ALL_TRX_TYPES);
 
-    if (db.selectTransactionsByRef(vec_map, eft->rrn, txtype)) {
+    if (db.selectTransactionsByRef(vec_map, eft->rrn, ALL_TRX_TYPES)) {
         return -1;
     }
 

@@ -60,6 +60,7 @@ short netLink(NetWorkParameters *netParam);
 
 short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp);
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
+void * preDial(void * netParams);
 
 
 

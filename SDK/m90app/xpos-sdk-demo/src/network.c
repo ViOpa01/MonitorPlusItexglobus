@@ -9,6 +9,7 @@
 #include "libapi_xpos/inc/libapi_comm.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 
+
 #define ITEX_TAMS_PUBLIC_IP "basehuge.itexapp.com"
 #define ITEX_TASM_PUBLIC_PORT "80"
 #define ITEX_TASM_SSL_PORT "443"
@@ -361,11 +362,28 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 }
 
 
+
+
 short netLink(NetWorkParameters *netParam)
 {
 	//TODO: maybe try many times.
 	//nret = comm_net_link_ex(netParam->title, netParam->apn, netParam->netLinkTimeout, netParam->apnUser, netParam->apnPassword, authParam);		// Network link with 30s timeout	
 	return comm_net_link(netParam->title, netParam->apn, netParam->netLinkTimeout);
+}
+
+void * preDial(void * netParams)
+{
+	int maxTry = 3;
+	NetWorkParameters * netParameters = (NetWorkParameters *) netParams;
+	int result = -1;
+	int i;
+
+	for (i = 0; i < maxTry; i++) {
+		result = netLink(netParameters);
+		if (!result) break;
+	}
+
+	result ? puts("Predialing failed...") : puts("Predialing Successful...\n");
 }
 
 static short connectToHost(NetWorkParameters *netParam)
@@ -486,6 +504,8 @@ static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int t
 
 	return curRecvLen;
 }
+
+
 
 
 /*
