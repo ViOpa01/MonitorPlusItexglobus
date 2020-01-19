@@ -1283,7 +1283,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	printf("Result After IccUpdate -> %d\n", result);
 
-	printEftReceipt(&eft);
+	printEftReceipt(eft);
 
 	return result;
 }

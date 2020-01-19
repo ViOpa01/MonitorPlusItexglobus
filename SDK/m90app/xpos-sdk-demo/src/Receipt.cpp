@@ -28,7 +28,6 @@ extern "C" {
 
 #define DOTTEDLINE		"--------------------------------"
 #define DOUBLELINE		"================================"
-#define LOGOIMG "logo.bmp"
 
 //Add a line of print data
 static void printLine(char *head, char *val)
