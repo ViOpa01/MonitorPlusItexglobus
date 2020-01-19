@@ -364,6 +364,9 @@ static void removeMerchantData(void)
 		gui_messagebox_show("", "Merchat Record", "", "Error", 2000);
 	}
 }
+
+
+
 //gui_get_message()
 // The menu callback function, as long as all the menu operations of this function are registered,
 // this function will be called, and the selected menu name will be returned.
@@ -499,21 +502,7 @@ static int _menu_proc(char *pid)
 	}
 	else if (!strcmp(pid, UI_REPRINT_BY_RRN))
 	{
-		
-		int result;
-		char rrn[13] = {'\0'};
-		gui_clear_dc();
-		if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
-		{
-			printf("rrn input failed ret : %d\n", result);
-			return result;
-		}
-
-		printf("rrn : %s\n", rrn);
-
-		//TODO: @Pius 
-		// get and reprint by rrn transaction
-
+		reprintByRrn();
 		return 0;
 	}
 	else if (!strcmp(pid, UI_REPRINT_TODAY))

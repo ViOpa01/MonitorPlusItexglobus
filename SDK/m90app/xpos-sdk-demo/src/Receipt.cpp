@@ -7,6 +7,8 @@
 #include "Receipt.h"
 #include "appInfo.h"
 
+#include "EftDBImpl.h"
+
 extern "C" {
 #include "Nibss8583.h"
 #include "nibss.h"
@@ -17,6 +19,7 @@ extern "C" {
 #include "libapi_xpos/inc/libapi_print.h"
 #include "libapi_xpos/inc/libapi_file.h"
 #include "libapi_xpos/inc/libapi_gui.h"
+#include "libapi_xpos/inc/libapi_util.h"
 
 }
 
@@ -136,6 +139,61 @@ static char* transTypeToString(enum TransType type)
 	}
 }
 
+
+static void centralizeBuffer(char * output, const char * input, const int expectedLen)
+{
+	int len = strlen(input);
+	int requiredSpaces = (expectedLen - len) / 2;
+
+	if (len >= expectedLen) return;
+	memset(output, ' ', requiredSpaces);
+	memcpy(&output[requiredSpaces], input, len);
+	memset(&output[requiredSpaces + len], ' ', requiredSpaces);
+
+
+}
+
+static void printReceiptAmount(const long long amount, short center)
+{
+    char buffer[21];
+    char line[32] = { '\0' };
+    char spaces[33] = { '\0' };
+    int len;
+	char centralizedAmount[34] = {'\0'};
+	char centralizedLine[34] = {'\0'};
+
+
+    memset(buffer, '\0', sizeof(buffer));
+    sprintf(buffer, "NGN %.2f", amount / 100.0);
+
+	centralizeBuffer(centralizedAmount, buffer, 24);
+
+
+    len = strlen(buffer);
+    memset(line, '*', len + 4);
+
+	centralizeBuffer(centralizedLine, line, 24);
+
+    if (center) {
+		//TODO: calculation to centralize
+		UPrint_StrBold(centralizedLine, 1, 1, 1);
+		UPrint_StrBold(centralizedAmount, 1, 1, 1);
+		UPrint_StrBold(centralizedLine, 1, 1, 1);
+    } else {
+        len = 32 - strlen(line);
+        memset(spaces, ' ', len);
+
+       UPrint_Feed(6);
+
+        printLine(spaces, line);
+        strcat(buffer, "  ");
+        printLine("AMOUNT", buffer);
+        printLine(spaces, line);
+
+       UPrint_Feed(6);
+    }
+}
+
 int printEftReceipt(Eft *eft)
 {
 	int ret = 0;
@@ -144,6 +202,7 @@ int printEftReceipt(Eft *eft)
 	char maskedPan[25] = {'\0'};
 	char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
+	short isApproved = isApprovedResponse(eft->responseCode);
 
     getParameters(&parameter);
     getDateAndTime(dt);
@@ -171,6 +230,8 @@ int printEftReceipt(Eft *eft)
 
 	UPrint_SetDensity(3); //Set print density to 3 normal
 	UPrint_SetFont(7, 2, 2);
+
+	
 	if (isApprovedResponse(eft->responseCode))
 	{
 		UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
@@ -191,11 +252,15 @@ int printEftReceipt(Eft *eft)
 
 	printLine("CARD NAME:   ", eft->cardHolderName);
 
+	/*
 	std::string formattedAmount(eft->amount);
 	formatAmount(formattedAmount);
 	UPrint_StrBold("***************", 1, 4, 1);
 	UPrint_StrBold((char *)formattedAmount.c_str(), 1, 4, 1);
     UPrint_StrBold("***************", 1, 4, 1);
+	*/
+
+	printReceiptAmount(atoll(eft->amount), isApproved);
 
 	UPrint_Str("\n\n", 2, 1);
 	printLine("TVR:           ", eft->tvr);
@@ -278,4 +343,24 @@ void printHandshakeReceipt(MerchantData *mParam)
 	getPrinterStatus(ret);
 
 
+}
+
+void reprintByRrn(void)
+{
+	Eft eft;
+
+	int result;
+	char rrn[13] = {'\0'};
+
+	memset(&eft, 0x00, sizeof(Eft));
+	gui_clear_dc();
+	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), eft.rrn, 12, 12, 1, 1000)) != 12)
+	{
+	printf("rrn input failed ret : %d\n", result);
+	return;
+	}
+
+	if (getEft(&eft)) return;
+
+	printEftReceipt(&eft);
 }

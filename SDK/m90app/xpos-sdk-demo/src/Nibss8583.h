@@ -186,6 +186,8 @@ typedef struct Eft
     char tableName[30];
     char dbName[30];
 
+    long atPrimaryIndex;
+
 } Eft;
 
 typedef struct NetworkKey
@@ -243,9 +245,9 @@ unsigned int transTypeToCode(const enum TransType transType);
 const char * transTypeToTitle(const enum TransType transType);
 const char * transTypeToMti(const enum TransType transType);
 unsigned int accountTypeToCode(const enum AccountType type);
-short decodeProcessingCode(enum TransType * transType, enum AccountType * fromAccount, enum AccountType * toAccount, const char processingCode[7]);
 short isApprovedResponse(const char responseCode[3]);
 int normalizeIccData(unsigned char *normalizedBcd, unsigned char *de55, const int de55Size, const IccDataT *iccDataDetails, const int detailsSize);
+short decodeProcessingCode(enum TransType * transType, enum AccountType * fromAccount, enum AccountType * toAccount, const char processingCode[7], const char * originalMti);
 
 int createIsoEftPacket(unsigned char *isoPacket, const int size, const Eft *eft);
 int createIsoNetworkPacket(unsigned char *isoPacket, const int size, const NetworkManagement *networkMangement);

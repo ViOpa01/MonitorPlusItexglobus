@@ -10,6 +10,7 @@
 #include "unistd.h"
 #include "EmvDBUtil.h"
 #include "EmvDB.h"
+#include "util.h"
 
 void normalizeDateTime(char * yyyymmddhhmmss, const char * formatedDateTime)
 {
@@ -39,46 +40,7 @@ static void formartAmount(const char *amountIn, char *amountOut)
     sprintf(amountOut, "%s", &amountIn[len]);
 }
 
-static short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmmss) 
-{
-    const char dateSeparator = '-';
-    const char timeSeparator = ':';
 
-    if (size < 24) {
-        fprintf(stderr, "Not enough buffer to format date.\n");
-        return -1;
-    }
-
-    //yyyy
-    strncpy(dbDate, yyyymmddhhmmss, 4);
-    dbDate[4] = dateSeparator;
-
-    //mm
-    strncpy(&dbDate[5], &yyyymmddhhmmss[4], 2);
-    dbDate[7] = dateSeparator;
-
-    //dd
-    strncpy(&dbDate[8], &yyyymmddhhmmss[6], 2);
-    dbDate[10] = ' ';
-
-    //hh
-    strncpy(&dbDate[11], &yyyymmddhhmmss[8], 2);
-    dbDate[13] = timeSeparator;
-
-    //mm
-    strncpy(&dbDate[14], &yyyymmddhhmmss[10], 2);
-    dbDate[16] = timeSeparator;
-
-    //ss
-    strncpy(&dbDate[17], &yyyymmddhhmmss[12], 2);
-    dbDate[19] = '.';
-
-    //hh
-    strncpy(&dbDate[20], "000", 3);
-    dbDate[23] = 0;
-
-    return 0; 
-}
 
 int ctxToInsertMap(std::map<std::string, std::string> &trx, const Eft *eft)
 {
@@ -175,8 +137,7 @@ int ctxToUpdateMap(std::map<std::string, std::string> &trx, const Eft *eft)
     if (!eft)
         return -1;
     int transactionCode;
-    transactionCode = transTypeToCode(eft->transType);
-    sprintf(ps, "%02X%02X%02X", transactionCode, (int)eft->fromAccount, (int)eft->toAccount);
+    sprintf(ps, "%02X%02X%02X", transTypeToCode(eft->transType), accountTypeToCode(eft->fromAccount), accountTypeToCode(eft->toAccount));
     mti = transTypeToMti(eft->transType);
     
     if (mti == NULL) {

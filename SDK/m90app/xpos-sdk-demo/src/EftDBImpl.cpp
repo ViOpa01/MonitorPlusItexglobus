@@ -14,9 +14,46 @@
 #include "libapi_xpos/inc/libapi_util.h"
 
 
+
  const  std::string DBNAME = "emvdb.db";
  #define EFT_DEFAULT_TABLE "Transactions"
 #define EMVDBUTILLOG "EMVDBUTILLOG"
+
+//int EmvDB::updateTransaction(long atPrimaryIndex, const std::map<std::string, std::string>& record)
+
+static short updateEftRequired(const Eft * eft) 
+{
+    if (!strncmp(eft->responseCode, "00", 2)) return 1;
+
+    //transaction not to be updated when declined.
+    if ((eft->transType == EFT_REVERSAL || eft->transType == EFT_COMPLETION)) 
+    {
+        fprintf(stderr, "No need to update, transaction declined...\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+short updateEft(const Eft * eft)
+{
+    EmvDB db(*eft->tableName ? eft->tableName : EFT_DEFAULT_TABLE,  *eft->dbName ? eft->dbName : DBNAME);
+    std::map<std::string, std::string> dbmap;
+
+    if (!updateEftRequired(eft)) {
+        return -1;
+    }
+
+    if (ctxToUpdateMap(dbmap, eft)) {
+        return -3;
+    }
+
+    if (db.updateTransaction(eft->atPrimaryIndex, dbmap)) {
+        return -3;
+    }
+
+    return 0;
+}
 
 short saveEft(Eft *eft)
 {
@@ -29,7 +66,9 @@ short saveEft(Eft *eft)
 
     printf("Started Saving to DB\n");
 
-    if (db.insertTransaction(dbmap) < 0) {
+    eft->atPrimaryIndex = db.insertTransaction(dbmap);
+
+    if (eft->atPrimaryIndex < 0) {
         return -2;
     }
 
@@ -72,10 +111,12 @@ short getEft(Eft * eft)
     normalizeDateTime(eft->yyyymmddhhmmss, dbmap[DB_DATE].c_str());
     strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss));
 
-    if (decodeProcessingCode(NULL, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str())) {
+    if (decodeProcessingCode(&eft->transType, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str(), dbmap[DB_MTI].c_str())) {
         fprintf(stderr, "Error decoding processing code...\n");
         return -2;
     }
+
+    eft->atPrimaryIndex = atoll(dbmap[DB_ID].c_str());
 
     return 0;
 }
