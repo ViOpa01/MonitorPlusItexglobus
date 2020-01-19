@@ -21,6 +21,8 @@
 #include "sdk_security.h"
 #include "EftDbImpl.h"
 
+#include <pthread.h>
+
 //Approved transaction will be reversed if icc update failed.
 #define DEV_MODE
 
@@ -336,7 +338,7 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 
 	//copy original MTI first before setting transaction type to reversal.
 	strncpy(eft->originalMti, transTypeToMti(eft->transType), sizeof(eft->originalMti));
-	
+
 	//copy original date time first before setting the current date time.
 	strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
 	Sys_GetDateTime(eft->yyyymmddhhmmss);
@@ -363,7 +365,8 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 
 	for (i = 0; i < maxTry; i++)
 	{
-			if (sendAndRecvPacket(netParam) == SEND_RECEIVE_SUCCESSFUL) break;
+		if (sendAndRecvPacket(netParam) == SEND_RECEIVE_SUCCESSFUL)
+			break;
 	}
 
 	if (i == maxTry)
@@ -434,7 +437,6 @@ static enum AccountType getAccountType(void)
 static short accountTypeRequired(const enum TransType transType)
 {
 	//TODO: we might need to check device configuration to know if account is required or not.
-	
 
 	switch (transType)
 	{
@@ -504,13 +506,14 @@ void getRrn(char rrn[13])
 
 static short getOriginalDataFromDb(Eft *eft)
 {
-	if (getEft(eft)) {
+	if (getEft(eft))
+	{
 		//TODO: Display couldn't find transaction with rrn eft->rrn
 		return -1;
 	}
 
-	printf("OriginalMti -> %s\nFISC -> %s\nOriginal Datetime -> %s\nAuthCode -> %s\n", 
-	eft->originalMti, eft->forwardingInstitutionIdCode, eft->originalYyyymmddhhmmss, eft->authorizationCode);
+	printf("OriginalMti -> %s\nFISC -> %s\nOriginal Datetime -> %s\nAuthCode -> %s\n",
+		   eft->originalMti, eft->forwardingInstitutionIdCode, eft->originalYyyymmddhhmmss, eft->authorizationCode);
 
 	return 0; //Success																						   //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
 }
@@ -594,6 +597,7 @@ void eftTrans(const enum TransType transType)
 	char sessionKey[33] = {'\0'};
 	char tid[9] = {'\0'};
 	NetWorkParameters netParam;
+	pthread_t thread;
 
 	memset(&netParam, 0x00, sizeof(NetWorkParameters));
 	memset(&eft, 0x00, sizeof(Eft));
@@ -637,16 +641,10 @@ void eftTrans(const enum TransType transType)
 	copyMerchantParams(&eft, &merchantParameters);
 	populateEchoData(eft.echoData);
 	strncpy(eft.sessionKey, sessionKey, sizeof(eft.sessionKey));
-
-	printf("Eft Session Key -> '%s'\n", sessionKey);
-
 	strncpy(eft.posConditionCode, POS_CONDITION_CODE, sizeof(eft.posConditionCode));
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
-
 	strcpy(netParam.title, transTypeToTitle(transType));
-
-	//TODO, put the netLink below on a thread.
-	netLink(&netParam);
+	pthread_create(&thread, NULL, preDial, &netParam);
 	performEft(&eft, &netParam, transTypeToTitle(transType));
 }
 
@@ -663,7 +661,8 @@ static long long getAmount(Eft *eft, const char *title)
 	char amountTitle[45] = {'\0'};
 	const int maxLen = 9;
 
-	if (!amountRequired(eft)) {
+	if (!amountRequired(eft))
+	{
 		sprintf(eft->amount, "%012lld", amount);
 		return 0;
 	}
@@ -962,23 +961,27 @@ short emvGetKernelData(char *ascValue, const unsigned char *tag)
 	return 0;
 }
 
-short addIccTagsToEft(Eft * eft) 
+short addIccTagsToEft(Eft *eft)
 {
 	eft->cardSequenceNumber[0] = '0';
-    if (emvGetKernelData(&eft->cardSequenceNumber[1], "\x5f\x34")) {
+	if (emvGetKernelData(&eft->cardSequenceNumber[1], "\x5f\x34"))
+	{
 		return -3;
 	}
 	printf("Pan seq asc %s\n", eft->cardSequenceNumber);
 
-	if (emvGetKernelData(eft->tsi, "\x9B")) {
+	if (emvGetKernelData(eft->tsi, "\x9B"))
+	{
 		return -4;
 	}
 
-	if (emvGetKernelData(eft->tvr, "\x95")) {
+	if (emvGetKernelData(eft->tvr, "\x95"))
+	{
 		return -5;
 	}
 
-	if (emvGetKernelData(eft->aid, "\x9F\x06")) {
+	if (emvGetKernelData(eft->aid, "\x9F\x06"))
+	{
 		return -6;
 	}
 
@@ -1033,9 +1036,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	strcpy(card_in->title, title);
 	strcpy(card_in->card_page_msg, "Please insert/swipe"); //Swipe interface prompt information, a line of 20 characters, up to two lines, automatic branch.
 
-
-    puts("==================> 3");
-
+	puts("==================> 3");
 
 	if (accountTypeRequired(eft->transType))
 	{
@@ -1141,7 +1142,8 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	puts("==================> 8");
 
-	if (addIccTagsToEft(eft)) {
+	if (addIccTagsToEft(eft))
+	{
 		return -3;
 	}
 
@@ -1253,16 +1255,15 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -5;
 	}
 
-	
 	if (!result && isApprovedResponse(eft->responseCode) && iccUpdateRequired(eft->transType)) //Successfull
 	{
 		int status = 0;
 
 		status = iccUpdate(eft, &hostType);
 
-		#if defined(DEV_MODE) 
+#if defined(DEV_MODE)
 		{
-			
+
 			//Calling auto reversal will change transType to EFT_REVERSAL, hence reversal receipt will be printed
 			//Also reversal leg will be saved on the db and Reversal Adviced shall be displayed on the receipt.
 
@@ -1274,10 +1275,11 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 				result = -6;
 			}
 		}
-		#endif
+#endif
 	}
 
-	if (saveEft(eft)) {
+	if (saveEft(eft))
+	{
 		fprintf(stderr, "Error saving transaction...\n");
 	}
 
