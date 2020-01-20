@@ -201,22 +201,27 @@ int printEftReceipt(Eft *eft)
 	printLine("TVR:           ", eft->tvr);
 	printLine("TSI:           ", eft->tsi);
 
-	printDottedLine();
-	
-	printFooter();
-
 	if (*eft->message) {
 		//TODO print message on receipt.
+
+		UPrint_SetFont(7, 1, 1);
+		UPrint_Str(eft->message, 2, 1);
 	}
 
 	if (strncmp(eft->responseCode, "00", 2)) { 
 		char declinedMessage[65];
 
 		sprintf(declinedMessage, "%s: %s", eft->responseCode, eft->responseDesc);
-
+		UPrint_SetFont(7, 1, 1);
+		UPrint_Str(declinedMessage, 2, 1);
 		//TODO: declinedMessage on receipt.
 	}
 
+	printDottedLine();
+	
+	printFooter();
+
+	
 	ret = UPrint_Start(); // Output to printer
 	getPrinterStatus(ret);
 
