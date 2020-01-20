@@ -17,6 +17,7 @@ extern "C" {
 
 int printEftReceipt(Eft *eft);
 void printHandshakeReceipt(MerchantData *mParam);
+void reprintByRrn(void);
 
 
 #ifdef __cplusplus

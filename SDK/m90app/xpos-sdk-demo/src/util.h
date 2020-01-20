@@ -1,6 +1,11 @@
 #ifndef UTIL__H
 #define UTIL__H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 
 typedef struct Userdata {
    int contentLength;
@@ -21,9 +26,11 @@ int getHttpStatusCode(const char* response);
 const char* bodyPointer(const char* response);
 int bodyIndex(const char* response);
 // int getContentLength(void* userdata, const char* tag, const int tag_len, const char* value, const int val_len);
+short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmmss);
 
-
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif UTIL__H
 

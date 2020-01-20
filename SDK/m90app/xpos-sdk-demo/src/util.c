@@ -197,40 +197,51 @@ int bodyIndex(const char* response)
     return len;
 }
 
-/*
-int getContentLength(void* userdata, const char* tag, const int tag_len, const char* value, const int val_len)
+
+/**
+ * Function: beautifyDateTime
+ * Usage:
+ * ---------------------------
+ *
+ */
+
+short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmmss) 
 {
-    int* i;
-    int index;
-    int space;
-    const char* trimVal;
-	char hKey[256 + 1] = {0};
-	char hValue[1024 + 1] = {0};
+    const char dateSeparator = '-';
+    const char timeSeparator = ':';
 
-    i = (int *)userdata;
-
-    // Convert to lower case while trimming
-    for (index = 0; index < tag_len; ++index) {
-        hKey[index] = tolower(*(tag + index));
+    if (size < 24) {
+        fprintf(stderr, "Not enough buffer to format date.\n");
+        return -1;
     }
 
-    //trim leading whitespace before picking value
-    space = 0;
-    while (space < val_len && isspace(*(value + space)))
-        ++space;
+    //yyyy
+    strncpy(dbDate, yyyymmddhhmmss, 4);
+    dbDate[4] = dateSeparator;
 
-    //
-    for (index = 0; space < val_len; ++space, ++index) {
-        hValue[index] = tolower(*(value + space));
-    }
+    //mm
+    strncpy(&dbDate[5], &yyyymmddhhmmss[4], 2);
+    dbDate[7] = dateSeparator;
 
-	if (!strcmp("content-length", hKey)) {
-		*i = atoi(hValue);
-        return -1;	// done
-    }
+    //dd
+    strncpy(&dbDate[8], &yyyymmddhhmmss[6], 2);
+    dbDate[10] = ' ';
 
-	return 0;
+    //hh
+    strncpy(&dbDate[11], &yyyymmddhhmmss[8], 2);
+    dbDate[13] = timeSeparator;
+
+    //mm
+    strncpy(&dbDate[14], &yyyymmddhhmmss[10], 2);
+    dbDate[16] = timeSeparator;
+
+    //ss
+    strncpy(&dbDate[17], &yyyymmddhhmmss[12], 2);
+    dbDate[19] = '.';
+
+    //hh
+    strncpy(&dbDate[20], "000", 3);
+    dbDate[23] = 0;
+
+    return 0; 
 }
-*/
-
-

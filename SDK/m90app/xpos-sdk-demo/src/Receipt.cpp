@@ -7,6 +7,9 @@
 #include "Receipt.h"
 #include "appInfo.h"
 
+// #include "EftDBImpl.h"
+#include "EftDbImpl.h"
+
 extern "C" {
 #include "Nibss8583.h"
 #include "nibss.h"
@@ -17,6 +20,7 @@ extern "C" {
 #include "libapi_xpos/inc/libapi_print.h"
 #include "libapi_xpos/inc/libapi_file.h"
 #include "libapi_xpos/inc/libapi_gui.h"
+#include "libapi_xpos/inc/libapi_util.h"
 
 }
 
@@ -28,6 +32,12 @@ extern "C" {
 
 #define DOTTEDLINE		"--------------------------------"
 #define DOUBLELINE		"================================"
+
+enum AlignType{
+	ALIGN_CENTER,
+	ALIGN_LEFT,
+	ALIGH_RIGHT,
+};
 
 //Add a line of print data
 static void printLine(char *head, char *val)
@@ -136,6 +146,80 @@ static char* transTypeToString(enum TransType type)
 	}
 }
 
+
+/**
+ * Function: alignBuffer 
+ * Usage: 
+ * ----------------------
+ */
+
+static void alignBuffer(char * output, const char * input, const int expectedLen, const enum AlignType alignType)
+{
+	int len = strlen(input);
+	int requiredSpaces = expectedLen - len;
+
+	if (len >= expectedLen) return;
+
+	if (alignType == ALIGH_RIGHT) {
+		memcpy(output, input, len);
+		memset(&output[len], ' ', requiredSpaces);
+	} else if(alignType == ALIGN_LEFT) {
+		memset(output, ' ', requiredSpaces);
+		memcpy(&output[requiredSpaces], input, len);
+	} else if(alignType == ALIGN_CENTER) {
+		requiredSpaces /= 2;
+		memset(output, ' ', requiredSpaces);
+		memcpy(&output[requiredSpaces], input, len);
+		memset(&output[requiredSpaces + len], ' ', requiredSpaces);
+	}
+
+	output[expectedLen] = 0;
+}
+
+static void printReceiptAmount(const long long amount, short center)
+{
+    char buffer[21];
+    char line[32] = { '\0' };
+    char spaces[33] = { '\0' };
+    int len;
+	char centralizedAmount[34] = {'\0'};
+	char centralizedLine[34] = {'\0'};
+	const int printerWidth = 24; //Not sure
+
+
+    memset(buffer, '\0', sizeof(buffer));
+    sprintf(buffer, "NGN %.2f", amount / 100.0);
+
+	alignBuffer(centralizedAmount, buffer, printerWidth, ALIGN_CENTER);
+
+
+    len = strlen(buffer);
+    memset(line, '*', len + 4);
+
+	alignBuffer(centralizedLine, line, printerWidth, ALIGN_CENTER);
+
+    if (center) {
+		UPrint_StrBold(centralizedLine, 1, 1, 1);
+		UPrint_StrBold(centralizedAmount, 1, 1, 1);
+		UPrint_StrBold(centralizedLine, 1, 1, 1);
+    } else {
+		char alignedLine[35] = {'\0'};
+		char alignedAmount[35] = {'\0'};
+		const char * amountLabel = "AMOUNT";
+
+		alignBuffer(alignedLine, line, printerWidth, ALIGH_RIGHT);
+		alignBuffer(alignedAmount, buffer, printerWidth - strlen(amountLabel), ALIGN_LEFT);
+
+       UPrint_Feed(6);
+
+       UPrint_StrBold(alignedLine, 1, 1, 1);
+	   printLine("AMOUNT", alignedAmount);
+	   UPrint_StrBold(alignedLine, 1, 1, 1);
+    }
+
+	UPrint_Feed(6);
+}
+
 int printEftReceipt(Eft *eft)
 {
 	int ret = 0;
@@ -144,6 +228,11 @@ int printEftReceipt(Eft *eft)
 	char maskedPan[25] = {'\0'};
 	char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
+	short isApproved = isApprovedResponse(eft->responseCode);
+	
+	char rightAligned[45];
+	char alignLabel[45];
+	int printerWidth = 32;
 
     getParameters(&parameter);
     getDateAndTime(dt);
@@ -171,6 +260,8 @@ int printEftReceipt(Eft *eft)
 
 	UPrint_SetDensity(3); //Set print density to 3 normal
 	UPrint_SetFont(7, 2, 2);
+
+	
 	if (isApprovedResponse(eft->responseCode))
 	{
 		UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
@@ -185,43 +276,42 @@ int printEftReceipt(Eft *eft)
 	MaskPan(eft->pan, maskedPan);
 	printLine("PAN:           ", maskedPan);
 	printLine("EXPIRY         ", eft->expiryDate);
+
+	if (isApproved) {
+		sprintf(alignLabel, "%s", "AuthCode");
+		alignBuffer(rightAligned, eft->authorizationCode, printerWidth - strlen(alignLabel), ALIGH_RIGHT);
+		printLine(alignLabel, rightAligned);
+	}
+	
 	printLine("RRN:           ", eft->rrn);
 	printLine("STAN:          ", eft->stan);
 	printLine("TERMINAL NO.:  ", eft->terminalId);
 
 	printLine("CARD NAME:   ", eft->cardHolderName);
 
-	std::string formattedAmount(eft->amount);
-	formatAmount(formattedAmount);
-	UPrint_StrBold("***************", 1, 4, 1);
-	UPrint_StrBold((char *)formattedAmount.c_str(), 1, 4, 1);
-    UPrint_StrBold("***************", 1, 4, 1);
+	printReceiptAmount(atoll(eft->amount), isApproved);
 
 	UPrint_Str("\n\n", 2, 1);
 	printLine("TVR:           ", eft->tvr);
 	printLine("TSI:           ", eft->tsi);
 
-	if (*eft->message) {
-		//TODO print message on receipt.
+	UPrint_Feed(6);
 
-		UPrint_SetFont(7, 1, 1);
-		UPrint_Str(eft->message, 2, 1);
+	if (*eft->message) {
+		printLine("", eft->message);
 	}
 
 	if (strncmp(eft->responseCode, "00", 2)) { 
 		char declinedMessage[65];
 
 		sprintf(declinedMessage, "%s: %s", eft->responseCode, eft->responseDesc);
-		UPrint_SetFont(7, 1, 1);
-		UPrint_Str(declinedMessage, 2, 1);
-		//TODO: declinedMessage on receipt.
+		printLine(declinedMessage, eft->message);
 	}
 
 	printDottedLine();
 	
 	printFooter();
 
-	
 	ret = UPrint_Start(); // Output to printer
 	getPrinterStatus(ret);
 
@@ -283,4 +373,24 @@ void printHandshakeReceipt(MerchantData *mParam)
 	getPrinterStatus(ret);
 
 
+}
+
+void reprintByRrn(void)
+{
+	Eft eft;
+
+	int result;
+	char rrn[13] = {'\0'};
+
+	memset(&eft, 0x00, sizeof(Eft));
+	gui_clear_dc();
+	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), eft.rrn, 12, 12, 1, 1000)) != 12)
+	{
+	printf("rrn input failed ret : %d\n", result);
+	return;
+	}
+
+	if (getEft(&eft)) return;
+
+	printEftReceipt(&eft);
 }

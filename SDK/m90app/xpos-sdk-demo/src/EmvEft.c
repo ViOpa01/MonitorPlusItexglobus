@@ -504,13 +504,68 @@ void getRrn(char rrn[13])
 	rrn[12] = 0;
 }
 
+static short confirmEft(const Eft * eft)
+{
+	char display[65];
+	char dateTime[27] = {'\0'};
+	int len = 0;
+
+	beautifyDateTime(dateTime, sizeof(dateTime), eft->yyyymmddhhmmss);
+	dateTime[strlen(dateTime) - 4] = 0;
+
+	sprintf(display, "Amount: N %.2f\nRRN: %s\nDate: %s", atoll(eft->amount) / 100.0, eft->rrn, dateTime);
+	//here
+	if (gui_messagebox_show(transTypeToTitle(eft->transType), display, "No", "Yes", 0) != 1) return -1;
+	
+	return 0;
+}
+
+static short isEftAllowed(const enum TransType current, const Eft * eft) 
+{
+	if (current == eft->transType) 
+	{
+		const char * title = transTypeToTitle(eft->transType);
+
+		if (eft->transType == EFT_REVERSAL) {
+			gui_messagebox_show(title, "Already Reversed", "", "", 0);
+		} else if(eft->transType == EFT_REFUND) {
+			gui_messagebox_show(title, "Already Refunded", "", "", 0);
+		} else if(eft->transType == EFT_COMPLETION) {
+			gui_messagebox_show(title, "Already Completed", "", "", 0);
+		} else {
+			gui_messagebox_show(title, "Unknown Error", "", "", 0);
+		}
+
+		return 0;
+	}
+
+	return 1;
+}
+
 static short getOriginalDataFromDb(Eft *eft)
 {
+	enum TransType current = eft->transType;
+
 	if (getEft(eft))
 	{
-		//TODO: Display couldn't find transaction with rrn eft->rrn
+		eft->transType = current;
+		gui_messagebox_show(eft->rrn, "Couldn't find transaction", "", "", 0);
 		return -1;
 	}
+
+	if (!isEftAllowed(current, eft)) {
+		eft->transType = current;
+		return -2;
+	}
+
+	//Confirm with the original transaction type.
+	if (confirmEft(eft)) {
+		eft->transType = current;
+		return -3;
+	} 
+
+	//Restore current transaction type
+	eft->transType = current;
 
 	printf("OriginalMti -> %s\nFISC -> %s\nOriginal Datetime -> %s\nAuthCode -> %s\n",
 		   eft->originalMti, eft->forwardingInstitutionIdCode, eft->originalYyyymmddhhmmss, eft->authorizationCode);
@@ -988,6 +1043,23 @@ short addIccTagsToEft(Eft *eft)
 	return 0;
 }
 
+static short persistEft(const Eft * eft)
+{
+	if (eft->atPrimaryIndex == 0) { 
+		if (saveEft(eft)) {
+			fprintf(stderr, "Error saving transaction...\n");
+			return -1;
+		} 
+	} else {
+		if (updateEft(eft))  {
+			fprintf(stderr, "Error updating transaction transaction...\n");
+			return -2;
+		}
+	}
+
+	return 0;
+}
+
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
@@ -1077,26 +1149,45 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	APP_TRACE("emv_read_card");
 	card_out = (st_read_card_out *)malloc(sizeof(st_read_card_out));
-	memset(card_out, 0, sizeof(st_read_card_out));
-	ret = emv_read_card(card_in, card_out);
+	
+	while (1)
+	{
+		memset(card_out, 0, sizeof(st_read_card_out));
+		ret = emv_read_card(card_in, card_out);
 
-	//if(ret == READ_CARD_RET_MAGNETIC){					// Magnetic stripe cards
-	//	sdk_log_out("trackb:%s\r\n", card_out.track2);
-	//	sdk_log_out("trackc:%s\r\n", card_out.track3);
-	//	sdk_log_out("pan:%s\r\n", card_out.pan);
-	//	sdk_log_out("expdate:%s\r\n", card_out.exp_data);
+		if(EMVAPI_RET_FALLBACk == ret)
+		{
+			card_in->card_mode = READ_CARD_MODE_MAG;
+			card_in->forceIC=0;
+			memset(card_in->card_page_msg,0x00,sizeof(card_in->card_page_msg));
+			strcpy(card_in->card_page_msg,"please try to swipe");
+			continue;
+		}
+		else if(EMVAPI_RET_FORCEIC == ret)
+		{
+			if(card_in->card_mode == READ_CARD_MODE_MAG)
+			{
+				ret = EMVAPI_RET_ARQC;
+				break;
+			}
+			else
+			{
+				card_in->card_mode = READ_CARD_MODE_IC | READ_CARD_MODE_RF;
+				memset(card_in->card_page_msg,0x00,sizeof(card_in->card_page_msg));
+				strcpy(card_in->card_page_msg,"don't swipe,please tap/insert the card");
+				continue;
+			}
+		}
+		else if(EMVAPI_RET_OTHER == ret)
+		{
+			card_in->card_mode = READ_CARD_MODE_IC;
+			memset(card_in->card_page_msg,0x00,sizeof(card_in->card_page_msg));
+			strcpy(card_in->card_page_msg,"please insert card");
+			continue;
+		}
 
-	//
-	//}
-	//else if(ret == INPUTCARD_RET_ICC){					//
-	//
-	//}
-	//else if(ret == INPUTCARD_RET_RFID){
-	//card_rf_emv_proc(0, 1, m_tmf_param,_pack_8583);
-	//}
-	//else{
-	//	return ret;
-	//}
+		break;
+	}
 
 	puts("==================> 6");
 
@@ -1278,14 +1369,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 #endif
 	}
 
-	if (saveEft(eft))
-	{
-		fprintf(stderr, "Error saving transaction...\n");
-	}
+	persistEft(eft);
+	printEftReceipt(eft);
 
 	printf("Result After IccUpdate -> %d\n", result);
-
-	printEftReceipt(eft);
 
 	return result;
 }
