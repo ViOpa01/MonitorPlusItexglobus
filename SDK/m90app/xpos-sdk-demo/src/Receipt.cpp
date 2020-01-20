@@ -228,6 +228,7 @@ int printEftReceipt(Eft *eft)
 	char maskedPan[25] = {'\0'};
 	char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
+	MerchantData mParam = {'\0'};
 	short isApproved = isApprovedResponse(eft->responseCode);
 	
 	char rightAligned[45];
@@ -235,6 +236,7 @@ int printEftReceipt(Eft *eft)
 	int printerWidth = 32;
 
     getParameters(&parameter);
+	readMerchantData(&mParam);
     getDateAndTime(dt);
     sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
 
@@ -251,8 +253,8 @@ int printEftReceipt(Eft *eft)
 	UPrint_BitMap(filename, 1);//print image
 	
 	UPrint_SetFont(8, 2, 2);
-    UPrint_Str(eft->merchantName, 2, 1);
-    printLine("MID : ", eft->merchantId);
+    UPrint_Str(mParam.address, 2, 1);
+    printLine("MID : ", parameter.cardAcceptiorIdentificationCode);
     printLine("DATE TIME   : ", buff);
     printDottedLine();
 
@@ -285,7 +287,7 @@ int printEftReceipt(Eft *eft)
 	
 	printLine("RRN:           ", eft->rrn);
 	printLine("STAN:          ", eft->stan);
-	printLine("TERMINAL NO.:  ", eft->terminalId);
+	printLine("TERMINAL NO.:  ", mParam.tid);
 
 	printLine("CARD NAME:   ", eft->cardHolderName);
 
@@ -356,7 +358,7 @@ void printHandshakeReceipt(MerchantData *mParam)
     printLine("DATE TIME   : ", buff);
     printDottedLine();
 
-    
+
     sprintf(filename, "xxxx\\%s", BANKLOGO);
 	UPrint_BitMap(filename, 1);//print image
 	// UPrint_Feed(20);
