@@ -716,6 +716,10 @@ static long long getAmount(Eft *eft, const char *title)
 	char amountTitle[45] = {'\0'};
 	const int maxLen = 9;
 
+	if (orginalDataRequired(&eft)) { //Amount already populated from DB
+		return atoll(eft->amount);
+	}
+
 	if (!amountRequired(eft))
 	{
 		sprintf(eft->amount, "%012lld", amount);
@@ -1092,7 +1096,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -1;
 	}
 
-	puts("==================> 1");
 
 	card_in->pin_input = 1;
 	card_in->pin_max_len = 12;
