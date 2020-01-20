@@ -188,6 +188,8 @@ typedef struct Eft
 
     long atPrimaryIndex;
 
+    char balance[256];
+
 } Eft;
 
 typedef struct NetworkKey

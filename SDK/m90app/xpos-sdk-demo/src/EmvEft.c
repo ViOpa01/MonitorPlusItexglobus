@@ -1064,6 +1064,11 @@ static short persistEft(const Eft * eft)
 	return 0;
 }
 
+static void displayBalance(char * balance)
+{
+	gui_messagebox_show("BALANCE", balance, "", "", 0);
+}
+
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
@@ -1373,6 +1378,11 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 
 	persistEft(eft);
+
+	if (!result && isApprovedResponse(eft->responseCode) && isBalance(eft)) {
+		displayBalance(eft->balance);
+	}
+
 	printEftReceipt(eft);
 
 	printf("Result After IccUpdate -> %d\n", result);
