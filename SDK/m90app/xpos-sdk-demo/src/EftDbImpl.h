@@ -16,6 +16,7 @@ extern "C" {
 short getEft(Eft * eft);
 short saveEft(Eft *eft);
 short updateEft(const Eft * eft);
+short getLastTransaction(Eft * eft);
 
 #ifdef __cplusplus
 }

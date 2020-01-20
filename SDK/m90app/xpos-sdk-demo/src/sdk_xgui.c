@@ -515,9 +515,8 @@ static int _menu_proc(char *pid)
 	}
 	else if (!strcmp(pid, UI_REPRINT_LAST))
 	{
-		//TODO: @Pius 
-		// get Last trans with last primary index from db
-		// print 
+		reprintLastTrans();
+		return 0;
 	}
 	else if (!strcmp(pid, UI_EOD_ALL_TRANS))
 	{
