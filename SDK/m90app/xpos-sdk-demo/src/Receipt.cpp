@@ -32,6 +32,12 @@ extern "C" {
 #define DOTTEDLINE		"--------------------------------"
 #define DOUBLELINE		"================================"
 
+enum AlignType{
+	ALIGN_CENTER,
+	ALIGN_LEFT,
+	ALIGH_RIGHT,
+};
+
 //Add a line of print data
 static void printLine(char *head, char *val)
 {
@@ -140,17 +146,33 @@ static char* transTypeToString(enum TransType type)
 }
 
 
-static void centralizeBuffer(char * output, const char * input, const int expectedLen)
+/**
+ * Function: alignBuffer 
+ * Usage: 
+ * ----------------------
+ */
+
+static void alignBuffer(char * output, const char * input, const int expectedLen, const enum AlignType alignType)
 {
 	int len = strlen(input);
-	int requiredSpaces = (expectedLen - len) / 2;
+	int requiredSpaces = expectedLen - len;
 
 	if (len >= expectedLen) return;
-	memset(output, ' ', requiredSpaces);
-	memcpy(&output[requiredSpaces], input, len);
-	memset(&output[requiredSpaces + len], ' ', requiredSpaces);
 
+	if (alignType == ALIGH_RIGHT) {
+		memcpy(output, input, len);
+		memset(&output[len], ' ', requiredSpaces);
+	} else if(alignType == ALIGN_LEFT) {
+		memset(output, ' ', requiredSpaces);
+		memcpy(&output[requiredSpaces], input, len);
+	} else if(alignType == ALIGN_CENTER) {
+		requiredSpaces /= 2;
+		memset(output, ' ', requiredSpaces);
+		memcpy(&output[requiredSpaces], input, len);
+		memset(&output[requiredSpaces + len], ' ', requiredSpaces);
+	}
 
+	output[expectedLen] = 0;
 }
 
 static void printReceiptAmount(const long long amount, short center)
@@ -161,37 +183,40 @@ static void printReceiptAmount(const long long amount, short center)
     int len;
 	char centralizedAmount[34] = {'\0'};
 	char centralizedLine[34] = {'\0'};
+	const int printerWidth = 24; //Not sure
 
 
     memset(buffer, '\0', sizeof(buffer));
     sprintf(buffer, "NGN %.2f", amount / 100.0);
 
-	centralizeBuffer(centralizedAmount, buffer, 24);
+	alignBuffer(centralizedAmount, buffer, printerWidth, ALIGN_CENTER);
 
 
     len = strlen(buffer);
     memset(line, '*', len + 4);
 
-	centralizeBuffer(centralizedLine, line, 24);
+	alignBuffer(centralizedLine, line, printerWidth, ALIGN_CENTER);
 
     if (center) {
-		//TODO: calculation to centralize
 		UPrint_StrBold(centralizedLine, 1, 1, 1);
 		UPrint_StrBold(centralizedAmount, 1, 1, 1);
 		UPrint_StrBold(centralizedLine, 1, 1, 1);
     } else {
-        len = 32 - strlen(line);
-        memset(spaces, ' ', len);
+		char alignedLine[35] = {'\0'};
+		char alignedAmount[35] = {'\0'};
+		const char * amountLabel = "AMOUNT";
+
+		alignBuffer(alignedLine, line, printerWidth, ALIGH_RIGHT);
+		alignBuffer(alignedAmount, buffer, printerWidth - strlen(amountLabel), ALIGN_LEFT);
 
        UPrint_Feed(6);
 
-        printLine(spaces, line);
-        strcat(buffer, "  ");
-        printLine("AMOUNT", buffer);
-        printLine(spaces, line);
-
-       UPrint_Feed(6);
+       UPrint_StrBold(alignedLine, 1, 1, 1);
+	   printLine("AMOUNT", alignedAmount);
+	   UPrint_StrBold(alignedLine, 1, 1, 1);
     }
+
+	UPrint_Feed(6);
 }
 
 int printEftReceipt(Eft *eft)
@@ -203,6 +228,10 @@ int printEftReceipt(Eft *eft)
 	char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
 	short isApproved = isApprovedResponse(eft->responseCode);
+	
+	char rightAligned[45];
+	char alignLabel[45];
+	int printerWidth = 32;
 
     getParameters(&parameter);
     getDateAndTime(dt);
@@ -246,19 +275,18 @@ int printEftReceipt(Eft *eft)
 	MaskPan(eft->pan, maskedPan);
 	printLine("PAN:           ", maskedPan);
 	printLine("EXPIRY         ", eft->expiryDate);
+
+	if (isApproved) {
+		sprintf(alignLabel, "%s", "AuthCode");
+		alignBuffer(rightAligned, eft->authorizationCode, printerWidth - strlen(alignLabel), ALIGH_RIGHT);
+		printLine(alignLabel, rightAligned);
+	}
+	
 	printLine("RRN:           ", eft->rrn);
 	printLine("STAN:          ", eft->stan);
 	printLine("TERMINAL NO.:  ", eft->terminalId);
 
 	printLine("CARD NAME:   ", eft->cardHolderName);
-
-	/*
-	std::string formattedAmount(eft->amount);
-	formatAmount(formattedAmount);
-	UPrint_StrBold("***************", 1, 4, 1);
-	UPrint_StrBold((char *)formattedAmount.c_str(), 1, 4, 1);
-    UPrint_StrBold("***************", 1, 4, 1);
-	*/
 
 	printReceiptAmount(atoll(eft->amount), isApproved);
 
@@ -266,21 +294,22 @@ int printEftReceipt(Eft *eft)
 	printLine("TVR:           ", eft->tvr);
 	printLine("TSI:           ", eft->tsi);
 
-	printDottedLine();
-	
-	printFooter();
+	UPrint_Feed(6);
 
 	if (*eft->message) {
-		//TODO print message on receipt.
+		printLine("", eft->message);
 	}
 
 	if (strncmp(eft->responseCode, "00", 2)) { 
 		char declinedMessage[65];
 
 		sprintf(declinedMessage, "%s: %s", eft->responseCode, eft->responseDesc);
-
-		//TODO: declinedMessage on receipt.
+		printLine(declinedMessage, eft->message);
 	}
+
+	printDottedLine();
+	
+	printFooter();
 
 	ret = UPrint_Start(); // Output to printer
 	getPrinterStatus(ret);
