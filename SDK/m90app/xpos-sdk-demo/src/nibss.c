@@ -800,6 +800,7 @@ short uiHandshake(void)
 
     for (i = 0; i < maxRetry; i++)
     {
+        //TODO: make network lib tread save and put this on a thread.
         if (!downloadRemoteLogo(mParam.tid))
             break;
     }

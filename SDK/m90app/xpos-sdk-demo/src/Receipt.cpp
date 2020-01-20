@@ -264,6 +264,8 @@ int printEftReceipt(Eft *eft)
 	UPrint_SetFont(7, 2, 2);
 
 	
+	//UPrint_StrBold((isApproved) ? "APPROVED" : "DECLINED", 1, 4, 1);
+	
 	if (isApprovedResponse(eft->responseCode))
 	{
 		UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
@@ -303,7 +305,7 @@ int printEftReceipt(Eft *eft)
 		printLine("", eft->message);
 	}
 
-	if (strncmp(eft->responseCode, "00", 2)) { 
+	if (!isApproved) { 
 		char declinedMessage[65];
 
 		sprintf(declinedMessage, "%s: %s", eft->responseCode, eft->responseDesc);
