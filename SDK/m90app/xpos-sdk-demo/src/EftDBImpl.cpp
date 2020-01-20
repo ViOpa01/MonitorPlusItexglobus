@@ -122,6 +122,50 @@ short getEft(Eft * eft)
     return 0;
 }
 
+short getLastTransaction(Eft * eft)
+{
+    unsigned char processingCodeBcd[3];
+    EmvDB db(*eft->tableName ? eft->tableName : EFT_DEFAULT_TABLE,  *eft->dbName ? eft->dbName : DBNAME);
+    
+    std::map<std::string, std::string> dbmap;
+    eft->atPrimaryIndex = db.lastTransactionId();
+
+    if(eft->atPrimaryIndex <= 0) {
+        return -1;
+    }
+
+    printf("Last Primary index : %d\n", eft->atPrimaryIndex);
+
+    db.select(dbmap, eft->atPrimaryIndex);
+
+    strncpy(eft->pan, dbmap[DB_PAN].c_str(), sizeof(eft->pan));
+    strncpy(eft->aid, dbmap[DB_AID].c_str(), sizeof(eft->aid));
+    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), sizeof(eft->additionalAmount));
+    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), sizeof(eft->authorizationCode));
+    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), sizeof(eft->cardHolderName));
+    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), sizeof(eft->cardLabel));
+    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), sizeof(eft->responseCode));
+    strncpy(eft->stan, dbmap[DB_STAN].c_str(), sizeof(eft->stan));
+    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), sizeof(eft->rrn));
+    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), sizeof(eft->tvr));
+    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), sizeof(eft->tsi));
+    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), sizeof(eft->originalMti));
+    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), sizeof(eft->originalMti));
+    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), sizeof(eft->expiryDate));
+
+    sprintf(eft->amount, "%012zu", atol(dbmap[DB_AMOUNT].c_str()));
+    normalizeDateTime(eft->yyyymmddhhmmss, dbmap[DB_DATE].c_str());
+    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss));
+
+    if (decodeProcessingCode(&eft->transType, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str(), dbmap[DB_MTI].c_str())) {
+        fprintf(stderr, "Error decoding processing code...\n");
+        return -2;
+    }
+
+    return 0;
+}
+
+
 
 void printTodayTransaction()
 {

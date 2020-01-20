@@ -390,11 +390,22 @@ void reprintByRrn(void)
 	gui_clear_dc();
 	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), eft.rrn, 12, 12, 1, 1000)) != 12)
 	{
-	printf("rrn input failed ret : %d\n", result);
-	return;
+		printf("rrn input failed ret : %d\n", result);
+		return;
 	}
 
 	if (getEft(&eft)) return;
+
+	printEftReceipt(&eft);
+}
+
+void reprintLastTrans()
+{
+	Eft eft;
+
+	memset(&eft, 0x00, sizeof(Eft));
+
+	if(getLastTransaction(&eft)) return;
 
 	printEftReceipt(&eft);
 }
