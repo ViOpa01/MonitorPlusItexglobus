@@ -48,6 +48,16 @@ typedef struct NetWorkParameters
 	int verificationLevel; //0 no verification, 1: verify
 } NetWorkParameters;
 
+typedef struct {
+    char apn[64];
+    char imsi[17];
+    char username[16];
+    char password[16];
+    int mode;
+    int slot;
+    int timeout;
+} Network;
+
 
 /**
  * Function: netLink
@@ -60,6 +70,7 @@ short netLink(NetWorkParameters *netParam);
 
 short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp);
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
+int imsiToNetProfile(Network* profile, const char* imsi);
 void * preDial(void * netParams);
 
 

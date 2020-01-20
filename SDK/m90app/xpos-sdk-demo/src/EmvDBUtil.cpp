@@ -100,7 +100,7 @@ int ctxToInsertMap(std::map<std::string, std::string> &trx, const Eft *eft)
     if (beautifyDateTime(formattedDate, sizeof(formattedDate), eft->yyyymmddhhmmss)) return -3;
     formartAmount(eft->amount, formattedAmount);
 
-    trx[DB_NAME] = eft->dbName;
+    trx[DB_NAME] = eft->cardHolderName;
     trx[DB_MTI] = mti;
     trx[DB_PS] = ps;
     trx[DB_RRN] = eft->rrn;
@@ -111,6 +111,7 @@ int ctxToInsertMap(std::map<std::string, std::string> &trx, const Eft *eft)
     trx[DB_TVR] = eft->tvr;
     trx[DB_TSI] = eft->tsi;
     trx[DB_RESP] = eft->responseCode;
+    trx[DB_AUTHID] = eft->authorizationCode;
 
     trx[DB_AMOUNT] = formattedAmount;
     if (eft->additionalAmount)

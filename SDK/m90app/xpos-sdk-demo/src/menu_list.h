@@ -20,18 +20,19 @@
 #define UI_REPRINT_TODAY    "Today"
 #define UI_REPRINT_BY_DATE  "By Date"
 #define UI_REPRINT_BY_RRN   "By RRN"
+#define UI_REPRINT_LAST     "Last Trans"
 
 #define UI_EOD      "EOD"                   // Menu for EOD
 
 // Sub Menu for EOD
-#define UI_EOD_ALL_TRANS    "All Trans"
-#define UI_EOD_PURCHASE     "Purchase"
-#define UI_EOD_CASHBACK     "CashBack"
-#define UI_EOD_PREAUTH      "PreAuth"
-#define UI_EOD_COMPLETION   "Completion"
-#define UI_EOD_CASHADVANCE  "Cash Advance"
-#define UI_EOD_REFUND       "Refund"
-#define UI_EOD_REVERSAL     "Reversal"
+#define UI_EOD_ALL_TRANS    "EOD All Trans"
+#define UI_EOD_PURCHASE     "EOD Purchase"
+#define UI_EOD_CASHBACK     "EOD CashBack"
+#define UI_EOD_PREAUTH      "EOD PreAuth"
+#define UI_EOD_COMPLETION   "EOD Completion"
+#define UI_EOD_CASHADVANCE  "EOD Cash Advance"
+#define UI_EOD_REFUND       "EOD Refund"
+#define UI_EOD_REVERSAL     "EOD Reversal"
 
 #define UI_NETWORK          "Network"       // Menu for Network
 #define UI_DOWNLOAD_LOGO    "Download Logo" // Menu for Download Logo

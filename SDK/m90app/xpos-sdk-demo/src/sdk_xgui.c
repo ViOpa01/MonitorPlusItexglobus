@@ -78,6 +78,8 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{UI_REPRINT, UI_REPRINT_TODAY, ""},
 	{UI_REPRINT, UI_REPRINT_BY_DATE, ""},
 	{UI_REPRINT, UI_REPRINT_BY_RRN, ""},
+	{UI_REPRINT, UI_REPRINT_LAST,   ""},
+
 
 	{UI_EOD, UI_EOD_ALL_TRANS, ""},
 	{UI_EOD, UI_EOD_PURCHASE, ""},
@@ -510,6 +512,12 @@ static int _menu_proc(char *pid)
 		//TODO: @Pius 
 		// get today's date
 		// get and reprint all today's transaction
+	}
+	else if (!strcmp(pid, UI_REPRINT_LAST))
+	{
+		//TODO: @Pius 
+		// get Last trans with last primary index from db
+		// print 
 	}
 	else if (!strcmp(pid, UI_EOD_ALL_TRANS))
 	{

@@ -30,6 +30,39 @@ static void logNetworkParameters(NetWorkParameters * netWorkParameters)
 
 }
 
+static const char* networkProfiles[][4] = {
+    { "62160", "etisalat", "", "" }, // etisalat
+    // { "42402", "etisalat", "", ""},     // etisalat
+    { "62130", "web.gprs.mtnnigeria.net", "web", "web" },
+    { "62001", "INTERNET", "", "" }, //EMP MTN PRIVATE SIM
+    { "62150", "glosecure", "gprs", "gprs" },
+    { "62120", "internet.ng.airtel.com", "internet", "internet" },
+    { "23450", "globasure", "web", "web" },
+    { "20408", "FAST.M2M", "", "" },
+    { "20404", "ESEYE.COM", "USER", "PASS" },
+    { "20601", "bicsapn", "", ""}
+    //{"", "public_fast", ""},
+    //{"", "public_wlapn", ""},
+};
+
+static const int netProfileList = (sizeof(networkProfiles) / sizeof(char*)) / 4;
+
+int imsiToNetProfile(Network* profile, const char* imsi)
+{
+    int i;
+
+    for (i = 0; i < netProfileList; i++) {
+        if (!strncmp(imsi, networkProfiles[i][0], 5)) {
+            strcpy(profile->apn, networkProfiles[i][1]);
+            strcpy(profile->username, networkProfiles[i][2]);
+            strcpy(profile->password, networkProfiles[i][3]);
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp)
 {
 	MerchantData mParam;
