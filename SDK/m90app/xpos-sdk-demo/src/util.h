@@ -27,6 +27,10 @@ const char* bodyPointer(const char* response);
 int bodyIndex(const char* response);
 // int getContentLength(void* userdata, const char* tag, const int tag_len, const char* value, const int val_len);
 short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmmss);
+void getImsi(char buff[20]);
+int getSignalLevel();
+int getCellId();
+int getLocationAreaCode();
 
 #ifdef __cplusplus
 }

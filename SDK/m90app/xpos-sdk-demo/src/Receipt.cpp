@@ -7,7 +7,8 @@
 #include "Receipt.h"
 #include "appInfo.h"
 
-#include "EftDBImpl.h"
+// #include "EftDBImpl.h"
+#include "EftDbImpl.h"
 
 extern "C" {
 #include "Nibss8583.h"

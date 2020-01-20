@@ -1,8 +1,10 @@
-#include "util.h"
-#include "network.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "util.h"
+#include "network.h"
+#include "atc_pub.h"
 
 #include "libapi_xpos/inc/libapi_util.h"
 
@@ -244,4 +246,24 @@ short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmms
     dbDate[23] = 0;
 
     return 0; 
+}
+
+void getImsi(char buff[20])
+{
+    ap_get_imsi(buff, 20);
+}
+
+int getSignalLevel()
+{
+    return atc_signal();
+}
+
+int getCellId()
+{
+    return atc_cell();
+}
+
+int getLocationAreaCode()
+{
+    return atc_lac();
 }

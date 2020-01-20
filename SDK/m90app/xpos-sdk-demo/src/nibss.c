@@ -18,6 +18,7 @@
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "libapi_xpos/inc/libapi_print.h"
 
+#include "cJSON.h"
 
 //Itex
 #include "nibss.h"
@@ -60,10 +61,88 @@ static void addGenericNetworkFields(NetworkManagement *networkMangement)
 static void addCallHomeData(NetworkManagement *networkMangement)
 {
     //TODO: get the values at runtime, the hardcoded data will still work
+    MerchantParameters parameter = {'\0'};
+    MerchantData mParam = {'\0'};
+    char *callHomeJsonStr;
+    cJSON *callHomeJson;
+    cJSON *cloc;
+
+    char buff[64] = {'\0'};
+    char softwareVersion[64] = {'\0'};
+    char mid[20] = {'\0'};
+    char tid[10] = {'\0'};
+    char terminalSn[24] = {'\0'};
+    char dateAndTime[24] = {'\0'};
+    char imsi[20] = {'\0'};
+    char cellId[12] = {'\0'};
+    int signalLevel = 0;
+    char lac[12] = {'\0'};
+
+
+    callHomeJson = cJSON_CreateObject();
+    cloc = cJSON_CreateObject();
+
+    if (!callHomeJson || !cloc) {
+        gui_messagebox_show("ERROR", "Can't create json object", "", "", 0);
+        return;
+    }
+
+    getParameters(&parameter);
+    readMerchantData(&mParam);
+    getTerminalSn(terminalSn);
+    getDateAndTime(buff);
+
+    strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid));
+    strncpy(tid, mParam.tid, 8);
+    sprintf(dateAndTime, "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", &buff[0], &buff[4], &buff[6], &buff[8], &buff[10], &buff[12]);
+    sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.nibss_platform);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
+    sprintf(cellId, "%d", getCellId);
+    sprintf(lac, "%d", getLocationAreaCode);
+    getImsi(imsi);
+    
+    signalLevel = getSignalLevel();
+
+    printf("IMSI : %s\n", imsi);
+    printf("Cell id : %s\n Signal level : %d\n lac : %s\n", cellId, signalLevel, lac);
+
+    cJSON_AddItemToObject(cloc, "cid", cJSON_CreateString(cellId));
+    cJSON_AddItemToObject(cloc, "lac", cJSON_CreateString(lac));
+    cJSON_AddItemToObject(cloc, "mcc", cJSON_CreateString("621"));
+    cJSON_AddItemToObject(cloc, "mnc", cJSON_CreateString("60"));
+    cJSON_AddItemToObject(cloc, "ss", cJSON_CreateString("-87dbm"));
+
+    cJSON_AddItemToObject(callHomeJson, "bl", cJSON_CreateNumber(100));
+    cJSON_AddItemToObject(callHomeJson, "btemp", cJSON_CreateNumber(35));
+    cJSON_AddItemToObject(callHomeJson, "cloc", cloc);
+    cJSON_AddItemToObject(callHomeJson, "coms", cJSON_CreateString("GSM/UMTSDualMode"));
+    cJSON_AddItemToObject(callHomeJson, "cs", cJSON_CreateString("NotCharging"));
+    cJSON_AddItemToObject(callHomeJson, "ctime", cJSON_CreateString(dateAndTime));
+    cJSON_AddItemToObject(callHomeJson, "hb", cJSON_CreateString("true"));
+    cJSON_AddItemToObject(callHomeJson, "imsi", cJSON_CreateString(imsi));
+    cJSON_AddItemToObject(callHomeJson, "lTxnAt", cJSON_CreateString(""));
+    cJSON_AddItemToObject(callHomeJson, "mid", cJSON_CreateString(parameter.cardAcceptiorIdentificationCode));
+    cJSON_AddItemToObject(callHomeJson, "pads", cJSON_CreateString(""));
+    cJSON_AddItemToObject(callHomeJson, "ps", cJSON_CreateString("PrinterAvailable"));
+    cJSON_AddItemToObject(callHomeJson, "ptad", cJSON_CreateString("Itex Integrated Services"));
+    cJSON_AddItemToObject(callHomeJson, "serial", cJSON_CreateString(terminalSn));
+    cJSON_AddItemToObject(callHomeJson, "sim", cJSON_CreateString("MTN"));  // SIM Operator's name 
+    cJSON_AddItemToObject(callHomeJson, "simID", cJSON_CreateString("89234000089199032105"));   // SIM id
+    cJSON_AddItemToObject(callHomeJson, "ss", cJSON_CreateString("33"));
+    cJSON_AddItemToObject(callHomeJson, "sv", cJSON_CreateString(softwareVersion));
+    cJSON_AddItemToObject(callHomeJson, "tid", cJSON_CreateString(tid));
+    cJSON_AddItemToObject(callHomeJson, "tmanu", cJSON_CreateString("Morefun"));
+    cJSON_AddItemToObject(callHomeJson, "tmn", cJSON_CreateString(APP_MODEL));
+
+    callHomeJsonStr = cJSON_PrintUnformatted(callHomeJson);
+    memcpy(networkMangement->callHOmeData, callHomeJsonStr, sizeof(networkMangement->callHOmeData));
+    
     strncpy(networkMangement->appVersion, APP_VER, sizeof(networkMangement->appVersion));
     strncpy(networkMangement->deviceModel, APP_MODEL, sizeof(networkMangement->deviceModel));
-    strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Verifone\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
+
+    // strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Morefun\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
+
+    free(callHomeJsonStr);
 }
 
 short isDevMode(const enum NetType netType)

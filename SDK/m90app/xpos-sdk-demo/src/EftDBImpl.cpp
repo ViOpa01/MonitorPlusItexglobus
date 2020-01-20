@@ -106,6 +106,7 @@ short getEft(Eft * eft)
     strncpy(eft->tsi, dbmap[DB_TSI].c_str(), sizeof(eft->tsi));
     strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), sizeof(eft->originalMti));
     strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), sizeof(eft->originalMti));
+    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), sizeof(eft->expiryDate));
 
     sprintf(eft->amount, "%012zu", atol(dbmap[DB_AMOUNT].c_str()));
     normalizeDateTime(eft->yyyymmddhhmmss, dbmap[DB_DATE].c_str());
