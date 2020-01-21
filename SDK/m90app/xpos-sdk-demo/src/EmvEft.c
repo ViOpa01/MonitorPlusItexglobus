@@ -21,10 +21,27 @@
 #include "sdk_security.h"
 #include "EftDbImpl.h"
 
+
+
 #include <pthread.h>
 
 //Approved transaction will be reversed if icc update failed.
 #define DEV_MODE
+
+#ifdef DEV_MODE 
+	#include "TestCapk.h"
+#else 
+	#include "LiveCapk.h"
+#endif
+
+static void injectCapks(void)
+{
+#ifdef DEV_MODE 
+	injectTestCapks();
+#else 
+	injectLiveCapks();
+#endif
+}
 
 typedef enum
 {
@@ -83,7 +100,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	memset(termconfig, 0x00, sizeof(TERMCONFIG));
 	memcpy(termconfig->TermCap, "\xE0\xF8\xC8", 3);					  /*Terminal performance '9F33'*/
 	memcpy(termconfig->AdditionalTermCap, "\xFF\x80\xF0\x00\x01", 5); /*Terminal additional performance*/
-	memcpy(termconfig->IFDSerialNum, "mf90_01", 8);					  /*IFD serial number '9F1E'*/
+	memcpy(termconfig->IFDSerialNum, "mf90001", 8);					  /*IFD serial number '9F1E'*/
 	memcpy(termconfig->TermCountryCode, COUNTRYCODE, 2);			  /*Terminal country code '9F1A'*/
 	memcpy(termconfig->TermID, "12312312", 8);						  /*Terminal identification '9F1C'*/
 	termconfig->TermType = 0x22;									  /*Terminal type '9F35'*/
@@ -1152,7 +1169,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		TestDownloadAID(&TerminalApps);
 		EMV_PrmClearAIDPrmFile();
 		EMV_PrmSetAIDPrm(&TerminalApps); //Set AID
-										 // 	EMV_PrmSetCAPK(&pkKey);//Set CAPK
+		injectCapks();
 	}
 
 	APP_TRACE("emv_read_card");
