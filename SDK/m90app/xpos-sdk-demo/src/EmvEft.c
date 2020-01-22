@@ -1398,6 +1398,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	if (!result && isApprovedResponse(eft->responseCode) && isBalance(eft)) {
 		displayBalance(eft->balance);
+		printf("Balance detail : %s\n", eft->balance);
 	}
 
 	printEftReceipt(eft);

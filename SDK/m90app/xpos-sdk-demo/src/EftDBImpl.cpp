@@ -91,6 +91,11 @@ short getEft(Eft * eft)
         return -1;
     }
 
+    if(vec_map.empty()) {
+        printf("Ref doesnt exist\n");
+        return -1;
+    }
+    
     dbmap = vec_map[0];
 
     strncpy(eft->pan, dbmap[DB_PAN].c_str(), sizeof(eft->pan));
