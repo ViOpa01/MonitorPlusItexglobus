@@ -220,6 +220,42 @@ static void printReceiptAmount(const long long amount, short center)
 	UPrint_Feed(6);
 }
 
+static void passBalanceAmount(const char *buff)
+{
+				
+	char tag[32] = {'\0'};
+	char formatAmnt[16] = {'\0'};
+	long int amount = 0;
+	short pos = 0;
+
+	std::string val;
+	val.append(buff);
+
+	pos = val.find(":");
+	strncpy(tag, val.substr(0, pos).c_str(), val.substr(0, pos).length());
+	
+	amount = atol(val.substr(pos + 1, std::string::npos).c_str());
+	sprintf(formatAmnt, "      NGN %.2f", amount / 100.0);
+
+	printLine(tag, formatAmnt);
+}
+
+static void processBalance(char *buff)
+{
+	char *account;
+	account = strtok(buff, ",");
+	
+	printDottedLine();
+	while(account != NULL)
+	{
+		passBalanceAmount(account);
+		account = strtok(NULL, ",");
+	}
+
+	printDottedLine();
+	free(account);
+}
+
 int printEftReceipt(Eft *eft)
 {
 	int ret = 0;
@@ -293,7 +329,12 @@ int printEftReceipt(Eft *eft)
 
 	printLine("CARD NAME:   ", eft->cardHolderName);
 
-	printReceiptAmount(atoll(eft->amount), isApproved);
+	if(eft->transType == EFT_BALANCE && isApproved)
+	{
+		processBalance(eft->balance);
+	} else {
+		printReceiptAmount(atoll(eft->amount), isApproved);
+	}
 
 	UPrint_Str("\n\n", 2, 1);
 	printLine("TVR:           ", eft->tvr);
@@ -321,6 +362,7 @@ int printEftReceipt(Eft *eft)
 
 	if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
 	{
+		printf("Merchant copy\n");
 		UPrint_Start();
 	}
 
