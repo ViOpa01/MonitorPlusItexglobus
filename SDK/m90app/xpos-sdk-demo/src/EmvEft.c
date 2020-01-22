@@ -26,7 +26,7 @@
 #include <pthread.h>
 
 //Approved transaction will be reversed if icc update failed.
-#define DEV_MODE
+// #define DEV_MODE
 
 #ifdef DEV_MODE 
 	#include "TestCapk.h"
@@ -1261,6 +1261,22 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	if (addIccTagsToEft(eft))
 	{
 		return -3;
+	}
+
+	{
+		int length = 0;
+		byte value[3];
+
+		if (EMV_GetKernelData("\x9F\x08", &length, value))
+		{
+			fprintf(stderr, "Error getting tag 9F08\n");
+		} else {
+			char ascBuff[12] = {'\0'};
+			
+			Util_Bcd2Asc(value, ascBuff, length * 2);
+			fprintf(stdout, "Tag 9F08 is : %s\n", ascBuff);
+		}
+
 	}
 
 	{

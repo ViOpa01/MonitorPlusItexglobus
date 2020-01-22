@@ -26,7 +26,7 @@ static short updateEftRequired(const Eft * eft)
     if (!strncmp(eft->responseCode, "00", 2)) return 1;
 
     //transaction not to be updated when declined.
-    if ((eft->transType == EFT_REVERSAL || eft->transType == EFT_COMPLETION)) 
+    if ((eft->transType == EFT_REVERSAL || eft->transType == EFT_COMPLETION || eft->transType == EFT_REFUND)) 
     {
         fprintf(stderr, "No need to update, transaction declined...\n");
         return 0;
