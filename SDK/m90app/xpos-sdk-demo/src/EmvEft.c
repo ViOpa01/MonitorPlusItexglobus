@@ -1417,7 +1417,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		printf("Balance detail : %s\n", eft->balance);
 	}
 
-	printEftReceipt(eft);
+	printReceipts(eft, 0);
 
 	printf("Result After IccUpdate -> %d\n", result);
 

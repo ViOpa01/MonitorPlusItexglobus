@@ -33,8 +33,9 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_REFUND,     ""},
 	{MAIN_MENU_PAGE, UI_BALANCE,    ""},
 
+	/*
+	* Demo menus
 	{MAIN_MENU_PAGE, "Sales", ""},
-
 	{MAIN_MENU_PAGE, "My Plain", ""},
 	{MAIN_MENU_PAGE, "My Ssl", ""},
 	{MAIN_MENU_PAGE, "CodePay", ""},
@@ -42,7 +43,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, "Test", ""},
 	{MAIN_MENU_PAGE, UI_SETTINGS, ""},
 	{MAIN_MENU_PAGE, "Others", ""},
-
+	
 	{"Test", "Print", ""},
 	{"Test", "Security", ""},
 	{"Test", "Http", ""},
@@ -58,13 +59,17 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{"Security", "SetMainKey", ""},
 	{"Security", "PinTest", ""},
 	{"Security", "RsaTest", ""},
-
+	*/
+	
 	{UI_SETTINGS, "Net Select", ""},
 	{UI_SETTINGS, "WIFI Settings", "WIFI Menu"},
 	{UI_SETTINGS, "TimeSet", ""},
 
+	/*
+	* Demo menus
 	{"Others", "View AID", ""},
 	{"Others", "View CAPK", ""},
+	*/
 
 	{SUPERVISION, UI_REPRINT, ""},
 	{SUPERVISION, UI_EOD, ""},
@@ -359,11 +364,11 @@ static void removeMerchantData(void)
 {
 	if (!UFile_Clear(MERCHANT_DETAIL_FILE, FILE_PRIVATE))
 	{
-		gui_messagebox_show("", "Merchat Record", "", "Cleared", 2000);
+		gui_messagebox_show("", "Merchant Record", "", "Cleared", 2000);
 	}
 	else
 	{
-		gui_messagebox_show("", "Merchat Record", "", "Error", 2000);
+		gui_messagebox_show("", "Merchant Record", "", "Error", 2000);
 	}
 }
 
@@ -617,6 +622,30 @@ void get_hhmmss_str(char *buff)
 	sprintf(buff, "%c%c:%c%c:%c%c", d[8], d[9], d[10], d[11], d[12], d[13]);
 }
 
+static short validateUsersPin()
+{
+	char pin[5] = {'\0'};
+	int result = 0;
+
+	gui_clear_dc();
+	if((result = Util_InputText(GUI_LINE_TOP(2), "ENTER PIN", GUI_LINE_TOP(5), pin, 4, 4, 1, 2, 10000)) == 4)
+	{
+		printf("Password : %s, ret : %d\n", pin, result);
+		if(!strncmp(pin, "4839", 4)) 
+		{
+			return 0;
+		}
+		else 
+		{
+			gui_clear_dc();
+			gui_messagebox_show("ERROR", "Invalid PIN", "", "", 3000);
+			return -1;
+		}
+	}
+	
+	return -1;
+}
+
 void standby_pagepaint()
 {
 	int pos;
@@ -726,11 +755,16 @@ void sdk_main_page()
 				}
 				else if (pmsg.wparam == GUI_KEY_F1)
 				{
+				
+					if(validateUsersPin()) sdk_main_page();
+
 					gui_main_menu_show(SUPERVISION, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 				else if (pmsg.wparam == GUI_KEY_F2)
 				{
+					if(validateUsersPin()) sdk_main_page();
+
 					gui_main_menu_show(MAINTAINANCE, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}

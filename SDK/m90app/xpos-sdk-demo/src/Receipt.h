@@ -7,15 +7,14 @@
 extern "C" {
 #endif
 
-/*typedef struct __st_card_info{
-	char title[32];
-	char pan[32];
-	char amt[32];
-	char expdate[32];
-}st_card_info;
-*/
+enum receiptCopy{
+	CUSTOMER_COPY,
+	MERCHANT_COPY,
+	REPRINT_COPY
+};
 
-int printEftReceipt(Eft *eft);
+short printReceipts(Eft * eft, const short isReprint);
+// int printEftReceipt(enum receiptCopy copy, Eft *eft);
 void printHandshakeReceipt(MerchantData *mParam);
 void reprintByRrn(void);
 void reprintLastTrans(void);

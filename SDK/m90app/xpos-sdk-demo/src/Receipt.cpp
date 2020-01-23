@@ -66,6 +66,22 @@ static void printFooter()
 	UPrint_Feed(108);
 }
 
+static char * getReceiptCopyLabel(enum receiptCopy copy)
+{
+	if(copy == MERCHANT_COPY)
+	{
+		return "**MERCHANT COPY**";
+	} else if(copy == CUSTOMER_COPY)
+	{
+		return "**CUSTOMER COPY**";
+	} else if(copy == REPRINT_COPY){
+		return "**REPRINT COPY**";
+	} else 
+	{
+		return "";
+	}
+}
+
 static int formatAmount(std::string& ulAmount)
 {
     int position;
@@ -256,7 +272,8 @@ static void processBalance(char *buff)
 	free(account);
 }
 
-int printEftReceipt(Eft *eft)
+
+static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 {
 	int ret = 0;
 	char dt[14] = {'\0'};
@@ -266,6 +283,8 @@ int printEftReceipt(Eft *eft)
     MerchantParameters parameter = {'\0'};
 	MerchantData mParam = {'\0'};
 	short isApproved = isApprovedResponse(eft->responseCode);
+
+
 	
 	char rightAligned[45];
 	char alignLabel[45];
@@ -295,12 +314,13 @@ int printEftReceipt(Eft *eft)
     printDottedLine();
 
 	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
+	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
 
 	UPrint_SetDensity(3); //Set print density to 3 normal
 	UPrint_SetFont(7, 2, 2);
 
 	
-	//UPrint_StrBold((isApproved) ? "APPROVED" : "DECLINED", 1, 4, 1);
+	// UPrint_StrBold((isApproved) ? "APPROVED" : "DECLINED", 1, 4, 1);
 	
 	if (isApprovedResponse(eft->responseCode))
 	{
@@ -309,6 +329,8 @@ int printEftReceipt(Eft *eft)
 	else{
 		UPrint_StrBold("DECLINED", 1, 4, 1); 
 	}
+
+	UPrint_Feed(12);
 	
 
 	printLine("AID            ", eft->aid);
@@ -340,7 +362,7 @@ int printEftReceipt(Eft *eft)
 	printLine("TVR:           ", eft->tvr);
 	printLine("TSI:           ", eft->tsi);
 
-	UPrint_Feed(6);
+	UPrint_Feed(12);
 
 	if (*eft->message) {
 		printLine("", eft->message);
@@ -360,13 +382,27 @@ int printEftReceipt(Eft *eft)
 	ret = UPrint_Start(); // Output to printer
 	getPrinterStatus(ret);
 
-	if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
-	{
-		printf("Merchant copy\n");
-		UPrint_Start();
+	return 0;
+}
+
+short printReceipts(Eft * eft, const short isReprint)
+{
+	int ret = -1;
+
+	ret = printEftReceipt(isReprint ? REPRINT_COPY : CUSTOMER_COPY, eft);
+
+	if (isApprovedResponse(eft->responseCode) && !isReprint) {
+
+		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
+		{
+			printf("Merchant copy\n");
+
+			ret = printEftReceipt(MERCHANT_COPY, eft);
+			
+		}
 	}
 
-	return 0;
+	return ret;
 }
 
 void printHandshakeReceipt(MerchantData *mParam)
@@ -438,7 +474,7 @@ void reprintByRrn(void)
 
 	if (getEft(&eft)) return;
 
-	printEftReceipt(&eft);
+	printReceipts(&eft, 1);
 }
 
 void reprintLastTrans()
@@ -449,5 +485,5 @@ void reprintLastTrans()
 
 	if(getLastTransaction(&eft)) return;
 
-	printEftReceipt(&eft);
+	printReceipts(&eft, 1);
 }
