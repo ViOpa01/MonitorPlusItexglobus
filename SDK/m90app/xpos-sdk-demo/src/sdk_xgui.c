@@ -534,7 +534,7 @@ static int _menu_proc(char *pid)
 	}
 	else if (!strcmp(pid, UI_REPRINT_TODAY))
 	{
-		//TODO: @Pius 
+		getListofEftToday();
 		// get today's date
 		// get and reprint all today's transaction
 	}

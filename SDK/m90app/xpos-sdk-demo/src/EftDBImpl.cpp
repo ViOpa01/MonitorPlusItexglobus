@@ -199,7 +199,8 @@ public:
            
        }
        printFooter();
-       UPrint_Start();
+      int  ret = UPrint_Start(); // Output to printer
+	  //getPrinterStatus(ret);
        data.clear();
        return;
     }
@@ -415,4 +416,100 @@ void getListOfEod(Eft * eft, TrxType txtype)
     printf("size of vector is %d\n", dateList.size());
     return;
 
+}
+
+void contextMapToEft(std::map<std::string, std::string> dbmap ,  Eft * eft){
+    
+    if(dbmap.empty()){
+        return;
+    }
+
+    strncpy(eft->pan, dbmap[DB_PAN].c_str(), sizeof(eft->pan));
+    strncpy(eft->aid, dbmap[DB_AID].c_str(), sizeof(eft->aid));
+    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), sizeof(eft->additionalAmount));
+    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), sizeof(eft->authorizationCode));
+    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), sizeof(eft->cardHolderName));
+    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), sizeof(eft->cardLabel));
+    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), sizeof(eft->responseCode));
+    strncpy(eft->stan, dbmap[DB_STAN].c_str(), sizeof(eft->stan));
+    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), sizeof(eft->rrn));
+    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), sizeof(eft->tvr));
+    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), sizeof(eft->tsi));
+    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), sizeof(eft->originalMti));
+    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), sizeof(eft->originalMti));
+    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), sizeof(eft->expiryDate));
+
+    sprintf(eft->amount, "%012zu", atol(dbmap[DB_AMOUNT].c_str()));
+    strcpy(eft->yyyymmddhhmmss, dbmap[DB_DATE].c_str());
+    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss));
+
+    if (decodeProcessingCode(&eft->transType, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str(), dbmap[DB_MTI].c_str())) {
+        fprintf(stderr, "Error decoding processing code...\n");
+        return ;
+    }
+
+    eft->atPrimaryIndex = atoll(dbmap[DB_ID].c_str());
+    
+}
+
+void getListofEftToday(){
+
+    EmvDB db(/* *eft->tableName ? eft->tableName : */EFT_DEFAULT_TABLE, /* *eft->dbName ? eft->dbName :*/ DBNAME);
+    std::vector<std::map<std::string, std::string> > transactions;
+    char ** menulist;
+    char todayDate[20] = { 0 };
+    int numberOfTrans;
+    Eft eft;
+    char normallizedDate[30] = {0};
+    getDate(todayDate);
+    db.selectTransactionsOnDate(transactions, todayDate, ALL_TRX_TYPES);
+    
+    if(transactions.empty()){
+        return;
+    }
+    numberOfTrans = transactions.size();
+    menulist = (char**) malloc(numberOfTrans * sizeof(char*));
+
+    printf("number of transactions is %d\n",numberOfTrans);
+    
+    int index;
+    int selectedOption;
+    char message[1024] = {0};
+    for(index = 0; index < numberOfTrans; index++){
+
+        printf("converting of Eod\n");
+        menulist[index] =  (char*)malloc(30 * sizeof(char));
+        memset(&eft, '\0', sizeof(eft));
+        contextMapToEft(transactions[index], &eft);
+        strcpy(menulist[index], eft.rrn);
+        
+    }
+
+    selectedOption = gui_select_page_ex("Select RRN", menulist, numberOfTrans, 10000, 0);
+    
+     if(selectedOption > index || selectedOption < 0){
+         return;
+     }
+    
+	char d[32] = {0};
+    strcpy(d, eft.yyyymmddhhmmss);
+	//sprintf(normallizedDate, "%c%c%c%c-%c%c-%c%c", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+    strncpy(normallizedDate, d, 10);
+    memset(&eft, '\0', sizeof(eft));
+    contextMapToEft(transactions[selectedOption], &eft);
+    strncpy(normallizedDate, eft.originalYyyymmddhhmmss, 10);
+    sprintf(message, "AMOUNT: NGN %.2f\nPAN: %s\nDATE:%s\n", (atol(eft.amount)/100.00), eft.pan, normallizedDate);
+    
+		if (gui_messagebox_show("PRINT ?", message , "No", "Yes", 0) == 1)
+		{
+			
+
+			printReceipts(&eft, 1);
+			
+		}
+	 for(index = 0; index < numberOfTrans; index++){
+
+        free(menulist[index]);
+    }
+    free(menulist);
 }
