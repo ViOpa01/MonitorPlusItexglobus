@@ -240,13 +240,13 @@ int EmvDB::selectUniqueDates(std::vector<std::string>& dates, TrxType trxType)
       //  snprintf(selectQuery, sizeof(selectQuery), "SELECT DISTINCT strftime('%%Y-%%m-%%d', " DB_DATE ") FROM "+ table +" WHERE " DB_PS " LIKE '%02d%%' ORDER BY " DB_DATE " DESC", static_cast<int>(trxType));
          selectQuery = "SELECT DISTINCT strftime('%Y-%m-%d', " DB_DATE ") FROM "+ table +" WHERE " DB_PS " LIKE " + std::string(txTypeStr) + " ORDER BY " DB_DATE " DESC";
     }
-
+   printf(selectQuery.c_str());
     rc = sqlite3_prepare_v2(db, selectQuery.c_str(), -1, &stmt, NULL); 
     if (rc != SQLITE_OK) {
         printf("%s prepare statement failed (%s): %s\n", __FUNCTION__, selectQuery.c_str(), sqlite3_errmsg(db));
         return -1;
     }
-
+ 
     while (sqlite3_step(stmt) == SQLITE_ROW && sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
         const unsigned char *text;
         text = sqlite3_column_text (stmt, 0);
@@ -364,7 +364,7 @@ int EmvDB::selectTransactionsByRef(std::vector<std::map<std::string, std::string
 
 
     if (trxType == ALL_TRX_TYPES) {
-        sql = "SELECT * FROM " + table + " WHERE " DB_RRN " ='" + std::string(ref) +"'";
+        sql = "SELECT * FROM " + table + " WHERE " DB_RRN " ='" + std::string(ref) + "'";
     } else if (trxType == REVERSAL) {
         sql = "SELECT * FROM " + table + " WHERE " DB_RRN " = '" + std::string(ref) +"' and " DB_MTI " LIKE '04%'";
     } else {
@@ -405,9 +405,10 @@ int EmvDB::sumTransactionsInDateRange(std::string& amount, const char *minDate, 
     int rc;
     char minDateTrim[16] = {0};
     char maxDateTrim[16] = {0};
-    char txTypeStr[8] = {0};
+    char txTypeStr[20] = {0};
 
     sprintf(txTypeStr, "'%02d%%'", static_cast<int>(trxType));
+    printf("\n Tx type is :%s\n",std::string(txTypeStr).c_str());
     strncpy(minDateTrim, minDate, 10); 
     strncpy(maxDateTrim, maxDate, 10);
 
@@ -429,14 +430,14 @@ int EmvDB::sumTransactionsInDateRange(std::string& amount, const char *minDate, 
         }
     } else {
         if (status == APPROVED) {
-            sql = "SELECT sum(" DB_AMOUNT " + " DB_ADDITIONAL_AMOUNT ") FROM " + table + " WHERE strftime('%Y-%m-%d', " DB_DATE ") BETWEEN '" + std::string(minDateTrim) + "' and '" + std::string(maxDateTrim) + "' and " DB_PS " LIKE '" + std::string(txTypeStr) + "' and " DB_MTI " NOT LIKE '04%' and " DB_RESP " = '00' ";
+            sql = "SELECT sum(" DB_AMOUNT " + " DB_ADDITIONAL_AMOUNT ") FROM " + table + " WHERE strftime('%Y-%m-%d', " DB_DATE ") BETWEEN '" + std::string(minDateTrim) + "' and '" + std::string(maxDateTrim) + "' and " DB_PS " LIKE '" + txTypeStr + "' and " DB_MTI " NOT LIKE '04%' and "  DB_RESP " = '00' ";
         } else if (status == DECLINED) {
-            sql = "SELECT sum(" DB_AMOUNT " + " DB_ADDITIONAL_AMOUNT ") FROM " + table + " WHERE strftime('%Y-%m-%d', " DB_DATE ") BETWEEN '" + std::string(minDateTrim) + "' and '" + std::string(maxDateTrim) + "' and " DB_PS " LIKE '" + std::string(txTypeStr) + "' and  (  " DB_RESP " IS NULL OR " DB_RESP " != '00' OR " DB_MTI " LIKE '04%' )";
+            sql = "SELECT sum(" DB_AMOUNT " + " DB_ADDITIONAL_AMOUNT ") FROM " + table + " WHERE strftime('%Y-%m-%d', " DB_DATE + ") BETWEEN '" + std::string(minDateTrim) + "' and '" + std::string(maxDateTrim) + "' and " DB_PS " LIKE '" + txTypeStr + "' and  (  " DB_RESP " IS NULL OR " DB_RESP " != '00' OR " DB_MTI " LIKE '04%' )";
         } else if (status == ALL) {
-            sql = "SELECT sum(" DB_AMOUNT " + " DB_ADDITIONAL_AMOUNT ") FROM " + table + " WHERE strftime('%Y-%m-%d', " DB_DATE ") BETWEEN '" + std::string(minDateTrim) + "' and '" + std::string(maxDateTrim) + "' and " DB_PS " LIKE '" + std::string(txTypeStr) + "'";
+            sql = "SELECT sum(" DB_AMOUNT " + " DB_ADDITIONAL_AMOUNT ") FROM " + table + " WHERE strftime('%Y-%m-%d', " DB_DATE + ") BETWEEN '" + std::string(minDateTrim) + "' and '" + std::string(maxDateTrim) + "' and " DB_PS " LIKE '" + txTypeStr + "'";
         }
     }
-
+    printf(sql.c_str());
     rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));

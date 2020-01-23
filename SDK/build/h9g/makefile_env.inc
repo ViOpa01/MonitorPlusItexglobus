@@ -1,4 +1,4 @@
-#¹¤×÷ÇøÂ·¾¶,ÏîÄ¿Â·¾¶,±àÒëÊä³öÂ·¾¶(¿ÉÓÉmake×÷Îª²ÎÊý´øÈë)
+#ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½,ï¿½ï¿½Ä¿Â·ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½makeï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 export PLAT_PATH=arm
 
 export WORKSPACE_PATH=$(LINUX_PLAT_COMPONENT_LINUX)
@@ -14,14 +14,14 @@ export LIBRARY_PATH=$(OUTPUT_PATH)/lib
 export OBJECT_PATH=$(OUTPUT_PATH)/obj
 export DEPEND_PATH=$(OUTPUT_PATH)/dep
 
-# ±àÒëÆ÷
+# ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
 export CC=arm-oe-linux-gnueabi-gcc
 export CXX=arm-oe-linux-gnueabi-g++
 export CAR=arm-none-linux-gnueabi-ar
 
-#Ö§³ÖÎÄ¼þµÄÀ©Õ¹Ãû
+#Ö§ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹ï¿½ï¿½
 EXT=.c .cpp
 
 export CFLAGS=-march=armv7-a -mfloat-abi=softfp -mfpu=neon  -O2 -fexpensive-optimizations -frename-registers -fomit-frame-pointer -fPIC -DOS_LINUX $(C_DEV_LCD) -DM90_DEV

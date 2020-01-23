@@ -387,9 +387,11 @@ void reprintByRrn(void)
 	{
 	printf("rrn input failed ret : %d\n", result);
 	return;
+
 	}
 
 	if (getEft(&eft)) return;
 
 	printEftReceipt(&eft);
 }
+
