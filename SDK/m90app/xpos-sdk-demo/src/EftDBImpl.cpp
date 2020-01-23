@@ -117,8 +117,9 @@ public:
       // totalNumberOfDeclined = db.countTransactions(DECLINED, PURCHASE);
      //  totalSumOfDeclinedInNaira = db.sumTransactions(DECLINED, PURCHASE);
      //  totalSumOfApprovedInNaira = db.sumTransactions(APPROVED, PURCHASE);
-
+        printf("before loop\n");
        for(int index = 0; index < data.size(); index++){
+           printf("inside loop\n");
           EodLabelStruct label;
           label.rrnOrPanStr.clear();
           if(isRRN == true){
@@ -178,8 +179,14 @@ public:
        UPrint_Str(printData, 1, 0);
        sprintf(printData,"DECLINED    NGN%.2f\n",  totalSumOfDeclinedInNaira);
        
+      
+
        UPrint_Str(printData, 1, 0);
-       sprintf(printData, "TOTAL       %d", totalNumberOfTransactions);
+       sprintf(printData, "APPROVED TX    %d\n", totalNumberOfApproved);
+       UPrint_Str(printData, 1, 0);
+       sprintf(printData, "DECLINED TX    %d\n", totalNumberOfDeclined);
+       UPrint_Str(printData, 1, 0);
+       sprintf(printData, "TOTAL          %d\n", totalNumberOfTransactions);
        UPrint_Str(printData, 1, 0);
        UPrint_Feed(12);
        UPrint_SetFont(8, 2, 2);
@@ -363,7 +370,7 @@ short getLastTransaction(Eft * eft)
 void eodSubMenuHandler(int selected, const char** dateList, TrxType txtype){
     EmvDB db(/* *eft->tableName ? eft->tableName : */EFT_DEFAULT_TABLE, /* *eft->dbName ? eft->dbName :*/ DBNAME);
     std::vector<std::map<std::string, std::string> > transactions;
-
+    
     char * menu[] = {
         "By RRN",
         "By PAN"
@@ -371,10 +378,16 @@ void eodSubMenuHandler(int selected, const char** dateList, TrxType txtype){
     if(!dateList){
         return;
     }
+    printf("I got here\n");
     //gui_select_page_ex("Print With", menu, 2, 10000, 0);
-    db.selectTransactionsOnDate(transactions,dateList[selected],txtype );
+    db.selectTransactionsOnDate(transactions, dateList[selected],  txtype );
+    printf("I got here too\n");
+    if(transactions.empty()){
+        return;
+    }
     printf("Size of the data is %d", transactions.size());
     EodStruct eods(transactions);
+    printf("starting operation\n");
     int selectedOption = gui_select_page_ex("Print By?", menu, 2, 10000, 0);
     if(selectedOption == 0){
         eods.convertData(true);
