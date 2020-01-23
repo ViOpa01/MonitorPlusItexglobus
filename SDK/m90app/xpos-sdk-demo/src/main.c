@@ -2,15 +2,14 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <string>
+
 #include <stdio.h>
-extern "C"{
 #include "libapi_xpos/inc/libapi_system.h"
 #include "libapi_xpos/inc/libapi_emv.h"
 #include "sdk_xgui.h"
 #include "nibss.h"
 #include "merchant.h"
-}
+
 static short autoHandshake(void)
 {
 	MerchantData merchantData;
@@ -28,14 +27,7 @@ static short autoHandshake(void)
 #define DB_RESP "resp"
 void app_main()
 {
-	std::string table = "transaction";
-	char minDateTrim[] = "2020-01-11";
-	char maxDateTrim[] = "2020-01-12";
-	std::string sql = "SELECT sum(" DB_AMOUNT " + " DB_ADDITIONAL_AMOUNT ") FROM " + table + " WHERE strftime('%Y-%m-%d', " DB_DATE ") BETWEEN '" + std::string(minDateTrim) + "' and '" + std::string(maxDateTrim) + "' and " DB_MTI " NOT LIKE '04%' and " DB_RESP " = '00' ";
-	
-		printf( "%s ",sql.c_str());
-		
-	
+
 	
 	
 	//xgui_default_msg_func_add((void*)sdk_power_proc_page);	// Default message processing
@@ -45,7 +37,7 @@ void app_main()
 	sdk_main_page(); 
 }
 #ifndef WIN32
-int main(){
+void main(){
 	app_main();
 
 }
