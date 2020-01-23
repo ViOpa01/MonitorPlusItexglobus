@@ -34,6 +34,8 @@ short getEft(Eft * eft);
 short saveEft(Eft *eft);
 short updateEft(const Eft * eft);
 void getListOfEod(Eft * eft, TrxType txtype);
+short getLastTransaction(Eft * eft);
+
 #ifdef __cplusplus
 }
 #endif

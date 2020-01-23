@@ -20,6 +20,7 @@
 #define UI_REPRINT_TODAY    "Today"
 #define UI_REPRINT_BY_DATE  "By Date"
 #define UI_REPRINT_BY_RRN   "By RRN"
+#define UI_REPRINT_LAST     "Last Trans"
 
 #define UI_EOD      "EOD"                   // Menu for EOD
 

@@ -21,10 +21,27 @@
 #include "sdk_security.h"
 #include "EftDbImpl.h"
 
+
+
 #include <pthread.h>
 
 //Approved transaction will be reversed if icc update failed.
-#define DEV_MODE
+// #define DEV_MODE
+
+#ifdef DEV_MODE 
+	#include "TestCapk.h"
+#else 
+	#include "LiveCapk.h"
+#endif
+
+static void injectCapks(void)
+{
+#ifdef DEV_MODE 
+	injectTestCapks();
+#else 
+	injectLiveCapks();
+#endif
+}
 
 typedef enum
 {
@@ -83,7 +100,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	memset(termconfig, 0x00, sizeof(TERMCONFIG));
 	memcpy(termconfig->TermCap, "\xE0\xF8\xC8", 3);					  /*Terminal performance '9F33'*/
 	memcpy(termconfig->AdditionalTermCap, "\xFF\x80\xF0\x00\x01", 5); /*Terminal additional performance*/
-	memcpy(termconfig->IFDSerialNum, "mf90_01", 8);					  /*IFD serial number '9F1E'*/
+	memcpy(termconfig->IFDSerialNum, "mf90001", 8);					  /*IFD serial number '9F1E'*/
 	memcpy(termconfig->TermCountryCode, COUNTRYCODE, 2);			  /*Terminal country code '9F1A'*/
 	memcpy(termconfig->TermID, "12312312", 8);						  /*Terminal identification '9F1C'*/
 	termconfig->TermType = 0x22;									  /*Terminal type '9F35'*/
@@ -716,6 +733,10 @@ static long long getAmount(Eft *eft, const char *title)
 	char amountTitle[45] = {'\0'};
 	const int maxLen = 9;
 
+	if (orginalDataRequired(&eft)) { //Amount already populated from DB
+		return atoll(eft->amount);
+	}
+
 	if (!amountRequired(eft))
 	{
 		sprintf(eft->amount, "%012lld", amount);
@@ -1060,6 +1081,11 @@ static short persistEft(const Eft * eft)
 	return 0;
 }
 
+static void displayBalance(char * balance)
+{
+	gui_messagebox_show("BALANCE", balance, "", "", 0);
+}
+
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
@@ -1092,7 +1118,6 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -1;
 	}
 
-	puts("==================> 1");
 
 	card_in->pin_input = 1;
 	card_in->pin_max_len = 12;
@@ -1144,7 +1169,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		TestDownloadAID(&TerminalApps);
 		EMV_PrmClearAIDPrmFile();
 		EMV_PrmSetAIDPrm(&TerminalApps); //Set AID
-										 // 	EMV_PrmSetCAPK(&pkKey);//Set CAPK
+		injectCapks();
 	}
 
 	APP_TRACE("emv_read_card");
@@ -1236,6 +1261,22 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	if (addIccTagsToEft(eft))
 	{
 		return -3;
+	}
+
+	{
+		int length = 0;
+		byte value[3];
+
+		if (EMV_GetKernelData("\x9F\x08", &length, value))
+		{
+			fprintf(stderr, "Error getting tag 9F08\n");
+		} else {
+			char ascBuff[12] = {'\0'};
+			
+			Util_Bcd2Asc(value, ascBuff, length * 2);
+			fprintf(stdout, "Tag 9F08 is : %s\n", ascBuff);
+		}
+
 	}
 
 	{
@@ -1370,7 +1411,13 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 
 	persistEft(eft);
-	printEftReceipt(eft);
+
+	if (!result && isApprovedResponse(eft->responseCode) && isBalance(eft)) {
+		displayBalance(eft->balance);
+		printf("Balance detail : %s\n", eft->balance);
+	}
+
+	printReceipts(eft, 0);
 
 	printf("Result After IccUpdate -> %d\n", result);
 

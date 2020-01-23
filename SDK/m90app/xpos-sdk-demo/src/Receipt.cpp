@@ -7,7 +7,8 @@
 #include "Receipt.h"
 #include "appInfo.h"
 
-#include "EftDBImpl.h"
+// #include "EftDBImpl.h"
+#include "EftDbImpl.h"
 
 extern "C" {
 #include "Nibss8583.h"
@@ -63,6 +64,22 @@ static void printFooter()
 	UPrint_StrBold("0700-2255-4839", 1, 4, 1);
 
 	UPrint_Feed(108);
+}
+
+static char * getReceiptCopyLabel(enum receiptCopy copy)
+{
+	if(copy == MERCHANT_COPY)
+	{
+		return "**MERCHANT COPY**";
+	} else if(copy == CUSTOMER_COPY)
+	{
+		return "**CUSTOMER COPY**";
+	} else if(copy == REPRINT_COPY){
+		return "**REPRINT COPY**";
+	} else 
+	{
+		return "";
+	}
 }
 
 static int formatAmount(std::string& ulAmount)
@@ -219,7 +236,44 @@ static void printReceiptAmount(const long long amount, short center)
 	UPrint_Feed(6);
 }
 
-int printEftReceipt(Eft *eft)
+static void passBalanceAmount(const char *buff)
+{
+				
+	char tag[32] = {'\0'};
+	char formatAmnt[16] = {'\0'};
+	long int amount = 0;
+	short pos = 0;
+
+	std::string val;
+	val.append(buff);
+
+	pos = val.find(":");
+	strncpy(tag, val.substr(0, pos).c_str(), val.substr(0, pos).length());
+	
+	amount = atol(val.substr(pos + 1, std::string::npos).c_str());
+	sprintf(formatAmnt, "      NGN %.2f", amount / 100.0);
+
+	printLine(tag, formatAmnt);
+}
+
+static void processBalance(char *buff)
+{
+	char *account;
+	account = strtok(buff, ",");
+	
+	printDottedLine();
+	while(account != NULL)
+	{
+		passBalanceAmount(account);
+		account = strtok(NULL, ",");
+	}
+
+	printDottedLine();
+	free(account);
+}
+
+
+static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 {
 	int ret = 0;
 	char dt[14] = {'\0'};
@@ -227,13 +281,17 @@ int printEftReceipt(Eft *eft)
 	char maskedPan[25] = {'\0'};
 	char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
+	MerchantData mParam = {'\0'};
 	short isApproved = isApprovedResponse(eft->responseCode);
+
+
 	
 	char rightAligned[45];
 	char alignLabel[45];
 	int printerWidth = 32;
 
     getParameters(&parameter);
+	readMerchantData(&mParam);
     getDateAndTime(dt);
     sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
 
@@ -250,16 +308,19 @@ int printEftReceipt(Eft *eft)
 	UPrint_BitMap(filename, 1);//print image
 	
 	UPrint_SetFont(8, 2, 2);
-    UPrint_Str(eft->merchantName, 2, 1);
-    printLine("MID : ", eft->merchantId);
+    UPrint_Str(mParam.address, 2, 1);
+    printLine("MID : ", parameter.cardAcceptiorIdentificationCode);
     printLine("DATE TIME   : ", buff);
     printDottedLine();
 
 	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
+	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
 
 	UPrint_SetDensity(3); //Set print density to 3 normal
 	UPrint_SetFont(7, 2, 2);
 
+	
+	// UPrint_StrBold((isApproved) ? "APPROVED" : "DECLINED", 1, 4, 1);
 	
 	if (isApprovedResponse(eft->responseCode))
 	{
@@ -268,6 +329,8 @@ int printEftReceipt(Eft *eft)
 	else{
 		UPrint_StrBold("DECLINED", 1, 4, 1); 
 	}
+
+	UPrint_Feed(12);
 	
 
 	printLine("AID            ", eft->aid);
@@ -284,23 +347,28 @@ int printEftReceipt(Eft *eft)
 	
 	printLine("RRN:           ", eft->rrn);
 	printLine("STAN:          ", eft->stan);
-	printLine("TERMINAL NO.:  ", eft->terminalId);
+	printLine("TERMINAL NO.:  ", mParam.tid);
 
 	printLine("CARD NAME:   ", eft->cardHolderName);
 
-	printReceiptAmount(atoll(eft->amount), isApproved);
+	if(eft->transType == EFT_BALANCE && isApproved)
+	{
+		processBalance(eft->balance);
+	} else {
+		printReceiptAmount(atoll(eft->amount), isApproved);
+	}
 
 	UPrint_Str("\n\n", 2, 1);
 	printLine("TVR:           ", eft->tvr);
 	printLine("TSI:           ", eft->tsi);
 
-	UPrint_Feed(6);
+	UPrint_Feed(12);
 
 	if (*eft->message) {
 		printLine("", eft->message);
 	}
 
-	if (strncmp(eft->responseCode, "00", 2)) { 
+	if (!isApproved) { 
 		char declinedMessage[65];
 
 		sprintf(declinedMessage, "%s: %s", eft->responseCode, eft->responseDesc);
@@ -314,12 +382,27 @@ int printEftReceipt(Eft *eft)
 	ret = UPrint_Start(); // Output to printer
 	getPrinterStatus(ret);
 
-	if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
-	{
-		UPrint_Start();
+	return 0;
+}
+
+short printReceipts(Eft * eft, const short isReprint)
+{
+	int ret = -1;
+
+	ret = printEftReceipt(isReprint ? REPRINT_COPY : CUSTOMER_COPY, eft);
+
+	if (isApprovedResponse(eft->responseCode) && !isReprint) {
+
+		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
+		{
+			printf("Merchant copy\n");
+
+			ret = printEftReceipt(MERCHANT_COPY, eft);
+			
+		}
 	}
 
-	return 0;
+	return ret;
 }
 
 void printHandshakeReceipt(MerchantData *mParam)
@@ -355,7 +438,7 @@ void printHandshakeReceipt(MerchantData *mParam)
     printLine("DATE TIME   : ", buff);
     printDottedLine();
 
-    
+
     sprintf(filename, "xxxx\\%s", BANKLOGO);
 	UPrint_BitMap(filename, 1);//print image
 	// UPrint_Feed(20);
@@ -385,13 +468,22 @@ void reprintByRrn(void)
 	gui_clear_dc();
 	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), eft.rrn, 12, 12, 1, 1000)) != 12)
 	{
-	printf("rrn input failed ret : %d\n", result);
-	return;
-
+		printf("rrn input failed ret : %d\n", result);
+		return;
 	}
 
 	if (getEft(&eft)) return;
 
-	printEftReceipt(&eft);
+	printReceipts(&eft, 1);
 }
 
+void reprintLastTrans()
+{
+	Eft eft;
+
+	memset(&eft, 0x00, sizeof(Eft));
+
+	if(getLastTransaction(&eft)) return;
+
+	printReceipts(&eft, 1);
+}
