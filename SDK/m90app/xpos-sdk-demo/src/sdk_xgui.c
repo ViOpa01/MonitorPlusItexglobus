@@ -525,7 +525,6 @@ static int _menu_proc(char *pid)
 		Eft eft;
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, ALL_TRX_TYPES);  
-		// get and reprint by date transaction
 	}
 	else if (!strcmp(pid, UI_REPRINT_BY_RRN))
 	{
@@ -535,8 +534,6 @@ static int _menu_proc(char *pid)
 	else if (!strcmp(pid, UI_REPRINT_TODAY))
 	{
 		getListofEftToday();
-		// get today's date
-		// get and reprint all today's transaction
 	}
 	else if (!strcmp(pid, UI_REPRINT_LAST))
 	{
@@ -545,65 +542,55 @@ static int _menu_proc(char *pid)
 	}
 	else if (!strcmp(pid, UI_EOD_ALL_TRANS))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, ALL_TRX_TYPES);
-		// get and reprint EOD for all type of trans
 	}
 	else if (!strcmp(pid, UI_EOD_CASHADVANCE))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, CASH_ADV);
-		// get and reprint EOD for cashAdvance trans
-
 	}
 	else if (!strcmp(pid, UI_EOD_CASHBACK))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, PURCHASE_WC);
-		// get and reprint EOD for cashBack trans
 	}
 	else if (!strcmp(pid, UI_EOD_PURCHASE))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, PURCHASE);
-		// get and reprint EOD for Purchase trans
 	}
 	else if (!strcmp(pid, UI_EOD_PREAUTH))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, PRE_AUTH);
-		// get and reprint EOD for preAuth trans
 	}
 	else if (!strcmp(pid, UI_EOD_COMPLETION))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, PRE_AUTH_C);
-		// get and reprint EOD for completion trans
 	}
 	else if (!strcmp(pid, UI_EOD_REVERSAL))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, REVERSAL);
-		// get and reprint EOD for reversal trans
 	}
 	else if (!strcmp(pid, UI_EOD_REFUND))
 	{
-		Eft eft;
+		Eft eft = {0};
 		strcpy(eft.tableName, "Transactions");
 		getListOfEod(&eft, REFUND);
-		// get and reprint EOD for refund trans
 	}
 	else if (!strcmp(pid, UI_ACCNT_SELECTION))
 	{
-		int ret = -1;
-		ret = enableAndDisableAccountSelection();
+		int ret = enableAndDisableAccountSelection();
 		printf("Enable / Disable ret : %d\n", ret);
 	}
 	else if (!strcmp(pid, UI_DOWNLOAD_LOGO))
@@ -665,7 +652,7 @@ static short validateUsersPin()
 	int result = 0;
 
 	gui_clear_dc();
-	if((result = Util_InputText(GUI_LINE_TOP(2), "ENTER PIN", GUI_LINE_TOP(4), pin, 4, 4, 1, 2, 10000)) == 4)
+	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(1), pin, 4, 4, 1, 2, 10000)) == 4)
 	{
 		printf("Password : %s, ret : %d\n", pin, result);
 		if(!strncmp(pin, "4839", 4)) 
@@ -740,9 +727,9 @@ void sdk_main_page()
 	char time_cur[20];
 	char time_last[20];
 	int i;
-	Eft eft;
-	strcpy(eft.tableName, "Transactions");
-	//getListOfEod(&eft);
+
+BEGIN :
+	
 	if (xgui_init_flag == 0)
 	{
 		xgui_init_flag = 1;
@@ -795,14 +782,14 @@ void sdk_main_page()
 				else if (pmsg.wparam == GUI_KEY_F1)
 				{
 				
-					if(validateUsersPin()) sdk_main_page();
+					if(validateUsersPin()) goto BEGIN;
 
 					gui_main_menu_show(SUPERVISION, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 				else if (pmsg.wparam == GUI_KEY_F2)
 				{
-					if(validateUsersPin()) sdk_main_page();
+					if(validateUsersPin()) goto BEGIN;
 
 					gui_main_menu_show(MAINTAINANCE, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);

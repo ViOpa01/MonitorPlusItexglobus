@@ -28,6 +28,7 @@ extern "C" {
         DEPOSIT = 21
     } TrxType;
 #define TXTYPE
+
 #endif
 
 short getEft(Eft * eft);

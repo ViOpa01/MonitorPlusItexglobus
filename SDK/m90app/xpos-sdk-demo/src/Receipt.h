@@ -13,11 +13,14 @@ enum receiptCopy{
 	REPRINT_COPY
 };
 
+void printBankLogo();
+void printFooter();
 short printReceipts(Eft * eft, const short isReprint);
 // int printEftReceipt(enum receiptCopy copy, Eft *eft);
 void printHandshakeReceipt(MerchantData *mParam);
 void reprintByRrn(void);
 void reprintLastTrans(void);
+void getPrinterStatus(const int status);
 
 
 #ifdef __cplusplus

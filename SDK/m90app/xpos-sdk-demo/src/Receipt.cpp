@@ -53,7 +53,7 @@ static void printDottedLine()
     UPrint_Str(DOTTEDLINE, 2, 1);
 }
 
-static void printFooter()
+void printFooter()
 {
 	char buff[64] = {'\0'};
 
@@ -104,7 +104,7 @@ static int formatAmount(std::string& ulAmount)
     return 0;
 }
 
-static void getPrinterStatus(const int status)
+void getPrinterStatus(const int status)
 {
     if (status == UPRN_SUCCESS)
 	{
@@ -126,6 +126,14 @@ static void getPrinterStatus(const int status)
 	{
 		gui_messagebox_show("Print", "Printer unknown fault", "", "confirm", 0);
 	}
+}
+
+void printBankLogo()
+{
+	char filename[32] = {'\0'};
+
+	sprintf(filename, "xxxx\\%s", BANKLOGO);
+	UPrint_BitMap(filename, 1);//print image
 }
 
 static char* transTypeToString(enum TransType type)
@@ -160,6 +168,163 @@ static char* transTypeToString(enum TransType type)
 	default:
 		return "NULL";
 	}
+}
+
+static const char *responseCodeToStr(const char responseCode[3])
+{
+
+    if (strcmp(responseCode, "00") == 0)
+        return "Approved or Completed Successfully";
+    if (strcmp(responseCode, "01") == 0)
+        return "Refer to card issuer";
+    if (strcmp(responseCode, "02") == 0)
+        return "Refer to card issuer, special condition";
+    if (strcmp(responseCode, "03") == 0)
+        return "Invalid merchant";
+    if (strcmp(responseCode, "04") == 0)
+        return "Pick-up card";
+    if (strcmp(responseCode, "05") == 0)
+        return "Do not honor";
+    if (strcmp(responseCode, "06") == 0)
+        return "Error";
+    if (strcmp(responseCode, "07") == 0)
+        return "Pick-up card, special condition";
+    if (strcmp(responseCode, "08") == 0)
+        return "Honor with identification";
+    if (strcmp(responseCode, "09") == 0)
+        return "Request in progress";
+    if (strcmp(responseCode, "10") == 0)
+        return "Approved, partial";
+    if (strcmp(responseCode, "11") == 0)
+        return "Approved, VIP";
+    if (strcmp(responseCode, "12") == 0)
+        return "Invalid transaction";
+    if (strcmp(responseCode, "13") == 0)
+        return "Invalid amount";
+    if (strcmp(responseCode, "14") == 0)
+        return "Invalid card number";
+    if (strcmp(responseCode, "15") == 0)
+        return "No such issuer";
+    if (strcmp(responseCode, "16") == 0)
+        return "Approved, update track 3";
+    if (strcmp(responseCode, "17") == 0)
+        return "Customer cancellation";
+    if (strcmp(responseCode, "18") == 0)
+        return "Customer dispute";
+    if (strcmp(responseCode, "19") == 0)
+        return "Re-enter transaction";
+    if (strcmp(responseCode, "20") == 0)
+        return "Invalid response";
+    if (strcmp(responseCode, "21") == 0)
+        return "No action taken";
+    if (strcmp(responseCode, "22") == 0)
+        return "Suspected malfunction";
+    if (strcmp(responseCode, "23") == 0)
+        return "Unacceptable transaction fee";
+    if (strcmp(responseCode, "24") == 0)
+        return "File update not supported";
+    if (strcmp(responseCode, "25") == 0)
+        return "Unable to locate record";
+    if (strcmp(responseCode, "26") == 0)
+        return "Duplicate record";
+    if (strcmp(responseCode, "27") == 0)
+        return "File update edit error";
+    if (strcmp(responseCode, "28") == 0)
+        return "File update file locked";
+    if (strcmp(responseCode, "29") == 0)
+        return "File update failed";
+    if (strcmp(responseCode, "30") == 0)
+        return "Format error";
+    if (strcmp(responseCode, "31") == 0)
+        return "Bank not supported";
+    if (strcmp(responseCode, "32") == 0)
+        return "Completed partially";
+    if (strcmp(responseCode, "33") == 0)
+        return "Expired card, pick-up";
+    if (strcmp(responseCode, "34") == 0)
+        return "Suspected fraud, pick-up";
+    if (strcmp(responseCode, "35") == 0)
+        return "Contact acquirer, pick-up";
+    if (strcmp(responseCode, "36") == 0)
+        return "Restricted card, pick-up";
+    if (strcmp(responseCode, "37") == 0)
+        return "Call acquirer security, pick-up";
+    if (strcmp(responseCode, "38") == 0)
+        return "PIN tries exceeded, pick-up";
+    if (strcmp(responseCode, "39") == 0)
+        return "No credit account";
+    if (strcmp(responseCode, "40") == 0)
+        return "Function not supported";
+    if (strcmp(responseCode, "41") == 0)
+        return "Lost card";
+    if (strcmp(responseCode, "42") == 0)
+        return "No universal account";
+    if (strcmp(responseCode, "43") == 0)
+        return "Stolen card";
+    if (strcmp(responseCode, "44") == 0)
+        return "No investment account";
+    if (strcmp(responseCode, "51") == 0)
+        return "Not sufficient funds";
+    if (strcmp(responseCode, "52") == 0)
+        return "No check account";
+    if (strcmp(responseCode, "53") == 0)
+        return "No savings account";
+    if (strcmp(responseCode, "54") == 0)
+        return "Expired card";
+    if (strcmp(responseCode, "55") == 0)
+        return "Incorrect PIN";
+    if (strcmp(responseCode, "56") == 0)
+        return "No card record";
+    if (strcmp(responseCode, "57") == 0)
+        return "Transaction not permitted to cardholder";
+    if (strcmp(responseCode, "58") == 0)
+        return "Transaction not permitted on terminal";
+    if (strcmp(responseCode, "59") == 0)
+        return "Suspected fraud";
+    if (strcmp(responseCode, "60") == 0)
+        return "Contact acquirer";
+    if (strcmp(responseCode, "61") == 0)
+        return "Exceeds withdrawal limit";
+    if (strcmp(responseCode, "62") == 0)
+        return "Restricted card";
+    if (strcmp(responseCode, "63") == 0)
+        return "Security violation";
+    if (strcmp(responseCode, "64") == 0)
+        return "Original amount incorrect";
+    if (strcmp(responseCode, "65") == 0)
+        return "Exceeds withdrawal frequency";
+    if (strcmp(responseCode, "66") == 0)
+        return "Call acquirer security";
+    if (strcmp(responseCode, "67") == 0)
+        return "Hard capture";
+    if (strcmp(responseCode, "68") == 0)
+        return "Response received too late";
+    if (strcmp(responseCode, "75") == 0)
+        return "PIN tries exceeded";
+    if (strcmp(responseCode, "77") == 0)
+        return "Intervene, bank approval required";
+    if (strcmp(responseCode, "78") == 0)
+        return "Intervene, bank approval required for partial amount";
+    if (strcmp(responseCode, "90") == 0)
+        return "Cut-off in progress";
+    if (strcmp(responseCode, "91") == 0)
+        return "Issuer or switch inoperative";
+    if (strcmp(responseCode, "92") == 0)
+        return "Routing error";
+    if (strcmp(responseCode, "93") == 0)
+        return "Violation of law";
+    if (strcmp(responseCode, "94") == 0)
+        return "Duplicate transaction";
+    if (strcmp(responseCode, "95") == 0)
+        return "Reconcile error";
+    if (strcmp(responseCode, "96") == 0)
+        return "System malfunction";
+    if (strcmp(responseCode, "98") == 0)
+        return "Exceeds cash limit";
+    if (strcmp(responseCode, "A1") == 0)
+        return "Unknown";
+
+    return NULL;
 }
 
 
@@ -279,7 +444,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	char dt[14] = {'\0'};
 	char buff[64] = {'\0'};
 	char maskedPan[25] = {'\0'};
-	char filename[128] = {'\0'};
+	// char filename[128] = {'\0'};
     MerchantParameters parameter = {'\0'};
 	MerchantData mParam = {'\0'};
 	short isApproved = isApprovedResponse(eft->responseCode);
@@ -304,8 +469,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
 	}
 
-	sprintf(filename, "xxxx\\%s", BANKLOGO);
-	UPrint_BitMap(filename, 1);//print image
+	printBankLogo();	// Prints Logo
 	
 	UPrint_SetFont(8, 2, 2);
     UPrint_Str(mParam.address, 2, 1);
@@ -371,7 +535,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	if (!isApproved) { 
 		char declinedMessage[65];
 
-		sprintf(declinedMessage, "%s: %s", eft->responseCode, eft->responseDesc);
+		sprintf(declinedMessage, "%s: %s", eft->responseCode, responseCodeToStr(eft->responseCode));
 		printLine(declinedMessage, eft->message);
 	}
 
