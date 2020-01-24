@@ -416,7 +416,7 @@ void getListOfEod(Eft * eft, TrxType txtype)
 
     if (dateListLenght == 0)
     {
-        gui_messagebox_show("MESSAGE", "No Any Record for this Transaction type", "", "Ok", 0);
+        gui_messagebox_show("MESSAGE", "No record for this transaction type", "", "Ok", 0);
         return;
     }
     

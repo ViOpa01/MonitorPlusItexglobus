@@ -82,7 +82,7 @@ static IccDataT nibssIccData[] = {
 	{0x9F34, 1},
 	{0x9F33, 1},
 	{0x9F35, 1},
-	{0x9F1E, 0},
+	{0x9F1E, 1},
 	{0x84, 1},
 	{0x9F09, 1},
 	{0x9F06, 0},
@@ -100,7 +100,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	memset(termconfig, 0x00, sizeof(TERMCONFIG));
 	memcpy(termconfig->TermCap, "\xE0\xF8\xC8", 3);					  /*Terminal performance '9F33'*/
 	memcpy(termconfig->AdditionalTermCap, "\xFF\x80\xF0\x00\x01", 5); /*Terminal additional performance*/
-	memcpy(termconfig->IFDSerialNum, "mf90001", 8);					  /*IFD serial number '9F1E'*/
+	memcpy(termconfig->IFDSerialNum, "48397677", 8);					  /*IFD serial number '9F1E'*/
 	memcpy(termconfig->TermCountryCode, COUNTRYCODE, 2);			  /*Terminal country code '9F1A'*/
 	memcpy(termconfig->TermID, "12312312", 8);						  /*Terminal identification '9F1C'*/
 	termconfig->TermType = 0x22;									  /*Terminal type '9F35'*/
@@ -377,8 +377,8 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 
 	netParam->packetSize = result;
 	memcpy(netParam->packet, packet, netParam->packetSize);
-	sprintf(&netParam->packet[netParam->packetSize], "\r\n");
-	netParam->packetSize += 2;
+	// sprintf(&netParam->packet[netParam->packetSize], "\r\n");
+	// netParam->packetSize += 2;
 
 	for (i = 0; i < maxTry; i++)
 	{
