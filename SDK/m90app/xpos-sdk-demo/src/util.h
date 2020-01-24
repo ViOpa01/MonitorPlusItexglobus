@@ -31,6 +31,7 @@ void getImsi(char buff[20]);
 int getSignalLevel();
 int getCellId();
 int getLocationAreaCode();
+const char* getSimId();
 
 #ifdef __cplusplus
 }

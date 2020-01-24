@@ -253,6 +253,11 @@ void getImsi(char buff[20])
     ap_get_imsi(buff, 20);
 }
 
+const char* getSimId()
+{
+    return atc_iccid();
+}
+
 int getSignalLevel()
 {
     return atc_signal();

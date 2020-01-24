@@ -75,6 +75,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     char dateAndTime[24] = {'\0'};
     char imsi[20] = {'\0'};
     char cellId[12] = {'\0'};
+    char simId[24] = {'\0'};
     int signalLevel = 0;
     char lac[12] = {'\0'};
 
@@ -96,8 +97,9 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(tid, mParam.tid, 8);
     sprintf(dateAndTime, "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", &buff[0], &buff[4], &buff[6], &buff[8], &buff[10], &buff[12]);
     sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.nibss_platform);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
-    sprintf(cellId, "%d", getCellId);
-    sprintf(lac, "%d", getLocationAreaCode);
+    sprintf(cellId, "%d", getCellId());
+    sprintf(lac, "%d", getLocationAreaCode());
+    sprintf(simId, "%s", getSimId());
     getImsi(imsi);
     
     signalLevel = getSignalLevel();
@@ -126,7 +128,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     cJSON_AddItemToObject(callHomeJson, "ptad", cJSON_CreateString("Itex Integrated Services"));
     cJSON_AddItemToObject(callHomeJson, "serial", cJSON_CreateString(terminalSn));
     cJSON_AddItemToObject(callHomeJson, "sim", cJSON_CreateString("MTN"));  // SIM Operator's name 
-    cJSON_AddItemToObject(callHomeJson, "simID", cJSON_CreateString("89234000089199032105"));   // SIM id
+    cJSON_AddItemToObject(callHomeJson, "simID", cJSON_CreateString(getSimId()));   // SIM id
     cJSON_AddItemToObject(callHomeJson, "ss", cJSON_CreateString("33"));
     cJSON_AddItemToObject(callHomeJson, "sv", cJSON_CreateString(softwareVersion));
     cJSON_AddItemToObject(callHomeJson, "tid", cJSON_CreateString(tid));
