@@ -45,6 +45,7 @@ static void formartAmount(const char *amountIn, char *amountOut)
 int ctxToInsertMap(std::map<std::string, std::string> &trx, const Eft *eft)
 {
     const char * mti = NULL;
+    char maskedPan[30] = { 0 };
     char pan[24] = {0};
     char ps[8] = {0};
     char amount[13] = {0};
@@ -63,7 +64,7 @@ int ctxToInsertMap(std::map<std::string, std::string> &trx, const Eft *eft)
     unsigned short TAGL;
     char formattedDate[26] = {0};
     char formattedAmount[10] = {0};
-
+    
     sprintf(ps, "%02X%02X%02X", transTypeToCode(eft->transType), accountTypeToCode(eft->fromAccount), accountTypeToCode(eft->toAccount));
     
     trx[DB_LABEL] = eft->cardLabel;
@@ -118,7 +119,8 @@ int ctxToInsertMap(std::map<std::string, std::string> &trx, const Eft *eft)
     {
         trx[DB_ADDITIONAL_AMOUNT] = eft->additionalAmount;
     }
-    trx[DB_PAN] = eft->pan;
+    MaskPan((char *)eft->pan, maskedPan);
+    trx[DB_PAN].assign(maskedPan);
 
     for (std::map<std::string, std::string>::iterator it = trx.begin(); it != trx.end(); ++it)
     {

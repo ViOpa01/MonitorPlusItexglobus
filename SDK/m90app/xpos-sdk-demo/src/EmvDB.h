@@ -41,6 +41,7 @@ typedef enum
         DECLINED
     } TrxRespCode;
 
+#ifndef TXTYPE
     typedef enum
     {
         ALL_TRX_TYPES = 999,
@@ -53,7 +54,8 @@ typedef enum
         REFUND = 20,
         DEPOSIT = 21
     } TrxType;
-
+#define TXTYPE
+#endif
 struct EmvDB
 {
     

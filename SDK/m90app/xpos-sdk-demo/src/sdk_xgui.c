@@ -19,6 +19,24 @@
 #include "nibss.h"
 #include "Nibss8583.h"
 
+//Used By EOD RECIEPT PRINTING DECLARED IN EMVDB//
+#ifndef TXTYPE
+    typedef enum
+    {
+        ALL_TRX_TYPES = 999,
+        REVERSAL = 0420,
+        PURCHASE = 0,
+        PURCHASE_WC = 9,
+        PRE_AUTH = 60,
+        PRE_AUTH_C = 61,
+        CASH_ADV = 1,
+        REFUND = 20,
+        DEPOSIT = 21
+    } TrxType;
+#define TXTYPE
+#endif
+
+
 // Define the menu array, the first parameter is the name of the parent menu,
 // the second parameter is the name of the current menu,
 // and the second parameter is set when the name is duplicated.
@@ -504,7 +522,9 @@ static int _menu_proc(char *pid)
 	}
 	else if (!strcmp(pid, UI_REPRINT_BY_DATE))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, ALL_TRX_TYPES);  
 		// get and reprint by date transaction
 	}
 	else if (!strcmp(pid, UI_REPRINT_BY_RRN))
@@ -514,7 +534,7 @@ static int _menu_proc(char *pid)
 	}
 	else if (!strcmp(pid, UI_REPRINT_TODAY))
 	{
-		//TODO: @Pius 
+		getListofEftToday();
 		// get today's date
 		// get and reprint all today's transaction
 	}
@@ -525,42 +545,59 @@ static int _menu_proc(char *pid)
 	}
 	else if (!strcmp(pid, UI_EOD_ALL_TRANS))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, ALL_TRX_TYPES);
 		// get and reprint EOD for all type of trans
 	}
 	else if (!strcmp(pid, UI_EOD_CASHADVANCE))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, CASH_ADV);
 		// get and reprint EOD for cashAdvance trans
+
 	}
 	else if (!strcmp(pid, UI_EOD_CASHBACK))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, PURCHASE_WC);
 		// get and reprint EOD for cashBack trans
 	}
 	else if (!strcmp(pid, UI_EOD_PURCHASE))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, PURCHASE);
 		// get and reprint EOD for Purchase trans
 	}
 	else if (!strcmp(pid, UI_EOD_PREAUTH))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, PRE_AUTH);
 		// get and reprint EOD for preAuth trans
 	}
 	else if (!strcmp(pid, UI_EOD_COMPLETION))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, PRE_AUTH_C);
 		// get and reprint EOD for completion trans
 	}
 	else if (!strcmp(pid, UI_EOD_REVERSAL))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, REVERSAL);
 		// get and reprint EOD for reversal trans
 	}
 	else if (!strcmp(pid, UI_EOD_REFUND))
 	{
-		//TODO: @Pius 
+		Eft eft;
+		strcpy(eft.tableName, "Transactions");
+		getListOfEod(&eft, REFUND);
 		// get and reprint EOD for refund trans
 	}
 	else if (!strcmp(pid, UI_ACCNT_SELECTION))
@@ -703,7 +740,9 @@ void sdk_main_page()
 	char time_cur[20];
 	char time_last[20];
 	int i;
-
+	Eft eft;
+	strcpy(eft.tableName, "Transactions");
+	//getListOfEod(&eft);
 	if (xgui_init_flag == 0)
 	{
 		xgui_init_flag = 1;
