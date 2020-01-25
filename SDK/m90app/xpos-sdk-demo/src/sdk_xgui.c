@@ -652,7 +652,7 @@ static short validateUsersPin()
 	int result = 0;
 
 	gui_clear_dc();
-	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(1), pin, 4, 4, 1, 2, 10000)) == 4)
+	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(2), pin, 4, 4, 1, 2, 10000)) == 4)
 	{
 		printf("Password : %s, ret : %d\n", pin, result);
 		if(!strncmp(pin, "4839", 4)) 
