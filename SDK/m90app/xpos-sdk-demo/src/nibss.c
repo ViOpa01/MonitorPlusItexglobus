@@ -690,6 +690,8 @@ short uiCallHome(void)
 static short getTid(char tid[9])
 {
 	char msgPrompt[35] = {'\0'};
+    const int tidSize = 8;
+    int result = -1;
 
 	if (*tid) {
 		sprintf(msgPrompt, "Enter Tid(%s)", tid);
@@ -698,7 +700,9 @@ static short getTid(char tid[9])
 	}
 	gui_clear_dc();
 	
-	return Util_InputText(GUI_LINE_TOP(0), msgPrompt, GUI_LINE_TOP(2), tid, 8, 8, 1, 1 ,18000);
+	result = Util_InputText(GUI_LINE_TOP(0), msgPrompt, GUI_LINE_TOP(2), tid, tidSize, tidSize, 1, 1 ,18000);
+
+    return result == tidSize ? 0 : -1;
 }
 
 short uiHandshake(void)

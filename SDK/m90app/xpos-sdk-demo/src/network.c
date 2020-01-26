@@ -100,7 +100,9 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 		printf("Plain: EMPS/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
 
 	}else if(netType == NET_EPMS_SSL_TEST) {
-
+		 strcpy(netParam->host,  "196.6.103.72");
+		netParam->port = 5043;
+		netParam->isSsl = 1;
 	}else if(netType == NET_EPMS_PLAIN_TEST) {
 
 	}else if(netType == NET_POSVAS_SSL_TEST) {
