@@ -881,7 +881,7 @@ static void getPurchaseRequest(Eft *eft)
 	eft->toAccount = DEFAULT_ACCOUNT;
 	eft->isFallback = 0;
 
-	strncpy(eft->sessionKey, "70BC974F2F01C837EA08E937E57AA791", sizeof(eft->sessionKey));
+	strncpy(eft->sessionKey, "F8D35EE9758337A10D40B9801015CD8F", sizeof(eft->sessionKey));
 
 	strncpy(eft->pan, "5399834500133103", sizeof(eft->pan));
 	strncpy(eft->amount, "000000000100", sizeof(eft->amount));
@@ -1361,7 +1361,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//TODO: print receipt from DB
 	//upay_print_proc(&card_info);	//TODO:		// Printout
 
-	//getPurchaseRequest(eft);
+	// getPurchaseRequest(eft);
 
 	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
 	{
