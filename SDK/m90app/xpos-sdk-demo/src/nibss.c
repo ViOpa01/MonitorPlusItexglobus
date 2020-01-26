@@ -142,7 +142,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(networkMangement->deviceModel, APP_MODEL, sizeof(networkMangement->deviceModel));
     strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
 
-    // strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Morefun\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
+// strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Morefun\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
 
     free(callHomeJsonStr);
 }
@@ -690,6 +690,8 @@ short uiCallHome(void)
 static short getTid(char tid[9])
 {
 	char msgPrompt[35] = {'\0'};
+    const int tidSize = 8;
+    int result = -1;
 
 	if (*tid) {
 		sprintf(msgPrompt, "Enter Tid(%s)", tid);
@@ -698,7 +700,9 @@ static short getTid(char tid[9])
 	}
 	gui_clear_dc();
 	
-	return Util_InputText(GUI_LINE_TOP(0), msgPrompt, GUI_LINE_TOP(2), tid, 8, 8, 1, 1 ,18000);
+	result = Util_InputText(GUI_LINE_TOP(0), msgPrompt, GUI_LINE_TOP(2), tid, tidSize, tidSize, 1, 1 ,18000);
+
+    return result == tidSize ? 0 : -1;
 }
 
 short uiHandshake(void)
@@ -783,7 +787,7 @@ short uiHandshake(void)
 
     //TODO: Get device serial number at runtime
     getTerminalSn(terminalSerialNumber);
-    strncpy(networkMangement.serialNumber, terminalSerialNumber/*"346-231-236"*/, sizeof(networkMangement.serialNumber));
+    strncpy(networkMangement.serialNumber, terminalSerialNumber, sizeof(networkMangement.serialNumber));
 
    
     for (i = 0; i < maxRetry; i++)

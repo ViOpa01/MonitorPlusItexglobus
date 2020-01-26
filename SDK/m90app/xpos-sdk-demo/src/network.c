@@ -87,9 +87,14 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	{
 		
 		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = mParam.nibss_plain_port;
-		// netParam->port = 5004;
-
+		if(!strcmp(mParam.nibss_platform, "POSVAS"))
+		{
+			netParam->port = 5004;		// To handle wrong IP coming for Plain POSVAS on TAMS;
+		} else {
+			
+			netParam->port = mParam.nibss_plain_port;
+		}
+		
 		//Echo server
 		//strncpy(netParam->host, "192.168.43.26", strlen(mParam.nibss_ip));
 		//netParam->port = 4444;
@@ -100,7 +105,9 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 		printf("Plain: EMPS/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
 
 	}else if(netType == NET_EPMS_SSL_TEST) {
-
+		 strcpy(netParam->host,  "196.6.103.72");
+		netParam->port = 5043;
+		netParam->isSsl = 1;
 	}else if(netType == NET_EPMS_PLAIN_TEST) {
 
 	}else if(netType == NET_POSVAS_SSL_TEST) {
