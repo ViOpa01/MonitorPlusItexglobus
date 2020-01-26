@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+#include "network.h"
+
 typedef struct MerchantData
 {
     char address[80];
@@ -26,7 +28,8 @@ typedef struct MerchantData
     char phone_no[14];
     int account_selection;
     int is_prepped;
-
+    
+    Network gprsSettings;
 } MerchantData;
 
 

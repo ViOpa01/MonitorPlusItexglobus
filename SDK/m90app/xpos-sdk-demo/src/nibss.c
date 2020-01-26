@@ -605,7 +605,7 @@ short uiGetParameters(void)
     memset(&networkMangement, 0x00, sizeof(NetworkManagement));
     strncpy(networkMangement.terminalId, tid, sizeof(networkMangement.terminalId));
 
-    getNetParams(&netParam, CURRENT_PATFORM, 0);
+    getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
     //TODO: Get device serial number at runtime
     getTerminalSn(terminalSerialNumber);
@@ -667,7 +667,7 @@ short uiCallHome(void)
 
     memcpy(networkMangement.sessionKey.clearKey, sessionKey, strlen(sessionKey));
 
-    getNetParams(&netParam, CURRENT_PATFORM, 0);
+    getNetParams(&netParam, CURRENT_PLATFORM, 0);
     
     addCallHomeData(&networkMangement);
 
@@ -687,6 +687,20 @@ short uiCallHome(void)
     return 0;
 }
 
+static short getTid(char tid[9])
+{
+	char msgPrompt[35] = {'\0'};
+
+	if (*tid) {
+		sprintf(msgPrompt, "Enter Tid(%s)", tid);
+	} else {
+		strcpy(msgPrompt, "Enter Tid");
+	}
+	gui_clear_dc();
+	
+	return Util_InputText(GUI_LINE_TOP(0), msgPrompt, GUI_LINE_TOP(2), tid, 8, 8, 1, 1 ,18000);
+}
+
 short uiHandshake(void)
 {
     NetworkManagement networkMangement;
@@ -698,13 +712,23 @@ short uiHandshake(void)
     int i;
     int ret;
 
-    if(getMerchantData())
-    {
-        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 1);
-        return -1; 
+    
+    if (!isDevMode(CURRENT_PLATFORM)) {
+         if(getMerchantData()) {
+            gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 1);
+            return -1; 
+        }
     } 
+    else 
+    {
+        if (getTid(tid)) return -1;
+    }
 
     if(readMerchantData(&mParam)) return -2;
+
+    if (isDevMode(CURRENT_PLATFORM)) {
+        strncpy(mParam.tid, tid, sizeof(mParam.tid));
+    }
 
     if(mParam.tid[0])
     {
@@ -715,9 +739,9 @@ short uiHandshake(void)
     strncpy(networkMangement.terminalId, tid, sizeof(networkMangement.terminalId));
 
     //Master key requires clear ptad key
-    strncpy(networkMangement.clearPtadKey, platformToKey(CURRENT_PATFORM), sizeof(networkMangement.clearPtadKey));
+    strncpy(networkMangement.clearPtadKey, platformToKey(CURRENT_PLATFORM), sizeof(networkMangement.clearPtadKey));
 
-    getNetParams(&netParam, CURRENT_PATFORM, 0);
+    getNetParams(&netParam, CURRENT_PLATFORM, 0);
     
     
     for (i = 0; i < maxRetry; i++)
@@ -816,6 +840,16 @@ short uiHandshake(void)
     return 0;
 }
 
+short autoHandshake(void)
+{
+	MerchantData merchantData;
+
+	memset(&merchantData, 0x00, sizeof(MerchantData));
+	readMerchantData(&merchantData);
+
+	if (merchantData.is_prepped) return 0;
+	return uiHandshake();
+}
 
 
 

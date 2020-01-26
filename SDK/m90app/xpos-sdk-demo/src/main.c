@@ -10,28 +10,16 @@
 #include "nibss.h"
 #include "merchant.h"
 
-static short autoHandshake(void)
-{
-	MerchantData merchantData;
+//#include "platform/inc/driver/mf_misc.h"
 
-	memset(&merchantData, 0x00, sizeof(MerchantData));
-	readMerchantData(&merchantData);
 
-	if (merchantData.is_prepped) return 0;
-	return uiHandshake();
-}
-#define DB_AMOUNT "amount"
-#define DB_ADDITIONAL_AMOUNT "additional amount"
-#define DB_DATE "date"
-#define DB_MTI "mti"
-#define DB_RESP "resp"
+
 void app_main()
 {
-
-	
-	
 	//xgui_default_msg_func_add((void*)sdk_power_proc_page);	// Default message processing
-	Sys_Init(0,0,"test");					// Application initializations
+	Sys_Init(0,0,"test");
+	//mf_buzzer_control(0);
+	gprsInit(); //net link will have enough time to initialize in the background, we can also add little delay.				
 	EMV_iKernelInit();//Init EMV
 	autoHandshake();
 	sdk_main_page(); 

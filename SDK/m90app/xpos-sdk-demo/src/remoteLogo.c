@@ -15,13 +15,11 @@ static void setUpNetworkParam(NetWorkParameters *netParam)
 
     
 	strncpy(netParam->title, "LOGO", 10);
-	strncpy(netParam->apn, "CMNET", 10);
-    // strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
+
     strncpy(netParam->host, domain, strlen(domain));
     netParam->port = 80;
 
     netParam->receiveTimeout = 10000;
-	netParam->netLinkTimeout = 30000;
     netParam->isHttp = 1;
     netParam->isSsl = 0;
 }
