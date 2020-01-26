@@ -37,15 +37,17 @@ typedef struct NetWorkParameters
     int port;
     int isSsl;
     int isHttp;
-    char apn[50];
+    //char apn[50];
     char title[35];
-    int netLinkTimeout;
+    //int netLinkTimeout;
     int receiveTimeout;
 
     char serverCert[256];
 	char clientCert[256];
 	char clientKey[256];
 	int verificationLevel; //0 no verification, 1: verify
+
+    const char * endTag;
 } NetWorkParameters;
 
 typedef struct {
@@ -56,6 +58,7 @@ typedef struct {
     int mode;
     int slot;
     int timeout;
+    char operatorName[35];
 } Network;
 
 
@@ -66,12 +69,13 @@ typedef struct {
  *
  */
 
-short netLink(NetWorkParameters *netParam);
+short netLink(Network * gprsSettings);
 
 short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp);
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
 int imsiToNetProfile(Network* profile, const char* imsi);
 void * preDial(void * netParams);
+short gprsInit(void);
 
 
 

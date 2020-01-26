@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 
 #include "network.h"
 #include "merchant.h"
@@ -26,7 +27,7 @@ static void logNetworkParameters(NetWorkParameters * netWorkParameters)
 {
     LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
     LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
-    LOG_PRINTF("NetLink Timeout -> %d, Recv Timeout -> %d, title -> %s", netWorkParameters->netLinkTimeout,  netWorkParameters->receiveTimeout, netWorkParameters->title);
+    LOG_PRINTF("Recv Timeout -> %d, title -> %s", netWorkParameters->receiveTimeout, netWorkParameters->title);
 
 }
 
@@ -103,9 +104,17 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	}else if(netType == NET_EPMS_PLAIN_TEST) {
 
 	}else if(netType == NET_POSVAS_SSL_TEST) {
+		 strcpy(netParam->host, "196.6.103.10");
+        netParam->port = 55533;
+		netParam->isSsl = 1;
 
+		printf("SSL: TEST/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
 	}else if(netType == NET_POSVAS_PLAIN_TEST) {
-
+		netParam->isSsl = 0;
+		strcpy(netParam->host, "196.6.103.10");
+		netParam->port = 55531;
+	
+		printf("Plain: TEST/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
 	}else if(netType == UPSL_DIRECT_TEST) {
 
 	}
@@ -117,9 +126,6 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	netParam->isHttp = isHttp;
 	// netParam->receiveTimeout = 1000;
 	netParam->receiveTimeout = 90000;
-	strncpy(netParam->apn, "CMNET", 10);
-	// strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
-	netParam->netLinkTimeout = 1000;
 
 	return 0;
 
@@ -190,144 +196,35 @@ static int _connect_server_func_proc()
 	return ret ;
 }
 
-static int allDataReceived(unsigned char *packet, const int bytesRead)
+static int allDataReceived(unsigned char *packet, const int bytesRead, const char * endTag)
 {
-    const int tpduSize = 2;
-    unsigned char bcdLen[2];
-    int msgLen;
+    
+	int result = 0;
 
-    memcpy(bcdLen, packet, tpduSize);
-    msgLen = ((bcdLen[0] << 8) + bcdLen[1]) + tpduSize;
+	if (bytesRead) {
+		int index = 0;
+		const int tpduSize = 2;
+		
+		if (*packet && endTag && strstr(packet, endTag)) {
+			result = 1;
+		} else if(bytesRead > 2 && *(&packet[tpduSize])) {
+			unsigned char bcdLen[2];
+			int msgLen;
 
-	printf("%s:::msgLen -> %d, bytesRead -> %d\n", __FUNCTION__, msgLen, bytesRead);
-
-    return (msgLen == bytesRead) ? 1 : 0;
-}
-
-
-// Http receiving processing, the step is to receive the byte stream from the sock to parse out the header status code and length and other fields, and then receive the http body according to the length
-static int socket_recv(int sock, char *buff, int len, int timeover, int isSsl, int isHttp)
-{
-	int index = 0;
-	unsigned int tick1;
-	char msg[32];
-	char *phttpbody;
-	int nHttpBodyLen;
-	int nHttpHeadLen;
-
-	printf("https_recv\n");
-
-	tick1 = Sys_TimerOpen(timeover);
-
-	// Receive http packets cyclically until timeout or reception is complete
-	while (Sys_TimerCheck(tick1) > 0 && index < len ){	
-		int ret;
-		int num;
-
-		if(isSsl)
-			num = (timeover - Sys_TimerCheck(tick1)) /1000;
-		else
-			num = Sys_TimerCheck(tick1) /1000;
-			
-		num = num < 0 ? 0 : num;
-		sprintf(msg , "%s(%d)" , "Recving" , num);
-
-		comm_page_set_page( "Http", msg , 1);
-		ret = comm_page_get_exit();
-
-		if(ret == 1){ 
-			return -2;
+			memcpy(bcdLen, packet, tpduSize);
+			msgLen = ((bcdLen[0] << 8) + bcdLen[1]) + tpduSize;
+		    index = tpduSize;
+			result = (msgLen == bytesRead) ? 1 : 0;
+			printf("%s:::msgLen -> %d, bytesRead -> %d\n", __FUNCTION__, msgLen, bytesRead);
 		}
 
-        if(isSsl) 
-        {
-            ret = comm_ssl_recv( sock, (unsigned char *)(buff + index), len - index );
-        } else 
-        {
-            ret = comm_sock_recv( sock, (unsigned char *)(buff + index), len - index , 1000);
-        }
-
-		// printf("ret from comm_sock_recv : %d\n", ret);
-
-		// if(ret) return ret;		// Temporarily
-
-	
-		if(isHttp){
-
-			if(ret >= 0){
-				index += ret;
-
-				buff[index] = '\0';
-				phttpbody = (char *)strstr( buff ,"\r\n\r\n" ); // Http headend
-				
-				if(phttpbody!=0){
-					//char *p;				
-					int nrescode = getHttpStatusCode(buff);
-					printf( "Status Code: %d",nrescode );
-
-					if ( nrescode == 200){	
-
-						nHttpHeadLen = phttpbody + 4 - buff;	
-
-						nHttpBodyLen = getContentLength(buff);
-
-						printf("HeadLen:%d  Content-Length: %d\n", nHttpHeadLen, nHttpBodyLen);
-
-						//if(nHttpBodyLen<=0) return -1;
-
-						if (index >= nHttpHeadLen + nHttpBodyLen){		
-							//The receiving length is equal to the length of the head plus
-							memcpy(buff , phttpbody + 4 , nHttpBodyLen);
-							printf( "http recv body: %s", buff );
-							return nHttpBodyLen;	// Receive completed, return to receive length
-						}
-						return ret;
-					}
-					else{  //not 200
-
-						return -1;
-					}
-				}
-							
-
-			}else {
-				return -1;
-			}
-		} else if(ret >= 0) {
-
-			// More work need to be done here in case all data don't come at once 
-			
-			if(ret > 0) {
-				index += ret;
-			}
-
-			if (allDataReceived((unsigned char*)buff, index)){
-				return index;
-			} 
-			
-		}
-
-			
+		packet[bytesRead] = 0;
+		printf("Packet -> '%s'\n", &packet[index]);
 	}
 
-	return -1;
+    return result;
 }
 
-
-/*
-enum CommsStatus {
-   
-    SEND_RECEIVE_SUCCESSFUL,
-    CONNECTION_FAILED,
-    SENDING_FAILED,
-    RECEIVING_FAILED,
-
-    //Extended Response, leave this part for me.
-    MANUAL_REVERSAL_NEEDED,
-    AUTO_REVERSAL_SUCCESSUL, 
-
-};
-*/
 
 
 static short tryConnection(NetWorkParameters *netParam, const int i)
@@ -398,22 +295,21 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 
 
 
-short netLink(NetWorkParameters *netParam)
+short netLink(Network * gprsSettings)
 {
-	//TODO: maybe try many times.
-	//nret = comm_net_link_ex(netParam->title, netParam->apn, netParam->netLinkTimeout, netParam->apnUser, netParam->apnPassword, authParam);		// Network link with 30s timeout	
-	return comm_net_link(netParam->title, netParam->apn, netParam->netLinkTimeout);
+	printf("Linking: APN -> %s, Username -> %s, Pass -> %s, operator -> %s, timeout -> %d\n", gprsSettings->apn, gprsSettings->username, gprsSettings->password, gprsSettings->operatorName, gprsSettings->timeout);
+	return comm_net_link_ex(gprsSettings->operatorName, gprsSettings->apn, gprsSettings->timeout, gprsSettings->username, gprsSettings->password, 0);
 }
 
 void * preDial(void * netParams)
 {
 	int maxTry = 3;
-	NetWorkParameters * netParameters = (NetWorkParameters *) netParams;
+	Network * gprsSettings = (Network *) netParams;
 	int result = -1;
 	int i;
 
 	for (i = 0; i < maxTry; i++) {
-		result = netLink(netParameters);
+		result = netLink(gprsSettings);
 		if (!result) break;
 	}
 
@@ -425,8 +321,12 @@ static short connectToHost(NetWorkParameters *netParam)
     int i;
     int nret;	
 	const int nTime = 3;
+	MerchantData merchantData;
 
-	nret = netLink(netParam);		// Network link with 30s timeout
+	memset(&merchantData, 0x00, sizeof(MerchantData));
+	readMerchantData(&merchantData);
+
+	nret = netLink(&merchantData.gprsSettings);
 	
 	if (nret != 0)
 	{
@@ -483,26 +383,32 @@ static short sendPacket(NetWorkParameters *netParam)
 }
 
 
-static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int tick1,int timeover, int ssl_flag)
+/*
+;
+bytes = http_recv_buff(netParam->title, netParam->response, size, tick, timeover, netParam->isSsl);
+*/
+
+static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int timeover)
 {
 	int nret;
 	int curRecvLen = 0;
 	char msg[32];
 	char title[32];
 	unsigned int tick2 = Sys_TimerOpen(1000);
+	const int maxLen = sizeof(netParam->response);
 
 	printf( "------http_recv_buff------\r\n" );		
 	while(Sys_TimerCheck(tick1) > 0){
 		int ret;
 		int num;
 
-		if(strlen(s_title)>0){
+		if(strlen(netParam->title)>0){
 			num = Sys_TimerCheck(tick1)/1000;
 			num = num < 0 ? 0 : num;
 
 			sprintf(msg , "%s(%d)" , "Recving" , num);
 
-			comm_page_set_page(s_title , msg , 1);
+			comm_page_set_page(netParam->title , msg , 1);
 			ret = comm_page_get_exit();
 
 			if(ret == 1){ 
@@ -511,10 +417,10 @@ static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int t
 		}
 
 
-		if(ssl_flag==1){
-			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)(recvBuff + curRecvLen), maxLen-curRecvLen);
+		if(netParam->isSsl == 1){
+			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)(netParam->response + curRecvLen), maxLen-curRecvLen);
 		}else{
-			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)(recvBuff + curRecvLen), maxLen-curRecvLen , 700);
+			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)(netParam->response + curRecvLen), maxLen-curRecvLen , 700);
 		}
 
 		//printf("nret is : %d\n", nret);
@@ -524,10 +430,10 @@ static int http_recv_buff(char *s_title,char *recvBuff,int maxLen,unsigned int t
 			curRecvLen+=nret;
 			if(curRecvLen == maxLen){
 				break;
-			}else if(allDataReceived(recvBuff, curRecvLen)){
+			}else if(allDataReceived(netParam->response, curRecvLen, netParam->endTag)){
 				break;
 			}
-		}else if(Sys_TimerCheck(tick2) == 0 && ssl_flag==1){
+		}else if(Sys_TimerCheck(tick2) == 0 && netParam->isSsl == 1){
 			mf_ssl_recv3(COMM_SOCK);
 			//printf("----------mf_ssl_recv3\r\n");
 			tick2 = Sys_TimerOpen(1000);
@@ -567,62 +473,17 @@ static short receivePacket(NetWorkParameters *netParam)
 	int result = -1;
 	int bytes = 0;
 	int count = 0;
-	const int size = sizeof(netParam->response);
 	int timeover = 60000;
 	unsigned int tick = Sys_TimerOpen(timeover);
 	
-
-	
-	bytes = http_recv_buff(netParam->title, netParam->response, size, tick, timeover, netParam->isSsl);
+	bytes = http_recv_buff(netParam, tick, timeover);
 
 	if (bytes > 0) {
 		netParam->responseSize = bytes;
 	} else {
 		return -1;
 	}
-	
 
-
-	/*
-	if (allDataReceived((unsigned char*)buff, index)){
-				return index;
-	}
-	*/
-	
-	/*
-	while (1) 
-	{
-		if (netParam->isSsl)
-		{
-			result = comm_ssl_recv(COMM_SOCK, (unsigned char *) &netParam->response[bytes], size - bytes);
-		}
-		else
-		{
-			result = comm_sock_recv(COMM_SOCK, (unsigned char *)&netParam->response[bytes], size - bytes, netParam->receiveTimeout);
-			
-		}
-
-		if (result == 0) {
-			//netParam->responseSize = bytes;
-			logHex(netParam->response, netParam->responseSize, "recv");
-			break;
-		} else if (result > 0) {
-			printf("recv: %d bytes received\n", result);
-			bytes += result;
-			if (allDataReceived((unsigned char*) netParam->response, bytes)) break;
-		} else if (result < 0) {
-			printf("Negative receive result -> %d\n", result);
-			if (bytes > 0) break;
-		}
-
-		//Sys_Delay(100);
-		
-	}
-	
-	if (bytes > 0) {
-		netParam->responseSize = bytes;
-	} 
-	*/
 	printf("\nrecv result -> %d\n", netParam->responseSize);
 
 	return bytes > 0 ? 0 : -1;
@@ -718,4 +579,47 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	//Sys_Delay(500);
 	comm_net_unlink(); // Unlink network connection
 	return SEND_RECEIVE_SUCCESSFUL;
+}
+
+/**
+ * Function: gprsInit
+ * Usage: if (!gprsInit()) .... success.
+ * ------------------------------------
+ *
+ */
+
+short gprsInit(void)
+{
+    char imsi[20] = {'\0'};
+    Network profile;
+	MerchantData merchantData;
+	int maxTry = 4;
+	int result = -1;
+	int i;
+	char title[] = "GPRS INIT";
+
+	gui_clear_dc();
+	gui_text_out((gui_get_width() - gui_get_text_width(title)) / 2, gui_get_height() / 2, title);
+	
+    memset(&profile, 0x00, sizeof(Network));
+    getImsi(imsi);
+	
+	memset(&merchantData, 0x00, sizeof(MerchantData));
+	readMerchantData(&merchantData);
+
+	if (imsiToNetProfile(&merchantData.gprsSettings, imsi)) {
+		gui_messagebox_show("GPRS INIT" , "Can't Configure Sim", "" , "Exit" , 0);
+		return -1;
+	}
+
+	merchantData.gprsSettings.timeout = 30000;
+	saveMerchantData(&merchantData);
+
+	for (i = 0; i < maxTry; i++) {
+		result = netLink(&merchantData.gprsSettings);
+		if (!result) break;
+		Sys_Delay(500);
+	}
+
+	return result;
 }

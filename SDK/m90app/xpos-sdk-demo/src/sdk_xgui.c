@@ -247,7 +247,7 @@ void hostTest(void)
 
 	printf("Len -> %02X %02X ---> %d", netParam.packet[0], netParam.packet[1], netParam.packetSize);
 
-	getNetParams(&netParam, CURRENT_PATFORM, 0);
+	getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
 	
 
@@ -349,7 +349,7 @@ static short hanshakeHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PREP_TERMINAL) == 0)
 	{
-		if (isDevMode(CURRENT_PATFORM)) {
+		if (isDevMode(CURRENT_PLATFORM)) {
 			//TODO: Get terminal Id.
 		}
 		
@@ -645,6 +645,8 @@ void get_hhmmss_str(char *buff)
 	Sys_GetDateTime(d);
 	sprintf(buff, "%c%c:%c%c:%c%c", d[8], d[9], d[10], d[11], d[12], d[13]);
 }
+
+
 
 static short validateUsersPin()
 {

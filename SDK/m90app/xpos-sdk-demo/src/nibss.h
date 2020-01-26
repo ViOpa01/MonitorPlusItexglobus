@@ -6,23 +6,29 @@
  */
 
 
+
+
+
+#ifndef _ITEX_NIBSS_INCLUDED
+#define _ITEX_NIBSS_INCLUDED
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#ifndef _ITEX_NIBSS_INCLUDED
-#define _ITEX_NIBSS_INCLUDED
-
 #include "Nibss8583.h"
 #include "network.h"
 
 
-// #define CURRENT_PATFORM NET_POSVAS_SSL
-#define CURRENT_PATFORM NET_EPMS_SSL
+// #define CURRENT_PLATFORM NET_POSVAS_SSL
+#define CURRENT_PLATFORM NET_EPMS_SSL
+
+//#define CURRENT_PLATFORM NET_POSVAS_SSL_TEST
 //
 
 short uiHandshake(void);
+short autoHandshake(void);
 short uiGetParameters(void);
 short uiCallHome(void);
 

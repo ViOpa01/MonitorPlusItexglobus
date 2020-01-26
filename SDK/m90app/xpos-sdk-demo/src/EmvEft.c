@@ -657,7 +657,6 @@ static void logNetworkParameters(NetWorkParameters *netWorkParameters)
 	puts("\n\nEft.......\n");
 	LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
 	LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
-	LOG_PRINTF("NetLink Timeout -> %d, Recv Timeout -> %d, title -> %s", netWorkParameters->netLinkTimeout, netWorkParameters->receiveTimeout, netWorkParameters->title);
 }
 
 void eftTrans(const enum TransType transType)
@@ -693,7 +692,7 @@ void eftTrans(const enum TransType transType)
 		return;
 	}
 
-	getNetParams(&netParam, CURRENT_PATFORM, 0);
+	getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
 	if (mParam.tid[0])
 	{
@@ -716,7 +715,7 @@ void eftTrans(const enum TransType transType)
 	strncpy(eft.posConditionCode, POS_CONDITION_CODE, sizeof(eft.posConditionCode));
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
 	strcpy(netParam.title, transTypeToTitle(transType));
-	pthread_create(&thread, NULL, preDial, &netParam);
+	pthread_create(&thread, NULL, preDial, &mParam.gprsSettings);
 	performEft(&eft, &netParam, transTypeToTitle(transType));
 }
 

@@ -35,10 +35,6 @@ static void initTamsParameters(NetWorkParameters * netParam)
 
 	netParam->receiveTimeout = 10000;
 	strncpy(netParam->title, "TAMS", 10);
-	//strncpy(netParam->apn, "CMNET", 10);
-    strncpy(netParam->apn, "web.gprs.mtnnigeria.net", sizeof(netParam->apn));
-	netParam->netLinkTimeout = 30000;
-
     netParam->isHttp = 1;
     netParam->isSsl = 0;
 }
@@ -54,6 +50,7 @@ static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
 
     strncpy((char *)netParam->host, ITEX_TAMS_PUBLIC_IP, strlen(ITEX_TAMS_PUBLIC_IP));
     netParam->port = atoi(ITEX_TASM_PUBLIC_PORT);
+    netParam->endTag = "</efttran>";
 
     getTerminalSn(terminalSn);
 
