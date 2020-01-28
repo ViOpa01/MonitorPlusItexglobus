@@ -691,7 +691,12 @@ void standby_pagepaint()
 	logoleft = 30;
 	logotop = 16;
 
-	pbmp = gui_load_bmp(LOGOIMG, &logowidth, &logoheight);
+	// pbmp = gui_load_bmp(LOGOIMG, &logowidth, &logoheight);
+	pbmp = gui_load_bmp(BANKLOGO, &logowidth, &logoheight);
+
+	printf("Width of the picture : %d\n", logowidth);
+	printf("Height of the picture : %d\n", logoheight);
+
 
 	if (pbmp != 0)
 	{
@@ -699,14 +704,13 @@ void standby_pagepaint()
 		free(pbmp);
 	}
 
+
 	get_yyyymmdd_str(data);
 	data[10] = ' ';
 	data[11] = ' ';
 	get_hhmmss_str(&data[12]);
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(3), data);
-	//get_hhmmss_str(data);
-	//gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
-
+	
 	sprintf(data, "Version:%s", APP_VER);
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
 
@@ -718,7 +722,7 @@ void standby_pagepaint()
 	data[pos] = 0;
 
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(5), data);
-
+	
 	gui_end_batch_paint();
 }
 

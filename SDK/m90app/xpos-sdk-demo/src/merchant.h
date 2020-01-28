@@ -14,6 +14,7 @@ extern "C" {
 typedef struct MerchantData
 {
     char address[80];
+    char name[80];
     char rrn[13];
     int status;
     char stamp_label[12];
@@ -21,7 +22,7 @@ typedef struct MerchantData
     int stamp_duty;
     char nibss_platform[12];    // POSVAS, EPMS
     char nibss_ip[22];
-    int  nibss_port;
+    int  nibss_ssl_port;
     int  nibss_plain_port;
     char port_type[12];
     char tid[14];

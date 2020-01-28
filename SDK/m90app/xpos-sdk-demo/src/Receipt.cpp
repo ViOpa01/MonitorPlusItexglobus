@@ -472,6 +472,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	printBankLogo();	// Prints Logo
 	
 	UPrint_SetFont(8, 2, 2);
+	UPrint_Str(mParam.name, 2, 1);
     UPrint_Str(mParam.address, 2, 1);
     printLine("MID : ", parameter.cardAcceptiorIdentificationCode);
     printLine("DATE TIME   : ", buff);

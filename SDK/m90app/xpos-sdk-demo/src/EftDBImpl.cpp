@@ -37,33 +37,22 @@ static void printLine(char *head, char *val)
 void printHeader(){
     MerchantData merchantdata = { 0 };
     readMerchantData(&merchantdata);
-    std::string merchantAddress(merchantdata.address);
-    std::string merchantName;
-    std::string realAddress;
     
-    char address_pr[100] = {0};
-    char name_pr[100] = {0};
     char tid[100] = {0};
     char date[50] = {0};
     char tidWithDate[100] = {0};
-    int index = merchantAddress.find('|',0);
     getDate(date);
-    merchantName = merchantAddress.substr(0, merchantAddress.length() - index + 1);
-    realAddress = merchantAddress.substr(index, merchantAddress.length() - index);
-    sprintf(address_pr, "%s\n", realAddress.c_str());
-    sprintf(name_pr,"%s\n", merchantName.c_str());
+    
     sprintf(tid,"%s", merchantdata.tid);
     UPrint_Feed(8);
     sprintf(tidWithDate, "%s              %s\n", tid, date);
     UPrint_SetFont(8, 2, 2);
-    UPrint_StrBold(name_pr, 1, 0, 1);
-    UPrint_StrBold(address_pr, 1, 0, 1);
+    UPrint_StrBold(merchantdata.name, 1, 0, 1);
+    UPrint_StrBold(merchantdata.address, 1, 0, 1);
 
-  //  UPrint_Str(name_pr, 1, 0);
- 	//UPrint_Str(address_pr, 1, 0);
-   UPrint_Str(tidWithDate, 1, 0);
-   UPrint_Feed(8);
-    //UPrint_Str(tid, 7, 0);
+    UPrint_Str(tidWithDate, 1, 0);
+    UPrint_Feed(8);
+    
 }
 
 struct EodLabelStruct {

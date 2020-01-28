@@ -83,10 +83,10 @@ static IccDataT nibssIccData[] = {
 	{0x9F33, 1},
 	{0x9F35, 1},
 	{0x9F1E, 1},
-	{0x84, 1},
-	{0x9F09, 1},
+	{0x84, 1},	
+	{0x9F09, 1},	
 	{0x9F06, 0},
-	{0x9F03, 1},
+	{0x9F03, 1},	
 	{0x5F34, 1},
 	{NULL, NULL},
 };
@@ -118,7 +118,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	termconfig->bCAPKFailOperAction = NO;  /*CAPK Is operator intervention required when reading an error? 1*/
 	termconfig->bCAPKChecksum = YES;	   /*Whether to perform CAPK check 1*/
 	/**<Cardholder Verification Method*/
-	termconfig->bBypassPIN = YES;			 /*Whether to support skipping PIN input (requires change process, to be determined)*/
+	termconfig->bBypassPIN = NO;			 /*Whether to support skipping PIN input (requires change process, to be determined)*/
 	termconfig->bGetDataForPINCounter = YES; /*PIN Try to check if the counter is supportedGetData 1*/
 	termconfig->bFailCVM = YES;				 /*Whether to support the wrong CVM (must be Yes)*/
 	termconfig->bAmountBeforeCVM = YES;		 /*CVM Whether the amount is known before 1*/
@@ -134,7 +134,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	termconfig->bDefActCodesBefore1stGenAC = NO; /*Is the default behavior code prior to FirstGenerateAC ?*/
 	termconfig->bDefActCodesAfter1stGenAC = NO;  /*Is the default behavior code after FirstGenerateAC ?*/
 	/**<Completion Processing*/
-	termconfig->bForceOnline = NO;		 /*Whether to allow forced online 1*/
+	termconfig->bForceOnline = YES;		 /*Whether to allow forced online 1*/
 	termconfig->bForceAccept = NO;		 /*Whether to allow forced acceptance of transactions 1*/
 	termconfig->bAdvices = YES;			 /*Whether to support notification 0*/
 	termconfig->bIISVoiceReferal = YES;  /*Whether to support the voice reference initiated by the card issuer ?*/
@@ -333,6 +333,7 @@ void populateEchoData(char echoData[256])
 
 	sprintf(de59, "%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
 	strncpy(echoData, de59, strlen(de59));
+
 }
 
 static void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters)
@@ -349,7 +350,7 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	unsigned char response[2048];
 	unsigned char packet[2048];
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
-	const int maxTry = 3;
+	const int maxTry = 2;
 	int i;
 	struct HostType hostType;
 
@@ -369,7 +370,8 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	eft->reversalReason = TIMEOUT_WAITING_FOR_RESPONSE;
 
 	//Here..
-	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
+	result = createIsoEftPacket(packet, sizeof(packet), eft);
+	if ( result <= 0)
 	{
 		fprintf(stderr, "Error creating reversal packet...\n");
 		return -3;
@@ -377,8 +379,8 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 
 	netParam->packetSize = result;
 	memcpy(netParam->packet, packet, netParam->packetSize);
-	// sprintf(&netParam->packet[netParam->packetSize], "\r\n");
-	// netParam->packetSize += 2;
+
+	printf("Last 2 bytes -> %02x%02X\n", netParam->packet[result - 2], netParam->packet[result - 1]);
 
 	for (i = 0; i < maxTry; i++)
 	{
@@ -871,7 +873,7 @@ static void getPurchaseRequest(Eft *eft)
 	//const char *expectedPacket = "0200F23C46D129E09220000000000000002116539983471913195500000000000000010012201232310000071232311220210856210510010004D0000000006539983345399834719131955D210822100116217990000317377942212070HE88FBP205600444741ONYESCOM VENTURES LTD  KD           LANG566AD456A8EAC9DA12E2809F2608CBAFAFBDB481085F9F2701809F10120110A040002A0000000000000000000000FF9F3704983160FC9F360200F0950500002488009A031912209C01009F02060000000001005F2A020566820239009F1A0205669F34034203009F3303E0F8C89F3501229F1E0834363233313233368407A00000000410109F090200029F03060000000000005F340101074V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300015510101511344101BE97C61158EDB7955608F7238DBFD07DA74483E720F5B172F36FDC35DF68CC55";
 	//unsigned char actualPacket[1024];
 	//int result = 0;
-	char iccData[] = "9F2608D2A889A502332C919F2701809F10120110A74003020000000000000000000000FF9F3704AF3C74E79F360201D5950500000088009A032001139C01009F02060000000001005F2A020566820239009F1A0205669F34034403029F3303E0F8C89F3501229F1E0834363138343632378407A00000000410109F090200029F03060000000000005F340101";
+	char iccData[] = "9F260842C0BA568B50C5BB9F2701809F10200FA501A03900140000000000000000000F0100000000000000000000000000009F3704137CD3729F3602016B950500000080009A032001289C01009F02060000000000005F2A020566820258009F3303E0E8F05F3401019F3501229F34034103029F1A020566";
 	memset(eft, 0x00, sizeof(Eft));
 
 	eft->transType = EFT_PURCHASE;
@@ -880,19 +882,19 @@ static void getPurchaseRequest(Eft *eft)
 	eft->toAccount = DEFAULT_ACCOUNT;
 	eft->isFallback = 0;
 
-	strncpy(eft->sessionKey, "F8D35EE9758337A10D40B9801015CD8F", sizeof(eft->sessionKey));
+	strncpy(eft->sessionKey, "C13D4AC49BF7705B9D6EFD0B6ED0E351", sizeof(eft->sessionKey));
 
-	strncpy(eft->pan, "5399834500133103", sizeof(eft->pan));
+	strncpy(eft->pan, "5061050258560993933", sizeof(eft->pan));
 	strncpy(eft->amount, "000000000100", sizeof(eft->amount));
 	strncpy(eft->yyyymmddhhmmss, "20200113094122", sizeof(eft->yyyymmddhhmmss));
-	strncpy(eft->stan, "000168", sizeof(eft->stan));
-	strncpy(eft->expiryDate, "2207", sizeof(eft->expiryDate));
+	strncpy(eft->stan, "110347", sizeof(eft->stan));
+	strncpy(eft->expiryDate, "2104", sizeof(eft->expiryDate));
 	strncpy(eft->merchantType, "5300", sizeof(eft->merchantType));
 	strncpy(eft->cardSequenceNumber, "001", sizeof(eft->cardSequenceNumber));
 	strncpy(eft->posConditionCode, "00", sizeof(eft->posConditionCode));
 	strncpy(eft->posPinCaptureCode, "04", sizeof(eft->posPinCaptureCode));
-	strncpy(eft->track2Data, "5399834500133103D22072210018092200", sizeof(eft->track2Data));
-	strncpy(eft->rrn, "000031943108", sizeof(eft->rrn));
+	strncpy(eft->track2Data, "5061050258560993933D2104601013636041", sizeof(eft->track2Data));
+	strncpy(eft->rrn, "200128110339", sizeof(eft->rrn));
 	strncpy(eft->serviceRestrictionCode, "221", sizeof(eft->serviceRestrictionCode));
 	strncpy(eft->terminalId, "2214KCE2", sizeof(eft->terminalId));
 	strncpy(eft->merchantId, "2214LA391425013", sizeof(eft->merchantId));
@@ -900,7 +902,7 @@ static void getPurchaseRequest(Eft *eft)
 	strncpy(eft->currencyCode, "566", sizeof(eft->currencyCode));
 
 	strncpy(eft->iccData, iccData, sizeof(eft->iccData));
-	strncpy(eft->echoData, "V240m-2G~346-184-627~1.0.6(Thu-Dec-19-11:14:55-2019-)~release-30812300", sizeof(eft->echoData));
+	strncpy(eft->echoData, "PAX|32598757|7.8.18", sizeof(eft->echoData));
 }
 
 static int asc2bcd(char asc)
@@ -1371,8 +1373,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	netParam->packetSize = result;
 	memcpy(netParam->packet, packet, netParam->packetSize);
-	sprintf(&netParam->packet[netParam->packetSize], "\r\n");
-	netParam->packetSize += 2;
+	
 
 	result = processPacketOnline(eft, &hostType, netParam);
 

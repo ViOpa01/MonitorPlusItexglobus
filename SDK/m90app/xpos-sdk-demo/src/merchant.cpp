@@ -115,6 +115,7 @@ int saveMerchantDataXml(const char* merchantXml)
     MerchantData merchant = { 0 };
     std::string ip_and_port;    // POSVASPUBLIC_SSL, EMPSPUBLIC_SSL
     std::string ip_and_port_plain;  // POSVASPUBLIC, EMPSPUBLIC
+    std::string address_name;
     int pos = 0;
     int ret = -1;
 
@@ -154,7 +155,21 @@ int saveMerchantDataXml(const char* merchantXml)
     
     printf("tid : %s\n", merchant.tid);
 
-    strncpy(merchant.address, ezxml_child(tran, "Address")->txt, sizeof(merchant.address) - 1);
+    address_name.append(ezxml_child(tran, "Address")->txt);
+    printf("Address and Name : %s\n", ezxml_child(tran, "Address")->txt);
+
+    pos = 0;
+    pos = address_name.find('|');
+    strncpy(merchant.name, address_name.substr(0, pos).c_str(), sizeof(merchant.name) - 1);
+    printf("Merchant Name : %s\n", merchant.name);
+
+    if(address_name.substr(pos + 1, std::string::npos).empty())
+    {
+        strncpy(merchant.address, "", sizeof(merchant.address) - 1);
+    } else {
+        strncpy(merchant.address, address_name.substr(pos + 1, std::string::npos).c_str(), sizeof(merchant.address) - 1);
+    }
+    
     printf("Address : %s\n", merchant.address);
 
     strncpy(merchant.rrn, ezxml_child(tran, "RRN")->txt, sizeof(merchant.rrn) - 1);
@@ -203,8 +218,8 @@ int saveMerchantDataXml(const char* merchantXml)
     strncpy(merchant.nibss_ip, ip_and_port.substr(0, pos).c_str(), sizeof(merchant.nibss_ip) - 1);
     printf("ip and port : %s\n", merchant.nibss_ip);
 
-    merchant.nibss_port = atoi(ip_and_port.substr(pos + 1, std::string::npos).c_str());
-    printf("ssl port is : %d\n", merchant.nibss_port);
+    merchant.nibss_ssl_port = atoi(ip_and_port.substr(pos + 1, std::string::npos).c_str());
+    printf("ssl port is : %d\n", merchant.nibss_ssl_port);
 
     pos = 0;
     pos = ip_and_port_plain.find(';');
@@ -326,8 +341,8 @@ int readMerchantData(MerchantData* merchant)
 
     if(cJSON_IsNumber(jsonNibssPort))
     {
-        merchant->nibss_port = jsonNibssPort->valueint;
-        printf("Nibss port : %d\n", merchant->nibss_port);
+        merchant->nibss_ssl_port = jsonNibssPort->valueint;
+        printf("Nibss port : %d\n", merchant->nibss_ssl_port);
     }
 
     if(cJSON_IsNumber(jsonNibssPlainPort))
@@ -389,7 +404,7 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "port_type", cJSON_CreateString(merchant->port_type));
     cJSON_AddItemToObject(requestJson, "prefix", cJSON_CreateString(merchant->nibss_platform));
     cJSON_AddItemToObject(requestJson, "ip", cJSON_CreateString(merchant->nibss_ip));
-    cJSON_AddItemToObject(requestJson, "port", cJSON_CreateNumber(merchant->nibss_port));
+    cJSON_AddItemToObject(requestJson, "port", cJSON_CreateNumber(merchant->nibss_ssl_port));
     cJSON_AddItemToObject(requestJson, "plain_port", cJSON_CreateNumber(merchant->nibss_plain_port));
     cJSON_AddItemToObject(requestJson, "phone_no", cJSON_CreateString(merchant->phone_no));
     cJSON_AddItemToObject(requestJson, "is_prepped", cJSON_CreateNumber(merchant->is_prepped));
