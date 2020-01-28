@@ -393,7 +393,12 @@ void eodSubMenuHandler(int selected, const char** dateList, TrxType txtype)
 void getListOfEod(Eft * eft, TrxType txtype)
 {
     EmvDB db(EFT_DEFAULT_TABLE, DBNAME);
-
+    MerchantData merchant;
+    readMerchantData(&merchant);
+    if(merchant.is_prepped == 0){
+        gui_messagebox_show("MESSAGE", "Please Prep Terminal first", "", "Ok", 0);
+        return;
+    }
     const char * C_dateList[250] = { 0 };
     std::vector<std::string> dateList;
     int selectedOption = 0;
