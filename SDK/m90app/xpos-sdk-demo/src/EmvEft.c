@@ -429,22 +429,22 @@ static enum AccountType getAccountType(void)
 	case -2:
 		return ACCOUNT_END;
 	case 0:
-		// return 0x10;
+
 		return SAVINGS_ACCOUNT;
 	case 1:
-		// return 0x20;
+		
 		return CURRENT_ACCOUNT;
 	case 2:
-		// return 0x00;
+		
 		return DEFAULT_ACCOUNT;
 	case 3:
-		// return 0x30;
+		
 		return CREDIT_ACCOUNT;
 	case 4:
-		// return 0x40;
+		
 		return UNIVERSAL_ACCOUNT;
 	case 5:
-		// return 0x50;
+		
 		return INVESTMENT_ACCOUNT;
 	default:
 		return DEFAULT_ACCOUNT;

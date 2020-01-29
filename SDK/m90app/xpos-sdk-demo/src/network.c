@@ -193,7 +193,7 @@ static int _connect_server_func_proc()
 	}
 	else if(m_connect_exit == 0){
 		sprintf(msg , "Connect(%d)" , num);
-		comm_page_set_page("Http", msg , 1);
+		comm_page_set_page("Http", msg , 0);
 	}
 	else{
 		sprintf(msg , "Canceling...");
@@ -416,7 +416,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 
 			sprintf(msg , "%s(%d)" , "Recving" , num);
 
-			comm_page_set_page(netParam->title , msg , 1);
+			comm_page_set_page(netParam->title , msg , 0);
 			ret = comm_page_get_exit();
 
 			if(ret == 1){ 
@@ -578,6 +578,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 
 	if (receivePacket(netParam))
 	{
+		gui_messagebox_show("Response", "No response received", "", "", 3000);
 		return RECEIVING_FAILED;
 	}
 

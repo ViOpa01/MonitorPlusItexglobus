@@ -780,11 +780,11 @@ BEGIN :
 					gui_main_menu_show(MAIN_MENU_PAGE, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
-				else if (pmsg.wparam == GUI_KEY_1)
-				{
-					sdk_simple_page();
-					gui_post_message(GUI_GUIPAINT, 0, 0);
-				}
+				// else if (pmsg.wparam == GUI_KEY_1)
+				// {
+				// 	sdk_simple_page();
+				// 	gui_post_message(GUI_GUIPAINT, 0, 0);
+				// }
 				else if (pmsg.wparam == GUI_KEY_F1)
 				{
 				

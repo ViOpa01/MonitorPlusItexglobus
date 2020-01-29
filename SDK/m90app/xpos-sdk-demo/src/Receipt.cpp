@@ -402,6 +402,16 @@ static void printReceiptAmount(const long long amount, short center)
 	UPrint_Feed(6);
 }
 
+static void displayPaymentStatus(char * responseCode)
+{
+    if (isApprovedResponse(responseCode)) {
+        gui_messagebox_show(responseCode , "APPROVED", "" , "" , 200);   
+    } else {
+		gui_messagebox_show(responseCode, "DECLINED", "", "", 2000);
+	}
+
+}
+
 static void passBalanceAmount(const char *buff)
 {
 				
@@ -449,8 +459,6 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
     MerchantParameters parameter = {'\0'};
 	MerchantData mParam = {'\0'};
 	short isApproved = isApprovedResponse(eft->responseCode);
-
-
 	
 	char rightAligned[45];
 	char alignLabel[45];
@@ -461,8 +469,8 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
     getDateAndTime(dt);
     sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
 
+	displayPaymentStatus(eft->responseCode);
 
-	printf("Starting Print Routine\n");
 	ret = UPrint_Init();
 
 	if (ret == UPRN_OUTOF_PAPER)
