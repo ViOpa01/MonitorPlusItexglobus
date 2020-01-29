@@ -334,28 +334,68 @@ static const char *responseCodeToStr(const char responseCode[3])
  * ----------------------
  */
 
-static void alignBuffer(char * output, const char * input, const int expectedLen, const enum AlignType alignType)
+static void alignBuffer(char *output, const char *input, const int expectedLen, const enum AlignType alignType)
 {
-	int len = strlen(input);
-	int requiredSpaces = expectedLen - len;
+    int len = strlen(input);
+    int requiredSpaces = expectedLen - len;
+    char tempBuffer[1024] = {0};
 
-	if (len >= expectedLen) return;
+    if(output == NULL || input == NULL){
+        return;
+    }
+    const char * space = " ";
+    if(strcmp(space, output) == 0){
+        strcpy(output, space);
+        return;
+    }
 
-	if (alignType == ALIGH_RIGHT) {
-		memset(output, ' ', requiredSpaces);
-		memcpy(&output[requiredSpaces], input, len);
-	} else if(alignType == ALIGN_LEFT) {
-		memcpy(output, input, len);
-		memset(&output[len], ' ', requiredSpaces);
+    if (alignType == ALIGH_RIGHT) {
 
-	} else if(alignType == ALIGN_CENTER) {
-		requiredSpaces /= 2;
-		memset(output, ' ', requiredSpaces);
-		memcpy(&output[requiredSpaces], input, len);
-		memset(&output[requiredSpaces + len], ' ', requiredSpaces);
+        int index = 0;
+
+        while(index < requiredSpaces - len){
+            strncpy(&tempBuffer[index], space , 1);
+            index++;
+        }
+
+        strncpy(&tempBuffer[index], input, len);
+        strcpy(output, tempBuffer);
+    } 
+    else if(alignType == ALIGN_LEFT) {
+
+        memset(tempBuffer, '\0', sizeof(tempBuffer));
+        int index = 0;
+        strncpy(&tempBuffer[index], input, len);
+        index = len;
+
+        while(index < requiredSpaces){
+            strncpy(&tempBuffer[index], space , 1);
+            index++;
+        }
+        strcpy(output, tempBuffer);
+    }
+    else if(alignType == ALIGN_CENTER) {
+
+    int leftSpace = requiredSpaces / 2;
+
+    int index = 0;
+    memset(tempBuffer, '\0', 1024);
+    while(index < leftSpace){ 
+        strncpy(&tempBuffer[index], space , 1);
+        index++;
+    }
+
+    strncpy(&tempBuffer[index], input, len);
+    index = index + len;
+
+    while(index < requiredSpaces){
+        strncpy(&tempBuffer[index], space , 1);
+        index++;
+    }
+
+    strncpy(output, tempBuffer, index);
+	
 	}
-
-	output[expectedLen] = 0;
 }
 
 static void printReceiptAmount(const long long amount, short center)
