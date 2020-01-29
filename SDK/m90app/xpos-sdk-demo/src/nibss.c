@@ -174,7 +174,7 @@ static const char * platformToKey(const enum NetType netType)
             return "DBEECACCB4210977ACE73A1D873CA59F";
 
         case UPSL_DIRECT_TEST:
-            return ""; //TODO: add upsl key
+            return "0"; //TODO: add upsl key
 
         default:
             return NULL;

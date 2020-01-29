@@ -74,10 +74,8 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	if(netType == NET_EPMS_SSL || netType == NET_POSVAS_SSL)
 	{
 		// 196.6.103.72 5042  nibss epms port and ip test environment
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		strncpy(netParam->host, "192.168.43.72", strlen(mParam.nibss_ip));
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
 		netParam->port = mParam.nibss_ssl_port;
-
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
@@ -96,9 +94,6 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 			netParam->port = mParam.nibss_plain_port;
 		}
 		
-		//Echo server
-		// strncpy(netParam->host, "192.168.137.1", strlen(mParam.nibss_ip));
-		// netParam->port = 5001;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 0;
@@ -124,6 +119,11 @@ short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHt
 	
 		printf("Plain: TEST/POSVAS: ip -> %s, port -> %d\n", netParam->host, netParam->port);
 	}else if(netType == UPSL_DIRECT_TEST) {
+		netParam->isSsl = 0;
+		strcpy(netParam->host, "196.46.20.30");
+		netParam->port = 5334;
+		
+		printf("Plain: UPSL: ip -> %s, port -> %d\n", netParam->host, netParam->port);
 
 	}
 	else 

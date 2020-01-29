@@ -1281,6 +1281,20 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 
 	{
+		int length = 0;
+		char value[17] = {'\01'};
+
+		if (EMV_GetKernelData("\x50", &length, value))
+		{
+			fprintf(stderr, "Error getting tag 50\n");
+		} else {
+			strcpy(eft->cardLabel, value);
+			fprintf(stdout, "Tag 50 is : %s\n", value);
+		}
+
+	}
+
+	{
 		char tag84[1] = {0x84};
 		int length = 0;
 		byte value[256];

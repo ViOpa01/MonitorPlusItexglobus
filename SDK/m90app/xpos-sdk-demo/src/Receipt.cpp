@@ -342,11 +342,12 @@ static void alignBuffer(char * output, const char * input, const int expectedLen
 	if (len >= expectedLen) return;
 
 	if (alignType == ALIGH_RIGHT) {
-		memcpy(output, input, len);
-		memset(&output[len], ' ', requiredSpaces);
-	} else if(alignType == ALIGN_LEFT) {
 		memset(output, ' ', requiredSpaces);
 		memcpy(&output[requiredSpaces], input, len);
+	} else if(alignType == ALIGN_LEFT) {
+		memcpy(output, input, len);
+		memset(&output[len], ' ', requiredSpaces);
+
 	} else if(alignType == ALIGN_CENTER) {
 		requiredSpaces /= 2;
 		memset(output, ' ', requiredSpaces);
@@ -472,8 +473,8 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	printBankLogo();	// Prints Logo
 	
 	UPrint_SetFont(8, 2, 2);
-	UPrint_Str(mParam.name, 2, 1);
-    UPrint_Str(mParam.address, 2, 1);
+	UPrint_StrBold(mParam.name, 1, 0, 1);
+    UPrint_StrBold(mParam.address, 1, 0, 1);
     printLine("MID : ", parameter.cardAcceptiorIdentificationCode);
     printLine("DATE TIME   : ", buff);
     printDottedLine();
@@ -503,6 +504,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	MaskPan(eft->pan, maskedPan);
 	printLine("PAN:           ", maskedPan);
 	printLine("EXPIRY         ", eft->expiryDate);
+	printLine("LABEL          ", eft->cardLabel);
 
 	if (isApproved) {
 		sprintf(alignLabel, "%s", "AuthCode");
@@ -596,7 +598,8 @@ void printHandshakeReceipt(MerchantData *mParam)
 	}
 
 	UPrint_SetFont(8, 2, 2);
-    UPrint_Str(mParam->address, 2, 1);
+	UPrint_StrBold(mParam->name, 1, 0, 1);
+    UPrint_StrBold(mParam->address, 1, 0, 1);
 
     printLine("TID : ", mParam->tid);
     printLine("MID : ", parameter.cardAcceptiorIdentificationCode);

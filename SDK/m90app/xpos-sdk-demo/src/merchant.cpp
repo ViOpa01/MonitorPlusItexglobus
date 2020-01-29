@@ -253,7 +253,7 @@ int readMerchantData(MerchantData* merchant)
     // populate the data
 
     cJSON *json;
-    cJSON *jsonAddress, *jsonRrn, *jsonStatus, *jsonTID, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
+    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonStatus, *jsonTID, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
     char buffer[1024] = {'\0'};
@@ -271,6 +271,7 @@ int readMerchantData(MerchantData* merchant)
     parseJsonFile(buffer, &json);
     
     jsonAddress = cJSON_GetObjectItemCaseSensitive(json, "address");
+    jsonName = cJSON_GetObjectItemCaseSensitive(json, "name");
     jsonRrn = cJSON_GetObjectItemCaseSensitive(json, "rrn");
     jsonTID = cJSON_GetObjectItemCaseSensitive(json, "tid");
     jsonStampLabel = cJSON_GetObjectItemCaseSensitive(json, "stamp_label"); // String
@@ -289,6 +290,12 @@ int readMerchantData(MerchantData* merchant)
     {
         strncpy(merchant->address, jsonAddress->valuestring, sizeof(merchant->address) - 1);
         printf("Address : %s\n", merchant->address);
+    }
+
+    if(cJSON_IsString(jsonName))
+    {
+        strncpy(merchant->name, jsonName->valuestring, sizeof(merchant->name) - 1);
+        printf("Name : %s\n", merchant->name);
     }
 
     if(cJSON_IsString(jsonRrn))
@@ -395,6 +402,7 @@ int saveMerchantData(const MerchantData* merchant)
     // save json to file
 
     cJSON_AddItemToObject(requestJson, "address", cJSON_CreateString(merchant->address));
+    cJSON_AddItemToObject(requestJson, "name", cJSON_CreateString(merchant->name));
     cJSON_AddItemToObject(requestJson, "rrn", cJSON_CreateString(merchant->rrn));
     cJSON_AddItemToObject(requestJson, "tid", cJSON_CreateString(merchant->tid));
     cJSON_AddItemToObject(requestJson, "status", cJSON_CreateNumber(merchant->status));
