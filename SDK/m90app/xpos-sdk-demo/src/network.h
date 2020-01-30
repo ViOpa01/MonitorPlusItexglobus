@@ -4,9 +4,9 @@
 //#include "Nibss8583.h"
 
 typedef enum NetType {
-    NET_EPMS_SSL,
+    NET_EPMS_SSL = 1,
+    NET_POSVAS_SSL = 2,
     NET_EPMS_PLAIN,
-    NET_POSVAS_SSL,
     NET_POSVAS_PLAIN,
 
     NET_EPMS_SSL_TEST,
@@ -14,7 +14,7 @@ typedef enum NetType {
     NET_POSVAS_SSL_TEST,
     NET_POSVAS_PLAIN_TEST,
     
-    UPSL_DIRECT_TEST,
+    UPSL_DIRECT_TEST
 
 }NetType;
 
@@ -71,13 +71,12 @@ typedef struct {
 
 short netLink(Network * gprsSettings);
 
-short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp);
+short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp);
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);
 int imsiToNetProfile(Network* profile, const char* imsi);
 void * preDial(void * netParams);
 short gprsInit(void);
-
-
+void platformAutoSwitch(NetType *netType);
 
 #endif 
 

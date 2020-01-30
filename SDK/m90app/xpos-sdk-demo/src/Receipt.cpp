@@ -561,7 +561,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	
 	printLine("RRN", eft->rrn);
 	printLine("STAN", eft->stan);
-	printLine("TERMINAL NO.", mParam.tid);
+	printLine("TID", mParam.tid);
 
 	printLine("CARD NAME", eft->cardHolderName);
 

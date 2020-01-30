@@ -96,7 +96,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid));
     strncpy(tid, mParam.tid, 8);
     sprintf(dateAndTime, "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", &buff[0], &buff[4], &buff[6], &buff[8], &buff[10], &buff[12]);
-    sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.nibss_platform);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
+    sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simId, "%s", getSimId());
@@ -160,8 +160,11 @@ short isDevMode(const enum NetType netType)
     }
 }
 
-static const char * platformToKey(const enum NetType netType)
+static const char * platformToKey(enum NetType netType)
 {
+
+    platformAutoSwitch(&netType);
+
     switch (netType) {
         case NET_POSVAS_SSL: case NET_POSVAS_PLAIN:
             return "F9F6FF09D77B6A78595541DB63D821FA";

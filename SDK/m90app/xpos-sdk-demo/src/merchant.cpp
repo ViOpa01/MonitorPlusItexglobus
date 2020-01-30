@@ -190,12 +190,15 @@ int saveMerchantDataXml(const char* merchantXml)
     strncpy(merchant.port_type, ezxml_child(tran, "PORT_TYPE")->txt, sizeof(merchant.port_type) - 1);
     printf("Port Type : %s\n", merchant.port_type);
     
-    strncpy(merchant.nibss_platform, ezxml_child(tran, "PREFIX")->txt, sizeof(merchant.nibss_platform) - 1);
-    printf("Platform : %s\n", merchant.nibss_platform);
+    strncpy(merchant.platform_label, ezxml_child(tran, "PREFIX")->txt, sizeof(merchant.platform_label) - 1);
+    printf("Platform Label: %s\n", merchant.platform_label);
 
 
-    if(strcmp(merchant.nibss_platform, "POSVAS") == 0)
+    if(strcmp(merchant.platform_label, "POSVAS") == 0)
     {
+        merchant.nibss_platform = 2;
+        printf("Platform is : %d\n", merchant.nibss_platform);
+        
         // get POSVAS IP and PORT SSL
         ip_and_port.append(ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
         printf("ip and port ssl : %s\n", ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
@@ -204,8 +207,11 @@ int saveMerchantDataXml(const char* merchantXml)
         printf("ip and port plain : %s\n", ezxml_child(tran, "POSVASPUBLIC")->txt);
 
 
-    } else if(strcmp(merchant.nibss_platform, "EPMS") == 0)
+    } else if(strcmp(merchant.platform_label, "EPMS") == 0)
     {
+        merchant.nibss_platform = 1;
+        printf("Platform is : %d\n", merchant.nibss_platform);
+
         // EPMS IP and PORT SSL
         ip_and_port.append(ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
         printf("ip and port ssl : %s\n", ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
@@ -233,7 +239,7 @@ int saveMerchantDataXml(const char* merchantXml)
     printf("Account Selection : %d\n", merchant.account_selection);
 
     strncpy(merchant.phone_no, ezxml_child(tran, "phone")->txt, sizeof(merchant.phone_no) - 1);
-    printf("Platform : %s\n", merchant.nibss_platform);
+    printf("Platform : %d\n", merchant.nibss_platform);
     printf("Phone no : %s\n", merchant.phone_no);
 
     merchant.is_prepped = 0;
@@ -253,7 +259,7 @@ int readMerchantData(MerchantData* merchant)
     // populate the data
 
     cJSON *json;
-    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonStatus, *jsonTID, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
+    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonStatus, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
     char buffer[1024] = {'\0'};
@@ -275,10 +281,11 @@ int readMerchantData(MerchantData* merchant)
     jsonRrn = cJSON_GetObjectItemCaseSensitive(json, "rrn");
     jsonTID = cJSON_GetObjectItemCaseSensitive(json, "tid");
     jsonStampLabel = cJSON_GetObjectItemCaseSensitive(json, "stamp_label"); // String
+    jsonPlatformLabel = cJSON_GetObjectItemCaseSensitive(json, "platform_label"); // String
     jsonStampDuty = cJSON_GetObjectItemCaseSensitive(json, "stamp_duty");   // Int
     jsonIsPrep = cJSON_GetObjectItemCaseSensitive(json, "is_prepped");   // Int
     jsonStampDutyThreshold = cJSON_GetObjectItemCaseSensitive(json, "stamp_threshold");    // Int
-    jsonPlatform = cJSON_GetObjectItemCaseSensitive(json, "prefix");    // String
+    jsonPlatform = cJSON_GetObjectItemCaseSensitive(json, "platform");    // Int
     jsonPhone = cJSON_GetObjectItemCaseSensitive(json, "phone_no"); // String
     jsonNibssIp = cJSON_GetObjectItemCaseSensitive(json, "ip");    // String
     jsonNibssPort = cJSON_GetObjectItemCaseSensitive(json, "port");    // Int
@@ -316,6 +323,12 @@ int readMerchantData(MerchantData* merchant)
         printf("Stamp Label : %s\n", merchant->stamp_label);
     }
 
+     if(cJSON_IsString(jsonPlatformLabel))
+    {
+        memcpy(merchant->platform_label, jsonPlatformLabel->valuestring, sizeof(merchant->platform_label) - 1);
+        printf("Platform Label : %s\n", merchant->platform_label);
+    }
+
     if(cJSON_IsNumber(jsonStampDuty))
     {
         merchant->stamp_duty = jsonStampDuty->valueint;
@@ -334,10 +347,10 @@ int readMerchantData(MerchantData* merchant)
         printf("Stamp duty threshold: %d\n", merchant->stamp_duty_threshold);
     }
 
-    if(cJSON_IsString(jsonPlatform))
+    if(cJSON_IsNumber(jsonPlatform))
     {
-        strncpy(merchant->nibss_platform, jsonPlatform->valuestring, sizeof(merchant->nibss_platform) - 1);
-        printf("Nibss platform : %s\n", merchant->nibss_platform);
+        merchant->nibss_platform = jsonPlatform->valueint;
+        printf("Nibss platform : %d\n", merchant->nibss_platform);
     }
 
     if(cJSON_IsString(jsonNibssIp))
@@ -407,10 +420,11 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "tid", cJSON_CreateString(merchant->tid));
     cJSON_AddItemToObject(requestJson, "status", cJSON_CreateNumber(merchant->status));
     cJSON_AddItemToObject(requestJson, "stamp_label", cJSON_CreateString(merchant->stamp_label));
+    cJSON_AddItemToObject(requestJson, "platform_label", cJSON_CreateString(merchant->platform_label));
     cJSON_AddItemToObject(requestJson, "stamp_threshold", cJSON_CreateNumber(merchant->stamp_duty_threshold));
     cJSON_AddItemToObject(requestJson, "stamp_duty", cJSON_CreateNumber(merchant->stamp_duty));
     cJSON_AddItemToObject(requestJson, "port_type", cJSON_CreateString(merchant->port_type));
-    cJSON_AddItemToObject(requestJson, "prefix", cJSON_CreateString(merchant->nibss_platform));
+    cJSON_AddItemToObject(requestJson, "platform", cJSON_CreateNumber(merchant->nibss_platform));
     cJSON_AddItemToObject(requestJson, "ip", cJSON_CreateString(merchant->nibss_ip));
     cJSON_AddItemToObject(requestJson, "port", cJSON_CreateNumber(merchant->nibss_ssl_port));
     cJSON_AddItemToObject(requestJson, "plain_port", cJSON_CreateNumber(merchant->nibss_plain_port));

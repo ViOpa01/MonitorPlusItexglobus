@@ -20,7 +20,8 @@ typedef struct MerchantData
     char stamp_label[12];
     int stamp_duty_threshold;
     int stamp_duty;
-    char nibss_platform[12];    // POSVAS, EPMS
+    int nibss_platform;    // 1 : EPMS, 2 : POSVAS
+    char platform_label[14];
     char nibss_ip[22];
     int  nibss_ssl_port;
     int  nibss_plain_port;

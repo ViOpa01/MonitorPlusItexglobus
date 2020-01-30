@@ -4,6 +4,7 @@
 #include "network.h"
 #include "merchant.h"
 #include "util.h"
+#include "nibss.h"
 #include "log.h"
 #include "sdk_http.h"
 #include "merchant.h"
@@ -29,6 +30,19 @@ static void logNetworkParameters(NetWorkParameters * netWorkParameters)
     LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
     LOG_PRINTF("Recv Timeout -> %d, title -> %s", netWorkParameters->receiveTimeout, netWorkParameters->title);
 
+}
+
+void platformAutoSwitch(NetType *netType)
+{
+	
+	if(!isDevMode(*netType))		// Platfrom Auto Switch is happening here
+	{
+		MerchantData mParam;
+		memset(&mParam, 0x00, sizeof(MerchantData));
+		readMerchantData(&mParam);
+
+		*netType = mParam.nibss_platform;	
+	}
 }
 
 static const char* networkProfiles[][4] = {
@@ -64,12 +78,14 @@ int imsiToNetProfile(Network* profile, const char* imsi)
     return -1;
 }
 
-short getNetParams(NetWorkParameters * netParam, const NetType netType, int isHttp)
+short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 {
 	MerchantData mParam;
 
 	memset(&mParam, 0x00, sizeof(MerchantData));
 	readMerchantData(&mParam);
+
+	platformAutoSwitch(&netType);
 
 	if(netType == NET_EPMS_SSL || netType == NET_POSVAS_SSL)
 	{
