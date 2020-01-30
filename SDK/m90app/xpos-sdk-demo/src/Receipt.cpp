@@ -39,13 +39,6 @@ enum AlignType{
 	ALIGH_RIGHT,
 };
 
-//Add a line of print data
-static void printLine(char *head, char *val)
-{
-	UPrint_SetFont(8, 2, 2);
-	UPrint_Str(head, 1, 0);
-	UPrint_Str(val, 1, 1);
-}
 
 static void printDottedLine()
 {
@@ -336,13 +329,21 @@ static const char *responseCodeToStr(const char responseCode[3])
 
 static void alignBuffer(char *output, const char *input, const int expectedLen, const enum AlignType alignType)
 {
-    int len = strlen(input);
-    int requiredSpaces = expectedLen - len;
-    char tempBuffer[1024] = {0};
+    int len = 0;
+    int requiredSpaces = 0;
+    char tempBuffer[33] = {0};
+
 
     if(output == NULL || input == NULL){
         return;
     }
+
+	len = strlen(input);
+	// requiredSpaces = expectedLen - len;
+	requiredSpaces = expectedLen;
+
+	printf("Len -> %d, requireSpace -> %d\n", len, requiredSpaces);
+
     const char * space = " ";
     if(strcmp(space, output) == 0){
         strcpy(output, space);
@@ -376,61 +377,67 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
     }
     else if(alignType == ALIGN_CENTER) {
 
-    int leftSpace = requiredSpaces / 2;
+		int leftSpace = requiredSpaces / 2;
 
-    int index = 0;
-    memset(tempBuffer, '\0', 1024);
-    while(index < leftSpace){ 
-        strncpy(&tempBuffer[index], space , 1);
-        index++;
-    }
+		int index = 0;
+		memset(tempBuffer, '\0', sizeof(tempBuffer));
+		while(index < leftSpace){ 
+			strncpy(&tempBuffer[index], space , 1);
+			index++;
+		}
 
-    strncpy(&tempBuffer[index], input, len);
-    index = index + len;
+		strncpy(&tempBuffer[index], input, len);
+		index = index + len;
 
-    while(index < requiredSpaces){
-        strncpy(&tempBuffer[index], space , 1);
-        index++;
-    }
+		while(index < leftSpace){
+			strncpy(&tempBuffer[index], space , 1);
+			index++;
+		}
 
     strncpy(output, tempBuffer, index);
-	
+
 	}
+}
+
+//Add a line of print data
+static void printLine(char *head, char *val)
+{
+	char rightAligned[45] = {'\0'};
+	int printerWidth = 32;
+
+	alignBuffer(rightAligned, val, printerWidth - strlen(head), ALIGH_RIGHT);
+	
+	UPrint_SetFont(8, 2, 2);
+	UPrint_Str(head, 1, 0);
+	UPrint_Str(rightAligned, 1, 1);
 }
 
 static void printReceiptAmount(const long long amount, short center)
 {
     char buffer[21];
     char line[32] = { '\0' };
-    char spaces[33] = { '\0' };
     int len;
-	char centralizedAmount[34] = {'\0'};
-	char centralizedLine[34] = {'\0'};
-	const int printerWidth = 24; //Not sure
+	const int printerWidth = 32; //Not sure
 
 
     memset(buffer, '\0', sizeof(buffer));
     sprintf(buffer, "NGN %.2f", amount / 100.0);
 
-	alignBuffer(centralizedAmount, buffer, printerWidth, ALIGN_CENTER);
-
 
     len = strlen(buffer);
     memset(line, '*', len + 4);
 
-	alignBuffer(centralizedLine, line, printerWidth, ALIGN_CENTER);
-
     if (center) {
-		UPrint_StrBold(centralizedLine, 1, 1, 1);
-		UPrint_StrBold(centralizedAmount, 1, 1, 1);
-		UPrint_StrBold(centralizedLine, 1, 1, 1);
+		UPrint_StrBold(line, 1, 1, 1);
+		UPrint_StrBold(buffer, 1, 1, 1);
+		UPrint_StrBold(line, 1, 1, 1);
     } else {
 		char alignedLine[35] = {'\0'};
 		char alignedAmount[35] = {'\0'};
 		const char * amountLabel = "AMOUNT";
 
 		alignBuffer(alignedLine, line, printerWidth, ALIGH_RIGHT);
-		alignBuffer(alignedAmount, buffer, printerWidth - strlen(amountLabel), ALIGN_LEFT);
+		alignBuffer(alignedAmount, buffer, printerWidth - strlen(amountLabel), ALIGH_RIGHT);
 
        UPrint_Feed(6);
 
@@ -467,7 +474,7 @@ static void passBalanceAmount(const char *buff)
 	strncpy(tag, val.substr(0, pos).c_str(), val.substr(0, pos).length());
 	
 	amount = atol(val.substr(pos + 1, std::string::npos).c_str());
-	sprintf(formatAmnt, "      NGN %.2f", amount / 100.0);
+	sprintf(formatAmnt, "NGN %.2f", amount / 100.0);
 
 	printLine(tag, formatAmnt);
 }
@@ -500,10 +507,6 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	MerchantData mParam = {'\0'};
 	short isApproved = isApprovedResponse(eft->responseCode);
 	
-	char rightAligned[45];
-	char alignLabel[45];
-	int printerWidth = 32;
-
     getParameters(&parameter);
 	readMerchantData(&mParam);
     getDateAndTime(dt);
@@ -523,8 +526,8 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	UPrint_SetFont(8, 2, 2);
 	UPrint_StrBold(mParam.name, 1, 0, 1);
     UPrint_StrBold(mParam.address, 1, 0, 1);
-    printLine("MID : ", parameter.cardAcceptiorIdentificationCode);
-    printLine("DATE TIME   : ", buff);
+    printLine("MID", parameter.cardAcceptiorIdentificationCode);
+    printLine("DATE TIME", buff);
     printDottedLine();
 
 	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
@@ -533,8 +536,6 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	UPrint_SetDensity(3); //Set print density to 3 normal
 	UPrint_SetFont(7, 2, 2);
 
-	
-	// UPrint_StrBold((isApproved) ? "APPROVED" : "DECLINED", 1, 4, 1);
 	
 	if (isApprovedResponse(eft->responseCode))
 	{
@@ -547,24 +548,22 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	UPrint_Feed(12);
 	
 
-	printLine("AID            ", eft->aid);
+	printLine("AID", eft->aid);
 
 	MaskPan(eft->pan, maskedPan);
-	printLine("PAN:           ", maskedPan);
-	printLine("EXPIRY         ", eft->expiryDate);
-	printLine("LABEL          ", eft->cardLabel);
+	printLine("PAN", maskedPan);
+	printLine("EXPIRY", eft->expiryDate);
+	printLine("LABEL", eft->cardLabel);
 
 	if (isApproved) {
-		sprintf(alignLabel, "%s", "AuthCode");
-		alignBuffer(rightAligned, eft->authorizationCode, printerWidth - strlen(alignLabel), ALIGH_RIGHT);
-		printLine(alignLabel, rightAligned);
+		printLine("AUTH CODE", eft->authorizationCode);
 	}
 	
-	printLine("RRN:           ", eft->rrn);
-	printLine("STAN:          ", eft->stan);
-	printLine("TERMINAL NO.:  ", mParam.tid);
+	printLine("RRN", eft->rrn);
+	printLine("STAN", eft->stan);
+	printLine("TERMINAL NO.", mParam.tid);
 
-	printLine("CARD NAME:   ", eft->cardHolderName);
+	printLine("CARD NAME", eft->cardHolderName);
 
 	if(eft->transType == EFT_BALANCE && isApproved)
 	{
@@ -574,8 +573,8 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	}
 
 	UPrint_Str("\n\n", 2, 1);
-	printLine("TVR:           ", eft->tvr);
-	printLine("TSI:           ", eft->tsi);
+	printLine("TVR", eft->tvr);
+	printLine("TSI", eft->tsi);
 
 	UPrint_Feed(12);
 
@@ -649,9 +648,9 @@ void printHandshakeReceipt(MerchantData *mParam)
 	UPrint_StrBold(mParam->name, 1, 0, 1);
     UPrint_StrBold(mParam->address, 1, 0, 1);
 
-    printLine("TID : ", mParam->tid);
-    printLine("MID : ", parameter.cardAcceptiorIdentificationCode);
-    printLine("DATE TIME   : ", buff);
+    printLine("TID", mParam->tid);
+    printLine("MID", parameter.cardAcceptiorIdentificationCode);
+    printLine("DATE TIME: ", buff);
     printDottedLine();
 
 

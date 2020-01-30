@@ -27,12 +27,6 @@ const  std::string DBNAME = "emvdb.db";
 #define EFT_DEFAULT_TABLE "Transactions"
 #define EMVDBUTILLOG "EMVDBUTILLOG"
 
-static void printLine(char *head, char *val)
-{
-	UPrint_SetFont(8, 2, 2);
-	UPrint_Str(head, 1, 0);
-	UPrint_Str(val, 1, 1);
-}
 
 void printHeader(){
     MerchantData merchantdata = { 0 };
@@ -400,7 +394,7 @@ void getListOfEod(Eft * eft, TrxType txtype)
         gui_messagebox_show("MESSAGE", "Please Prep Terminal first", "", "Ok", 0);
         return;
     }
-    
+
     const char * C_dateList[250] = { 0 };
     std::vector<std::string> dateList;
     int selectedOption = 0;
