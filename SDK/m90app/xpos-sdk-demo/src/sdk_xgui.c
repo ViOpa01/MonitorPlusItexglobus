@@ -42,6 +42,9 @@
 // and the second parameter is set when the name is duplicated.
 static const st_gui_menu_item_def _menu_def[] = {
 
+	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
+	{MAIN_MENU_PAGE, UI_VAS,          ""},
+	/*
 	{MAIN_MENU_PAGE, UI_PURCHASE,   ""},
 	{MAIN_MENU_PAGE, UI_PREAUTH,    ""},
 	{MAIN_MENU_PAGE, UI_COMPLETION, ""},
@@ -50,7 +53,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_REVERSAL,   ""},
 	{MAIN_MENU_PAGE, UI_REFUND,     ""},
 	{MAIN_MENU_PAGE, UI_BALANCE,    ""},
-
+	*/
 	/*
 	* Demo menus
 	{MAIN_MENU_PAGE, "Sales", ""},
@@ -247,8 +250,7 @@ static int enableAndDisableAccountSelection()
 	{
 		sprintf(msg, "%s", "Enable");
 	}
-	char *menuOption[] = {
-		msg};
+	char *menuOption[] = {msg};
 
 	option = gui_select_page_ex("Select", menuOption, 1, 3000, 0); // if it timesout it return -ve no else index on the menu list
 	// printf("Option : %d\n", option);
@@ -258,7 +260,7 @@ static int enableAndDisableAccountSelection()
 		option = gui_messagebox_show("Message", msg, "Exit", "Confrim", 0); // Exit : 2, Confirm : 1
 		if (option == 1)
 		{
-			mParam.account_selection = mParam.account_selection ? 0 : 1;
+			mParam.account_selection = !mParam.account_selection;
 			saveMerchantData(&mParam);
 		}
 	}
@@ -266,6 +268,96 @@ static int enableAndDisableAccountSelection()
 	return option;
 }
 
+static int enableAndDisableOtherTrans()
+{
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char msg[12] = {'\0'};
+
+	readMerchantData(&mParam);
+
+	if (mParam.trans_type == 1)
+	{
+		sprintf(msg, "%s", "Disable");
+	}
+	else if (mParam.trans_type == 0)
+	{
+		sprintf(msg, "%s", "Enable");
+	}
+	char *menuOption[] = {msg};
+
+	option = gui_select_page_ex("Select", menuOption, 1, 3000, 0); // if it timesout it return -ve no else index on the menu list
+
+	if (!option)
+	{
+		option = gui_messagebox_show("Message", msg, "Exit", "Confrim", 0); // Exit : 2, Confirm : 1
+		if (option == 1)
+		{
+			mParam.trans_type = !mParam.trans_type;
+			
+			saveMerchantData(&mParam);
+		}
+	}
+
+	return option;
+}
+
+enum TransType cardPaymentHandler()
+{
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char *payment_list[] = {
+		"Purchase",
+		"Pre Authorization",
+		"Completion",
+		"Cashback",
+		"Cash Advance",
+		"Reversal",
+		"Refund",
+		"Balance Inquiry"
+	};
+
+	readMerchantData(&mParam);
+	if (mParam.trans_type != 1)
+		return EFT_PURCHASE;
+
+	switch (option = gui_select_page_ex("Select Payment Type", payment_list, 8, 30000, 0)) // if exit : -1, timout : -2
+	{
+	case -1:
+	case -2:
+		return EFT_TRANS_END;
+	case 0:
+
+		return EFT_PURCHASE;
+	case 1:
+		
+		return EFT_PREAUTH;
+	case 2:
+		
+		return EFT_COMPLETION;
+	case 3:
+		
+		return EFT_CASHBACK;
+	case 4:
+		
+		return EFT_CASHADVANCE;
+	case 5:
+		
+		return EFT_REVERSAL;
+	case 6:
+		
+		return EFT_REFUND;
+	case 7:
+		
+		return EFT_BALANCE;
+	default:
+		return EFT_PURCHASE;
+	}
+
+}
+/*
 static short eftHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PURCHASE) == 0)
@@ -307,6 +399,7 @@ static short eftHandler(const char *pid)
 
 	return 0;
 }
+*/
 
 #include "sdk_security.h"
 
@@ -367,11 +460,9 @@ static int _menu_proc(char *pid)
 
 	printf("pid -> %s\n", pid);
 
-	if (!eftHandler(pid))
-	{
+	if(!strcmp(pid, UI_CARD_PAYMENT)) {
+		eftTrans(cardPaymentHandler());
 		return 0;
-	} else if(!strcmp(pid, "hot test")) {
-		// hostTest();
 	}
 	else if (!hanshakeHandler(pid))
 	{
@@ -553,7 +644,13 @@ static int _menu_proc(char *pid)
 	{
 		int ret = enableAndDisableAccountSelection();
 		printf("Enable / Disable ret : %d\n", ret);
-	} else if(!strcmp(pid, UI_REBOOT))
+	} 
+	else if (!strcmp(pid, UI_TRANS_TYPE))
+	{
+		int ret = enableAndDisableOtherTrans();
+		printf("Enable / Disable ret : %d\n", ret);
+	}
+	else if(!strcmp(pid, UI_REBOOT))
 	{
 		Sys_Reboot();
 	}

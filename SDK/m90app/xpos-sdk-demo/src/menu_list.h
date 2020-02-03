@@ -4,6 +4,9 @@
 #define SUPERVISION		    "supervision"
 #define MAINTENANCE	        "maintenance"
 
+#define UI_CARD_PAYMENT     "Card Payment"
+#define UI_VAS              "Value Added Service"
+
 #define UI_PURCHASE         "Purchase"          // Menu for Purchase
 #define UI_CASHBACK         "Cashback"
 #define UI_PREAUTH          "Pre Authorization"
