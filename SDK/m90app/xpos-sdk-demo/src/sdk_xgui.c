@@ -14,7 +14,7 @@
 #include "merchant.h"
 #include "remoteLogo.h"
 
-#define LOGOIMG "xxxx\\logo2.bmp"
+#define LOGOIMG "xxxx\\logo.bmp"
 
 #include "nibss.h"
 #include "Nibss8583.h"
@@ -113,12 +113,13 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{UI_EOD, UI_EOD_REFUND, ""},
 	{UI_EOD, UI_EOD_REVERSAL, ""},
 
-	{MAINTAINANCE, UI_PREP_TERMINAL, ""},
-	{MAINTAINANCE, UI_GET_PARAMETER, ""},
-	{MAINTAINANCE, UI_CALL_HOME, ""},
-	{MAINTAINANCE, UI_ACCNT_SELECTION, ""},
-	{MAINTAINANCE, UI_TRANS_TYPE, ""},
-	{MAINTAINANCE, UI_NOTIF_ID, ""},
+	{MAINTENANCE, UI_PREP_TERMINAL, ""},
+	{MAINTENANCE, UI_GET_PARAMETER, ""},
+	{MAINTENANCE, UI_CALL_HOME, ""},
+	{MAINTENANCE, UI_ACCNT_SELECTION, ""},
+	{MAINTENANCE, UI_TRANS_TYPE, ""},
+	{MAINTENANCE, UI_NOTIF_ID, ""},
+	{MAINTENANCE, UI_REBOOT},
 
 };
 
@@ -552,6 +553,9 @@ static int _menu_proc(char *pid)
 	{
 		int ret = enableAndDisableAccountSelection();
 		printf("Enable / Disable ret : %d\n", ret);
+	} else if(!strcmp(pid, UI_REBOOT))
+	{
+		Sys_Reboot();
 	}
 	else if (!strcmp(pid, UI_DOWNLOAD_LOGO))
 	{
@@ -614,7 +618,7 @@ static short validateUsersPin()
 	int result = 0;
 
 	gui_clear_dc();
-	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(2), pin, 4, 4, 1, 2, 10000)) == 4)
+	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(2), pin, 4, 4, 0, 2, 10000)) == 4)
 	{
 		printf("Password : %s, ret : %d\n", pin, result);
 		if(!strncmp(pin, "4839", 4)) 
@@ -648,23 +652,23 @@ void standby_pagepaint()
 	gui_begin_batch_paint();
 	gui_clear_dc();
 
-	logoleft = 30;
-	logotop = 16;
+	logoleft = 10;
+	logotop = 36;
 
-	// pbmp = gui_load_bmp(LOGOIMG, &logowidth, &logoheight);
-	pbmp = gui_load_bmp(BANKLOGO, &logowidth, &logoheight);
+	pbmp = gui_load_bmp("data//logo.bmp"/*LOGOIMG*/, &logowidth, &logoheight);
+	// pbmp = gui_load_bmp("itex//bank.bmp"/*BANKLOGO*/, &logowidth, &logoheight);
 
-	printf("Width of the picture : %d\n", logowidth);
-	printf("Height of the picture : %d\n", logoheight);
-
+	// printf("Logo width : %d\n", logowidth);
+	// printf("Logo Height : %d\n", logoheight);
 
 	if (pbmp != 0)
 	{
+		// printf("==============\n");
 		gui_out_bits(logoleft, logotop, pbmp, logowidth, logoheight, 0);
 		free(pbmp);
 	}
 
-
+	
 	get_yyyymmdd_str(data);
 	data[10] = ' ';
 	data[11] = ' ';
@@ -674,7 +678,6 @@ void standby_pagepaint()
 	sprintf(data, "Version:%s", APP_VER);
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
 
-	//TODO: don't hardcode 32, get it at run time
 	pos = 32 - strlen(f1Msg) - strlen(f2Msg);
 	memset(spaceRequired, ' ', pos);
 
@@ -757,7 +760,7 @@ BEGIN :
 				{
 					if(validateUsersPin()) goto BEGIN;
 
-					gui_main_menu_show(MAINTAINANCE, 0);
+					gui_main_menu_show(MAINTENANCE, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 			}

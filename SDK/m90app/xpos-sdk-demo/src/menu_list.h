@@ -2,7 +2,7 @@
 
 #define MAIN_MENU_PAGE	    "main"
 #define SUPERVISION		    "supervision"
-#define MAINTAINANCE	    "maintanance"
+#define MAINTENANCE	        "maintenance"
 
 #define UI_PURCHASE         "Purchase"          // Menu for Purchase
 #define UI_CASHBACK         "Cashback"
@@ -44,6 +44,7 @@
 #define UI_ACCNT_SELECTION  "Account Selection"
 #define UI_TRANS_TYPE       "Trans Type"
 #define UI_NOTIF_ID         "Notification ID"
+#define UI_REBOOT           "Reboot"
 
 #define UI_DEFAULT_ACCT     "Default"
 #define UI_SAVINGS_ACCT     "Savings"

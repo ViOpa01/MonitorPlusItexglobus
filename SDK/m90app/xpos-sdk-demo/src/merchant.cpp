@@ -45,9 +45,7 @@ static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
 
     char terminalSn[22] = {0};
     char path[0x500] = {'\0'};
-    string add;
-
-
+   
     strncpy((char *)netParam->host, ITEX_TAMS_PUBLIC_IP, strlen(ITEX_TAMS_PUBLIC_IP));
     netParam->port = atoi(ITEX_TASM_PUBLIC_PORT);
     netParam->endTag = "</efttran>";
@@ -259,7 +257,7 @@ int readMerchantData(MerchantData* merchant)
     // populate the data
 
     cJSON *json;
-    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonStatus, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
+    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
     char buffer[1024] = {'\0'};
@@ -399,7 +397,7 @@ int saveMerchantData(const MerchantData* merchant)
 {
     // json equivalent of merchant
 
-    cJSON *json, *requestJson;
+    cJSON *requestJson;
     char *requestJsonStr;
     char jsonData[1024] = {'\0'};
     int ret = -1;
@@ -457,7 +455,6 @@ int getMerchantData()
     if(getMerchantDetails(&netParam, responseXml)) return ret;
 
     if ((ret = saveMerchantDataXml(responseXml)) != 0) {
-        // error
         printf("Error saving merchant data, ret : %d\n", ret);
         return ret;
     }

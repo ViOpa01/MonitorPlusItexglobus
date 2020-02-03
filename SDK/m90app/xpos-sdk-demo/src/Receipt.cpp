@@ -129,6 +129,33 @@ void printBankLogo()
 	UPrint_BitMap(filename, 1);//print image
 }
 
+static char* accountTypeToString(enum AccountType type)
+{
+    switch (type)
+	{
+	case SAVINGS_ACCOUNT :
+		return "Savings";
+		
+	case CURRENT_ACCOUNT :
+		return "Current";
+	
+	case CREDIT_ACCOUNT :
+		return "Credit";
+
+	case DEFAULT_ACCOUNT :
+		return "Default";
+
+	case UNIVERSAL_ACCOUNT :
+		return "Universal";
+
+	case INVESTMENT_ACCOUNT :
+		return "Investment";
+
+	default:
+		return "Default";
+	}
+}
+
 static char* transTypeToString(enum TransType type)
 {
 
@@ -554,6 +581,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	printLine("PAN", maskedPan);
 	printLine("EXPIRY", eft->expiryDate);
 	printLine("LABEL", eft->cardLabel);
+    printLine("ACCOUNT", accountTypeToString(eft->fromAccount));
 
 	if (isApproved) {
 		printLine("AUTH CODE", eft->authorizationCode);

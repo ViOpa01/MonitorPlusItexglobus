@@ -395,7 +395,6 @@ void getListOfEod(Eft * eft, TrxType txtype)
         return;
     }
 
-    const char * C_dateList[250] = { 0 };
     std::vector<std::string> dateList;
     int selectedOption = 0;
     int index;
@@ -409,7 +408,9 @@ void getListOfEod(Eft * eft, TrxType txtype)
         gui_messagebox_show("MESSAGE", "No record for this transaction type", "", "Ok", 0);
         return;
     }
-    
+
+    const char * C_dateList[dateListLenght] = { 0 };
+
     for(index = 0; index < dateList.size(); index++){
         printf("\n%s\n", dateList[index].c_str());
         C_dateList[index] = dateList[index].c_str();

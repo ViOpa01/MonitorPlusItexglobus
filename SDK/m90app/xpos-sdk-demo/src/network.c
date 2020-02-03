@@ -90,6 +90,8 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 	if(netType == NET_EPMS_SSL || netType == NET_POSVAS_SSL)
 	{
 		// 196.6.103.72 5042  nibss epms port and ip test environment
+		// 196.6.103.18 5014  nibss posvas port and ip live environment
+
 		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
 		netParam->port = mParam.nibss_ssl_port;
 
@@ -425,6 +427,8 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 	while(Sys_TimerCheck(tick1) > 0){
 		int ret;
 		int num;
+		unsigned char buffer[2048] = { '\0' };
+
 
 		if(strlen(netParam->title)>0){
 			num = Sys_TimerCheck(tick1)/1000;
@@ -442,17 +446,21 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 
 
 		if(netParam->isSsl == 1){
-			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)(netParam->response + curRecvLen), maxLen-curRecvLen);
+			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)buffer/*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen*/);
 		}else{
-			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)(netParam->response + curRecvLen), maxLen-curRecvLen , 700);
+			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 700);
 		}
 
 		//printf("nret is : %d\n", nret);
 
 		if (nret >0){
 			tick2 = Sys_TimerOpen(1000);
-			curRecvLen+=nret;
-			if(curRecvLen == maxLen){
+
+			memcpy(&netParam->response[curRecvLen], buffer, nret);
+
+			curRecvLen += nret;
+
+			if(curRecvLen >= maxLen){
 				break;
 			}else if(allDataReceived(netParam->response, curRecvLen, netParam->endTag)){
 				break;
