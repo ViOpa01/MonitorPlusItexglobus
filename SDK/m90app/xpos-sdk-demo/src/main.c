@@ -2,9 +2,10 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <signal.h>
+
 
 #include <stdio.h>
+#include <sys/stat.h>
 #include "libapi_xpos/inc/libapi_system.h"
 #include "libapi_xpos/inc/libapi_emv.h"
 #include "sdk_xgui.h"

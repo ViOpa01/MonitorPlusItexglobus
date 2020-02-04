@@ -18,6 +18,7 @@ extern "C"
 #include "nibss.h"
 
 void eftTrans(const enum TransType transType);
+enum TransType cardPaymentHandler();
 
 #ifdef __cplusplus
 }
