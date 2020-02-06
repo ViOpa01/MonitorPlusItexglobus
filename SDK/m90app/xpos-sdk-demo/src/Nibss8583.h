@@ -196,6 +196,7 @@ typedef struct Eft
     char auxResponse[4096];
     char customRefCode[1024];
     int  switchMerchant;
+    short isVasTrans;
 
 } Eft;
 

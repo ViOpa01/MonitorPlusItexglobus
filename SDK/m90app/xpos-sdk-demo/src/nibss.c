@@ -826,6 +826,8 @@ short uiHandshake(void)
 
 
     mParam.is_prepped = 1;
+
+    strncpy(mParam.pKey, networkMangement.pinKey.clearKey, sizeof(mParam.pKey) - 1);
     saveMerchantData(&mParam);
     saveParameters(&networkMangement.merchantParameters);
 

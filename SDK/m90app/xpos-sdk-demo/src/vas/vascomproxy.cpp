@@ -3,12 +3,13 @@
 
 #include "vascomproxy.h"
 #include "payvice.h"
+#include "vasbridge.h"
 #include "merchant.h"
 #include "util.h"
 
 extern "C" {
-#include "EmvEft.h"
-#include "Nibss8583.h"
+// #include "EmvEft.h"
+// #include "Nibss8583.h"
 #include "network.h"
 }
 
@@ -204,21 +205,15 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
 VasStatus
 Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const std::map<std::string, std::string>* headers, CardPurchase* cardPurchase)
 {
-    unsigned char ucAmount[6] = { 0 };
-    unsigned char ucCashbackAmount[6] = { 0 };
     Eft trxContext;
     VasStatus status;
-    MerchantData mParam = {0};
     
     iisys::JSObject jsonReq;
 
     std::string body;
 
-    readMerchantData(&mParam);
-
     memset((void*)&trxContext, 0, sizeof(Eft));
     trxContext.switchMerchant = 1;
-    strncpy(trxContext.customRefCode, cardPurchase->refcode.c_str(), sizeof(trxContext.customRefCode) - 1);
 
     if (json) {
         body = json->dump();
@@ -251,13 +246,16 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
         }
     }
 
-    jsonReq("terminalId") = mParam.tid;     /*Merchant().object(config::TID).getString();*/
+    jsonReq("terminalId") = getDeviceTerminalId();
 
     trxContext.genAuxPayload = vasPayloadGenerator;
     trxContext.callbackdata = (void*)&jsonReq;
     
-    // TODO:
-    // doTransaction(ucAmount, ucCashbackAmount, &trxContext); // Here the main transaction is started
+    strncpy(trxContext.echoData, cardPurchase->refcode.c_str(), sizeof(trxContext.echoData) - 1);
+
+    if (doVasCardTransaction(&trxContext, cardPurchase->amount) < 0) {
+        return status;  // We weren't able to initiate transaction
+    }
 
     cardPurchase->primaryIndex = trxContext.atPrimaryIndex;
 

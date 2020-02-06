@@ -10,7 +10,8 @@ extern "C" {
 #include "sha256.h"
 #include "util.h"
 #include "ezxml.h"
-#include "network.h"
+#include "vasbridge.h"
+
 }
 
 
@@ -36,24 +37,6 @@ struct TamsPayviceResponse {
     std::string status;
     std::string result;
 };
-
-static short setupPayviceNetwork(NetWorkParameters * netParam, char *path)
-{
-    char host[] = "basehuge.itexapp.com";
-   
-    strncpy((char *)netParam->host, host, strlen(host));
-    netParam->receiveTimeout = 60000;
-	strncpy(netParam->title, "Payvice", 10);
-    netParam->isHttp = 1;
-    netParam->isSsl = 0;
-    netParam->port = 80;
-    netParam->endTag = "";  // I might need to comment it out later
-
-    
-    netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "GET %s HTTP/1.1\r\n", path);
- 	netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "Host: %s:%d\r\n\r\n", netParam->host, netParam->port);
-
-}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
 int genericSHA256(const char* msg, const char* key, char* hash)
 {
@@ -142,7 +125,7 @@ TamsPayviceResponse loginPayVice(/*CURL* curl_handle, */const char* key, Payvice
 
     urlPath += std::string("&password=") + encPass;
 
-    setupPayviceNetwork(&netParam, (char *)urlPath.c_str());
+    setupBaseHugeNetwork(&netParam, urlPath.c_str());
     printf("request : \n%s\n", netParam.packet);
 
     if (sendAndRecvPacket(&netParam) != SEND_RECEIVE_SUCCESSFUL) {
@@ -189,7 +172,7 @@ TamsPayviceResponse getPayviceKeys(/*CURL* curl_handle, */ Payvice& payvice)
 
     // http://basehuge.itexapp.com/ctms/eftpos/devinterface/transactionadvice.php?action=TAMS_LOGIN&termid=203301ZA&userid=urlEncoded(username)&control=INIT
 
-    setupPayviceNetwork(&netParam, (char *)urlPath.c_str());
+    setupBaseHugeNetwork(&netParam, urlPath.c_str());
     printf("request : \n%s\n", netParam.packet);
 
     if (sendAndRecvPacket(&netParam) != SEND_RECEIVE_SUCCESSFUL) {

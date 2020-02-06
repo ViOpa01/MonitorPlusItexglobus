@@ -31,6 +31,8 @@ typedef struct MerchantData
     short account_selection;
     short trans_type;
     short is_prepped;
+
+    char pKey[33];
     
     Network gprsSettings;
 } MerchantData;

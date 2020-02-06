@@ -17,6 +17,9 @@ extern "C"
 
 #include "nibss.h"
 
+void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters);
+int performEft(Eft *eft, NetWorkParameters *netParam, const char *title);
+
 void eftTrans(const enum TransType transType);
 enum TransType cardPaymentHandler();
 

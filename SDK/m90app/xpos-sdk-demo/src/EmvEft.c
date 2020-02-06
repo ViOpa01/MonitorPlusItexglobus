@@ -17,6 +17,7 @@
 #include "log.h"
 #include "appInfo.h"
 #include "merchant.h"
+#include "virtualtid.h"
 
 #include "sdk_security.h"
 #include "EftDbImpl.h"
@@ -43,15 +44,15 @@ static void injectCapks(void)
 #endif
 }
 
+#define COUNTRYCODE "\x05\x66" //NGN
+#define POS_CONDITION_CODE "00"
+#define PIN_CAPTURE_CODE "04"
+
 typedef enum
 {
 	NO = '0',
 	YES = '1'
 } YESORNO;
-
-#define COUNTRYCODE "\x05\x66" //NGN
-#define POS_CONDITION_CODE "00"
-#define PIN_CAPTURE_CODE "04"
 
 typedef struct __st_card_info
 {
@@ -336,7 +337,7 @@ void populateEchoData(char echoData[256])
 
 }
 
-static void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters)
+void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters)
 {
 	strncpy(eft->merchantType, merchantParameters->merchantCategoryCode, sizeof(eft->merchantType));
 	strncpy(eft->merchantId, merchantParameters->cardAcceptiorIdentificationCode, sizeof(eft->merchantId));
@@ -789,7 +790,7 @@ static long long getAmount(Eft *eft, const char *title)
 	char amountTitle[45] = {'\0'};
 	const int maxLen = 9;
 
-	if (orginalDataRequired(&eft)) { //Amount already populated from DB
+	if (orginalDataRequired(eft)) { //Amount already populated from DB
 		return atoll(eft->amount);
 	}
 
@@ -841,6 +842,37 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus, NetWorkPar
 	}
 }
 
+int tpduToNumber(const char *packet)
+{
+    return (packet[0] << 8) + packet[1];
+}
+
+int separatePayload(NetWorkParameters *netParam, Eft *eft)
+{
+	const char* response = netParam->response;
+    int primaryLength = tpduToNumber(response + 2);
+    int auxLength = tpduToNumber(response) - primaryLength - 2;
+
+    if (4 + primaryLength + auxLength != netParam->responseSize) {
+        printf("4 + primaryLength + auxLength (%d) != length (%d)", 4 + primaryLength + auxLength, netParam->responseSize);
+        return -1;
+    }
+
+    if (auxLength < sizeof(eft->auxResponse)) {
+        memcpy(eft->auxResponse, response + 4 + primaryLength, auxLength);
+    } else {
+        printf("Aux buffer size (%zu) not enough for received data (%d)", sizeof(eft->auxResponse), auxLength);
+        return -3;
+    }
+
+    memmove(netParam->response, netParam->response + 2, primaryLength);
+	netParam->responseSize = primaryLength + 2;
+	netParam->response[netParam->responseSize] = '\0';
+
+
+    return 0;
+}
+
 /**
  * Function: processPacketOnline
  * Usage: processPacketOnline(...);
@@ -853,14 +885,43 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus, NetWorkPar
 static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParameters *netParam)
 {
 	int result = -1;
-	unsigned char response[2048];
+	// unsigned char response[2048];
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
+
+	if (eft->isVasTrans && eft->genAuxPayload && !isReversal(eft) /* && !isManualReversal() */) {
+		char auxPayload[4096];
+
+        eft->genAuxPayload(auxPayload, sizeof(auxPayload), eft);
+
+		if (auxPayload[0]) { // prepend aux payload 
+			size_t secLength = strlen(auxPayload);
+			size_t newLength = secLength + netParam->packetSize;
+			if (newLength + 2 /*tpdu length*/ >= sizeof(netParam->packet)) {
+				// E don happen o, abort?
+				return -98;
+			}
+			// append aux payload
+			memcpy(&netParam->packet[netParam->packetSize], auxPayload, secLength);
+			// prepend tpdu
+			memmove(netParam->packet + 2, netParam->packet, newLength);
+			netParam->packet[0] = (unsigned char)(newLength >> 8);
+			netParam->packet[1] = (unsigned char) newLength;
+			// then update reqLen
+			netParam->packetSize = newLength + 2;
+		}
+    }
 
 	commsStatus = sendAndRecvPacket(netParam);
 
-	if (commsStatus != SEND_RECEIVE_SUCCESSFUL)
-	{
+	if (commsStatus != SEND_RECEIVE_SUCCESSFUL) {
 		return handleFailedComms(eft, commsStatus, netParam);
+	}
+
+	if (eft->isVasTrans && strncmp(netParam->response + 2, "0210", 4)) {
+		if (separatePayload(netParam, eft) < 0) {
+			// E don happen again o
+			// what do we do?
+		}
 	}
 
 	if (result = getEftOnlineResponse(hostType, eft, netParam->response, netParam->responseSize))
@@ -1145,7 +1206,6 @@ static void displayBalance(char * balance)
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 {
 	int ret;
-	long long namt = 0;
 	int result = -1;
 	unsigned char packet[2048] = {0x00};
 	struct HostType hostType;
@@ -1203,16 +1263,22 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	//ret = input_num_page(card_in.amt, "input the amount", 1, 9, 0, 0, 1);		// Enter the amount
 	//if(ret != INPUT_NUM_RET_OK) return -1;
 
-	namt = getAmount(eft, title);
-	if (namt < 0)
-	{
-		free(card_in);
-		return -1;
+	if (eft->isVasTrans) {
+		
+		strncpy(card_in->amt, eft->amount, sizeof(card_in->amt));
+
+	} else {
+		long long namt = getAmount(eft, title);
+		if (namt < 0) {
+			free(card_in);
+			return -1;
+		}
+
+		sprintf(card_in->amt, "%lld", namt);
+
 	}
-
+	
 	puts("==================> 5");
-
-	sprintf(card_in->amt, "%lld", namt);
 
 	card_in->card_mode = READ_CARD_MODE_MAG | READ_CARD_MODE_IC | READ_CARD_MODE_RF; // Card reading method
 	card_in->card_timeover = 60000;													 // Card reading timeout ms
@@ -1400,10 +1466,14 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		return -3;
 	}
 
-	if (card_out->pin_len)
-	{
-		eft->pinDataBcdLen = 8;
-		memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
+	if (card_out->pin_len) {
+		if (eft->isVasTrans && eft->switchMerchant) {
+			copyVirtualPinBlock(eft, card_out->pin_block);
+			
+		} else {
+			eft->pinDataBcdLen = 8;
+			memcpy(eft->pinDataBcd, card_out->pin_block, eft->pinDataBcdLen);
+		}
 	}
 
 	strncpy(eft->pan, card_out->pan, sizeof(eft->pan));

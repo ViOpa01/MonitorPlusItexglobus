@@ -10,6 +10,7 @@
 #include <string>
 #include "appInfo.h"
 #include "merchant.h"
+#include "vas/virtualtid.h"
 
 extern "C" {
 #include "network.h"
@@ -146,7 +147,7 @@ int saveMerchantDataXml(const char* merchantXml)
 
     } else {
         ret = saveMerchantData(&merchant);
-        gui_messagebox_show("VIOLATION", "The Terminal is not mapped", "", "", 0);
+        gui_messagebox_show("VIOLATION", "Terminal is not mapped", "", "", 0);
         return -1;
     }    
     
@@ -255,7 +256,7 @@ int readMerchantData(MerchantData* merchant)
     // Read json
     // populate the data
 
-    cJSON *json;
+    cJSON *json, *pkey;
     cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonTransType, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
@@ -290,6 +291,7 @@ int readMerchantData(MerchantData* merchant)
     jsonPortType = cJSON_GetObjectItemCaseSensitive(json, "port_type"); // String
     jsonAccntSelection = cJSON_GetObjectItemCaseSensitive(json, "account_selection"); // Int
     jsonTransType = cJSON_GetObjectItemCaseSensitive(json, "trans_type");
+    pkey = cJSON_GetObjectItemCaseSensitive(json, "plain_key");
 
     if(cJSON_IsString(jsonAddress))
     {
@@ -393,6 +395,11 @@ int readMerchantData(MerchantData* merchant)
         // printf("Trans Type : %d\n", merchant->trans_type);
     }
 
+    if(cJSON_IsString(pkey))
+    {
+        strncpy(merchant->pKey, pkey->valuestring, sizeof(merchant->pKey) - 1);
+    }
+
     cJSON_Delete(json);
 
     return 0;
@@ -438,6 +445,9 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "account_selection", cJSON_CreateNumber(merchant->account_selection));
     cJSON_AddItemToObject(requestJson, "trans_type", cJSON_CreateNumber(merchant->trans_type));
 
+    cJSON_AddItemToObject(requestJson, "plain_key", cJSON_CreateString(merchant->pKey));
+
+
 
 
     requestJsonStr = cJSON_PrintUnformatted(requestJson);
@@ -466,6 +476,8 @@ int getMerchantData()
         printf("Error saving merchant data, ret : %d\n", ret);
         return ret;
     }
+
+    resetVirtualConfiguration();
 
     return ret;
 }

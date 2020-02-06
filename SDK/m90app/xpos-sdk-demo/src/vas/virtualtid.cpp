@@ -6,38 +6,60 @@
 
 #include "payvice.h"
 #include "jsobject.h"
+#include "merchant.h"
 
+
+#include "vas.h"
+#include "vasbridge.h"
+#include "util.h"
 
 #include "virtualtid.h"
 
+extern "C" {
+#include "libapi_xpos/inc/libapi_util.h"
+}
+
 int copyVirtualPinBlock(Eft *pTrxContext, const char* pinBlock)
 {
-    unsigned char pinKeyBcd[16];
-    unsigned char vPinKeyBcd[16];
+    MerchantData mParam = {'\0'};
 
-    unsigned char actualPinBlockBcd[8] = {0};
-    unsigned char plainPinBlockBcd[8] = {0};
+    char pinKeyBcd[16];
+    char vPinKeyBcd[16];
+    char clearKey[33] = {'\0'};
+
+    char actualPinBlockBcd[8] = {0};
+    char plainPinBlockBcd[8] = {0};
+
+    char pinKey[32 + 1] = { 0 };
+    char vPinKey[32 + 1] = { 0 };
 
     Payvice payvice;
     if (!loggedIn(payvice)) {
         return -1;
     }
+
+    readMerchantData(&mParam);
+    strncpy(clearKey, mParam.pKey, sizeof(mParam.pKey) - 1);
+    printf("Clear Pin Key : %s\n", clearKey);
     
-    // memcpy(actualPinBlockBcd, pinBlock->pPINBlock, pinBlock->ucPINBlockLen);
+    memcpy(actualPinBlockBcd, pinBlock, 8);
 
-    // std::string pinKey = Merchant().object(config::PKEY).getString();
-    // std::string vPinKey = payvice.object(Payvice::VIRTUAL)(Payvice::PKEY).getString();
-/*
-    ASCII2BCD(pinKey.c_str(), pinKeyBcd, sizeof(pinKeyBcd));
-    ASCII2BCD(vPinKey.c_str(), vPinKeyBcd, sizeof(vPinKeyBcd));
+    strncpy(pinKey, clearKey, sizeof(pinKey) - 1); 
+    strncpy(vPinKey, payvice.object(Payvice::VIRTUAL)(Payvice::PKEY).getString().c_str(), sizeof(vPinKey) - 1);
 
-    if (DES(TDES2KD, pinKeyBcd, actualPinBlockBcd, plainPinBlockBcd)) {
+    printf("virtual Pin Key : %s\n", vPinKey);
+
+    Util_Asc2Bcd(pinKey, pinKeyBcd, strlen(pinKey));
+    Util_Asc2Bcd(vPinKey, vPinKeyBcd, strlen(vPinKey));
+
+
+    if (Util_Des(3, pinKeyBcd, actualPinBlockBcd, plainPinBlockBcd)) {
         return -1;
-    } else if (DES(TDES2KE, vPinKeyBcd, plainPinBlockBcd, pTrxContext->pinblockBcd)) {
+    } else if (Util_Des(2, vPinKeyBcd, plainPinBlockBcd, (char*)pTrxContext->pinDataBcd)) {
         return -1;
     }
-*/
-    // pTrxContext->pinblockLen = pinBlock->ucPINBlockLen;
+
+    pTrxContext->pinDataBcdLen = 8;
 
     return 0;
 }
@@ -59,57 +81,31 @@ bool virtualConfigurationIsSet()
 
 int resetVirtualConfiguration()
 {
-    // CURL* curl_handle;
-    // Payvice payvice;
-    // CURLcode res;
-    // char errorMsg[CURL_ERROR_SIZE];
-    // std::string body;
-    // std::string urlPath = "http://197.253.19.75/tams/eftpos/op/xmerchant.php?tid=";
-    // LogManager log("TLITE");
+    NetWorkParameters netParam = {'\0'};
+    Payvice payvice;
+    std::string urlPath = "/tams/eftpos/op/xmerchant.php?tid=";
 
-    // payvice.object.erase(Payvice::VIRTUAL);
-    // payvice.save();
+    payvice.object.erase(Payvice::VIRTUAL);
+    payvice.save();
 
-    // curl_handle = curl_easy_init();
+    urlPath += getDeviceTerminalId();
 
-    // if (!curl_handle) {
-    //     return -1;
-    // }
+    setupBaseHugeNetwork(&netParam, urlPath.c_str());
 
-    // CurlScopeGuard curlGuard(curl_handle);
+    if (sendAndRecvPacket(&netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        printf("Send and recceive failed");
+        return -1;
+    }
 
-
-    // urlPath += Merchant().object(config::TID).getString();
-
-    // curl_easy_setopt(curl_handle, CURLOPT_URL, urlPath.c_str());
-
-    // curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 30);
-    // curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 60);
-    // curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorMsg);
-
-    // curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, curlStringCallback);
-    // curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&body);
-
-    // curl_easy_setopt(curl_handle, CURLOPT_DEBUGFUNCTION, curlTrace);
-    // /* the DEBUGFUNCTION has no effect until we enable VERBOSE */
-    // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
-
-    // res = curl_easy_perform(curl_handle);
-
-    // if (res != CURLE_OK) {
-    //     printf("Error -> %s", errorMsg);
-    //     return -1;
-    // }
-
-    // iisys::JSObject detail;
+    iisys::JSObject detail;
     
-    // if (!detail.load(body)) {
-    //     printf("Unable to parse body -> %s", body.c_str());
-    //     return -1;
-    // }
+    if (!detail.load((const char *)bodyPointer((const char *)netParam.response))) {
+        printf("Unable to parse body -> %s\n", (const char *)netParam.response);
+        return -1;
+    }
 
-    // payvice.object(Payvice::VIRTUAL) = detail;
-    // payvice.save();
+    payvice.object(Payvice::VIRTUAL) = detail;
+    payvice.save();
 
     return 0;
 }
@@ -126,21 +122,28 @@ void resetVirtualConfigurationAsync()
     pthread_create(&configThread, NULL, asynchResetVirtualConfig, NULL);
 }
 
-// int swithMerchantToVas(Merchant& merchant)
-// {
-//     Payvice payvice;
+int swithMerchantToVas(Eft* trxContext)
+{
+    Payvice payvice;
 
-//     if (!virtualConfigurationIsSet()) {
-//         resetVirtualConfiguration();
-//         return -1;
-//     }
+    if (!virtualConfigurationIsSet()) {
+        resetVirtualConfiguration();
+        return -1;
+    }
 
-//     merchant.object(config::TID) = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
-//     merchant.object(config::MCC) = payvice.object(Payvice::VIRTUAL)(Payvice::MCC);
-//     merchant.object(config::MID) = payvice.object(Payvice::VIRTUAL)(Payvice::MID);
-//     merchant.object(config::NAME) = payvice.object(Payvice::VIRTUAL)(Payvice::NAME);
-//     merchant.object(config::CUR_CODE) = payvice.object(Payvice::VIRTUAL)(Payvice::CUR_CODE);
-//     merchant.object(config::SKEY) = payvice.object(Payvice::VIRTUAL)(Payvice::SKEY);
+    strncpy(trxContext->merchantType, payvice.object(Payvice::VIRTUAL)(Payvice::MCC).getString().c_str(), sizeof(trxContext->merchantType) - 1);
+    strncpy(trxContext->merchantId, payvice.object(Payvice::VIRTUAL)(Payvice::MID).getString().c_str(), sizeof(trxContext->merchantId) - 1);
+    strncpy(trxContext->merchantName, payvice.object(Payvice::VIRTUAL)(Payvice::NAME).getString().c_str(), sizeof(trxContext->merchantName) - 1);
+    strncpy(trxContext->currencyCode, payvice.object(Payvice::VIRTUAL)(Payvice::CUR_CODE).getString().c_str(), sizeof(trxContext->currencyCode) - 1);
+    strncpy(trxContext->terminalId, payvice.object(Payvice::VIRTUAL)(Payvice::TID).getString().c_str(), sizeof(trxContext->terminalId) - 1);
+    strncpy(trxContext->sessionKey, payvice.object(Payvice::VIRTUAL)(Payvice::SKEY).getString().c_str(), sizeof(trxContext->sessionKey) - 1);
 
-//     return 0;
-// }
+    // merchant.object(config::TID) = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
+    // merchant.object(config::MCC) = payvice.object(Payvice::VIRTUAL)(Payvice::MCC);
+    // merchant.object(config::MID) = payvice.object(Payvice::VIRTUAL)(Payvice::MID);
+    // merchant.object(config::NAME) = payvice.object(Payvice::VIRTUAL)(Payvice::NAME);
+    // merchant.object(config::CUR_CODE) = payvice.object(Payvice::VIRTUAL)(Payvice::CUR_CODE);
+    // merchant.object(config::SKEY) = payvice.object(Payvice::VIRTUAL)(Payvice::SKEY);
+
+    return 0;
+}

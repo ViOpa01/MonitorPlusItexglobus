@@ -92,9 +92,11 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		// 196.6.103.72 5042  nibss epms port and ip test environment
 		// 196.6.103.18 5014  nibss posvas port and ip live environment
 
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = mParam.nibss_ssl_port;
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = mParam.nibss_ssl_port;
 
+		strncpy(netParam->host, "192.168.137.4", strlen(mParam.nibss_ip));
+		netParam->port = 5001;
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
 
@@ -210,7 +212,7 @@ static int _connect_server_func_proc()
 		ret = 1;
 	}
 	else if(m_connect_exit == 0){
-		sprintf(msg , "Connect(%d)" , num);
+		sprintf(msg , "Connecting(%d)" , num);
 		comm_page_set_page("Http", msg , 0);
 	}
 	else{
@@ -263,7 +265,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	m_connect_exit = 0;
 	m_connect_time = i + 1;
 
-	sprintf(tmp, "Connecting (%d) ...", i + 1);
+	sprintf(tmp, "Connecting...(%d)", i + 1);
 	comm_page_set_page(netParam->title, tmp, 1);
 
 	//comm_page_set_page("COM", tmp , 1);
@@ -434,7 +436,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 			num = Sys_TimerCheck(tick1)/1000;
 			num = num < 0 ? 0 : num;
 
-			sprintf(msg , "%s(%d)" , "Recving" , num);
+			sprintf(msg , "%s(%d)" , "Receiving..." , num);
 
 			comm_page_set_page(netParam->title , msg , 0);
 			ret = comm_page_get_exit();

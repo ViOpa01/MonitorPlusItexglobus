@@ -6,7 +6,14 @@
 extern "C" {
 #endif
 
+#include "network.h"
+#include "EmvEft.h"
+#include "merchant.h"
+
 int vasTransactionTypesBridge();
+int doVasCardTransaction(Eft* trxContext, unsigned long amount);
+short setupBaseHugeNetwork(NetWorkParameters * netParam, const char *path);
+
 
 #ifdef __cplusplus
 }
