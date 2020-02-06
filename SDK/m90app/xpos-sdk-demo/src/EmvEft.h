@@ -28,6 +28,7 @@ enum SubTransType
 };
 
 void eftTrans(const enum TransType transType, const enum SubTransType subTransType);
+char * payCodeTypeToStr(const enum SubTransType subTransType);
 
 #ifdef __cplusplus
 }

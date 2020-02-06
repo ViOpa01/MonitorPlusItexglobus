@@ -675,7 +675,7 @@ static short isPayCode(const enum SubTransType subTransType)
    
 }
 
-static char * payCodeTypeToStr(const enum SubTransType subTransType)
+char * payCodeTypeToStr(const enum SubTransType subTransType)
 {
 	switch (subTransType) {
 		case SUB_PAYCODE_CASHOUT: return "PAYCODE CASHOUT";
@@ -1141,6 +1141,7 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
 	unsigned long payCodeAmount = 0L;
 	const char * title = payCodeTypeToStr(subTransType);
 	eft->techMode = CHIP_MODE;
+	int year = 0;
 
     if (title == NULL) {
 		printf("PayCode title is null\n");
@@ -1165,7 +1166,9 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
 		eft->pinDataBcdLen = 8;
 	}
 
-	strncpy(eft->expiryDate, PAYCODE_EXPIRY, strlen(PAYCODE_EXPIRY));
+	eft->otherTrans = (int) subTransType;
+	strncpy(eft->otherData, payCode, sizeof(eft->otherData));
+	getPaycodeExpiry(eft->expiryDate);
 
 	//if (!orginalDataRequired(eft))
 	//{
@@ -1180,7 +1183,7 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
 	strncpy(transDate, &eft->yyyymmddhhmmss[2], 6);
 	transDate[6] = 0;
     buildPaycodeIccData(eft->iccData, transDate, eft->amount);
-	sprintf(eft->track2Data, "%sD%s", eft->pan, PAYCODE_EXPIRY);
+	sprintf(eft->track2Data, "%sD%s", eft->pan, eft->expiryDate);
 	strncpy(eft->posDataCode, "510101561344101", 15);
 	 strncpy(eft->cardSequenceNumber, "000", sizeof(eft->cardSequenceNumber));
 	 strncpy(eft->serviceRestrictionCode, "501", sizeof(eft->serviceRestrictionCode));
@@ -1201,7 +1204,7 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
 	}
 
 	persistEft(eft);
-	printReceipts(eft, 0);
+	printPaycodeReceipts(eft, 0);
 
 	return result;
 }

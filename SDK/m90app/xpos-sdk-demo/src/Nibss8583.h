@@ -191,6 +191,8 @@ typedef struct Eft
     char balance[256];
     char posDataCode[16];
     char entryMode[5];
+    int otherTrans; //Used for other transaction type like paycode cashin and cashout
+    char otherData[256]; //Used for saving other data like paycode.
 
 } Eft;
 

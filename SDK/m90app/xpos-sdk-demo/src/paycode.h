@@ -15,7 +15,6 @@ extern "C"
 #endif
 
 #define PTAD_CODE "10"
-#define PAYCODE_EXPIRY "2102"
 #define ASSIGNED_BANK_BIN "506179"
 #define MIN_PAYCODE_LEN 9
 #define MAX_PAYCODE_LEN 12
@@ -30,6 +29,7 @@ short buildCardNumber(char * cardNumber, const int cardNumberSize, const char * 
 short getPayCodePin(unsigned char pinblock[8], const char * pan);
 short getPayCodeData(char* payCode, const int payCodeSize, unsigned long* amount);
 void buildPaycodeIccData(char * iccData, const char transDate[7], const char transAmount[13]);
+void getPaycodeExpiry(char * yymm);
 
 #ifdef __cplusplus
 }
