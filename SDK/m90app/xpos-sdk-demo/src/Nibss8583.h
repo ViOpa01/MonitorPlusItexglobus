@@ -189,6 +189,8 @@ typedef struct Eft
     long atPrimaryIndex;
 
     char balance[256];
+    char posDataCode[16];
+    char entryMode[5];
 
 } Eft;
 

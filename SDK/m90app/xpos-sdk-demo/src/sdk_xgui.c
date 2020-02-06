@@ -18,6 +18,7 @@
 
 #include "nibss.h"
 #include "Nibss8583.h"
+#include "EmvEft.h"
 
 //Used By EOD RECIEPT PRINTING DECLARED IN EMVDB//
 #ifndef TXTYPE
@@ -50,6 +51,8 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_REVERSAL,   ""},
 	{MAIN_MENU_PAGE, UI_REFUND,     ""},
 	{MAIN_MENU_PAGE, UI_BALANCE,    ""},
+	{MAIN_MENU_PAGE, UI_PAYCODE_CASHIN,    ""},
+	{MAIN_MENU_PAGE, UI_PAYCODE_CASHOUT,   ""},
 
 	/*
 	* Demo menus
@@ -269,35 +272,43 @@ static short eftHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PURCHASE) == 0)
 	{
-		eftTrans(EFT_PURCHASE);
+		eftTrans(EFT_PURCHASE, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_CASHBACK) == 0)
 	{
-		eftTrans(EFT_CASHBACK);
+		eftTrans(EFT_CASHBACK, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_PREAUTH) == 0)
 	{
-		eftTrans(EFT_PREAUTH);
+		eftTrans(EFT_PREAUTH, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_COMPLETION) == 0)
 	{
-		eftTrans(EFT_COMPLETION);
+		eftTrans(EFT_COMPLETION, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_REVERSAL) == 0)
 	{
-		eftTrans(EFT_REVERSAL);
+		eftTrans(EFT_REVERSAL, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_REFUND) == 0)
 	{
-		eftTrans(EFT_REFUND);
+		eftTrans(EFT_REFUND, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_CASHADVANCE) == 0)
 	{
-		eftTrans(EFT_CASHADVANCE);
+		eftTrans(EFT_CASHADVANCE, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_BALANCE) == 0)
 	{
-		eftTrans(EFT_BALANCE);
+		eftTrans(EFT_BALANCE, SUB_NONE);
+	}
+	else if (strcmp(pid, UI_PAYCODE_CASHOUT) == 0)
+	{
+		eftTrans(EFT_CASHADVANCE, SUB_PAYCODE_CASHOUT);
+	}
+	else if (strcmp(pid, UI_PAYCODE_CASHIN) == 0)
+	{
+		eftTrans(EFT_PURCHASE, SUB_PAYCODE_CASHIN);
 	}
 	else
 	{

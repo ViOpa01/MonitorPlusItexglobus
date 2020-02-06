@@ -13,6 +13,9 @@
 #define UI_CASHADVANCE      "Cash Advance"
 #define UI_BALANCE          "Balance Inquiry"
 
+#define UI_PAYCODE_CASHOUT         "Paycode Cashout" 
+#define UI_PAYCODE_CASHIN          "Paycode Cashin"
+
 
 #define UI_REPRINT          "Reprint"       // Menu for Reprint
 
