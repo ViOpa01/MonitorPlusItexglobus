@@ -79,9 +79,6 @@ JSObject& JSObject::operator[](const size_t i)
 
 const JSObject& JSObject::operator[](const size_t i) const
 {
-    if (i < vChild.size()) {
-        return nulljsobject;
-    }
     return vChild[i];
 }
 
@@ -219,16 +216,7 @@ std::string JSObject::dump() const
 
 std::string JSObject::getString() const
 {
-    if (type == NULL_T) {
-        std::string message;
-
-        #ifdef JSONDEBUG
-        message += "(\"" + key + "\"): ";
-        #endif
-        message += typeToString(type) + " type is not convertible to string";
-
-        throw std::runtime_error(message);
-    } else if (type == STRING_T) {
+    if (type == STRING_T) {
         return value;
     } else {
         return dump();

@@ -469,8 +469,6 @@ VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const 
     iisys::JSObject json;
     Payvice payvice;
 
-    std::string response;
-
     if (!loggedIn(payvice)) {
         return NOT_LOGGED_IN;
     }    
@@ -489,7 +487,7 @@ VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const 
 
     std::string body = json.dump();
 
-    strncpy((char *)netParam.host, "vas.itexapp.com", sizeof(netParam.host) - 1);
+    strncpy((char *)netParam.host, "basehuge.itexapp.com", sizeof(netParam.host) - 1);
     netParam.receiveTimeout = 60000;
 	strncpy(netParam.title, "Requery", 10);
     netParam.isHttp = 1;
@@ -499,16 +497,17 @@ VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const 
     
     
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST /api/v1/account/requery HTTP/1.1\r\n");
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d\r\n", netParam.host, netParam.port);
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Type: application/json\r\n");
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Length: %zu\r\n", body.length());
 
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "\r\n%s", body.c_str());
 
-    if (1) {
+    if (sendAndRecvPacket(&netParam) != SEND_RECEIVE_SUCCESSFUL) {
         return VAS_ERROR;
     }
 
-    if (!json.load(response)) {
+    if (!json.load(bodyPointer((const char*)netParam.response))) {
         return INVALID_JSON;
     }
 
@@ -587,4 +586,9 @@ const char * getDeviceTerminalId()
     strcpy(tid, mParam.tid);
     
     return tid;
+}
+
+char menuendl()
+{
+    return ' ';
 }

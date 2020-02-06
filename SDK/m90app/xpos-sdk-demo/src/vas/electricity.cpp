@@ -334,21 +334,19 @@ int Electricity::getLookupJson(iisys::JSObject& json, Service service)
 int Electricity::getPaymentJson(iisys::JSObject& json, Service service)
 {
     Payvice payvice;
-    MerchantData mParam = {0};
-    char tid[16];
+    char tid[16] = { 0 };
 
     if (!loggedIn(payvice)) {
         return -1;
     }
 
-    readMerchantData(&mParam);
     std::string paymentMethodStr = paymentString(payMethod);
     std::transform(paymentMethodStr.begin(), paymentMethodStr.end(), paymentMethodStr.begin(), ::tolower);
 
     const std::string username = payvice.object(Payvice::USER).getString();
     const std::string password = payvice.object(Payvice::PASS).getString();
     const std::string walletId = payvice.object(Payvice::WALLETID).getString();
-    strncpy(tid, mParam.tid/*Merchant().object(config::TID).getString().c_str()*/, sizeof(tid) - 1);
+    strncpy(tid, getDeviceTerminalId(), sizeof(tid) - 1);
 
     json("terminal") = tid;;
 	if (service == EKEDC || service == IKEJA) {

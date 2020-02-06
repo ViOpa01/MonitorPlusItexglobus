@@ -258,7 +258,7 @@ VasStatus PayTV::multichoiceLookupCheck(const VasStatus& lookupStatus)
 
     multichoice.name = name.getString();
 
-    confirmationMessage << multichoice.name << std::endl << std::endl;
+    confirmationMessage << multichoice.name << std::endl;
     if (!account.isNull() && iuc != account.getString()) {
         return VasStatus(VAS_ERROR, "Account mismatch");
     }
@@ -278,8 +278,8 @@ VasStatus PayTV::multichoiceLookupCheck(const VasStatus& lookupStatus)
 
     const size_t size = data.size();
     std::vector<std::string> menuData;
-    for (size_t i = 0; i < size; ++i) {
-        menuData.push_back(data[i]("name").getString() + '\n' + data[i]("amount").getString() + " Naira");
+    for (i = 0; i < size; ++i) {
+        menuData.push_back(data[i]("name").getString() + menuendl() + data[i]("amount").getString() + " Naira");
     }
 
     int selection = UI_ShowSelection(60000, "Data Packages", menuData, 0);

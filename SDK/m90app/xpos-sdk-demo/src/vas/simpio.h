@@ -22,7 +22,7 @@ typedef enum InputStatus{
 
 typedef enum MessageBoxStatus {
     CANCEL = -2,
-    TIMEOUT = -1,
+    MSG_TIMEOUT = -1,
     CONFIRM = 0
     
 } MessageBoxStatus;

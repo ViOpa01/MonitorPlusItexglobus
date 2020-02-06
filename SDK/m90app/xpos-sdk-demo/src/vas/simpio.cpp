@@ -159,7 +159,7 @@ int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_
     case 2:
        return CANCEL;
     case 3:
-       return TIMEOUT;
+       return MSG_TIMEOUT;
     default:
         break;
     }

@@ -103,4 +103,6 @@ int printVas(std::map<std::string, std::string>& record);
 std::string getCurrencySymbol();
 const char * getDeviceTerminalId();
 
+char menuendl();
+
 #endif

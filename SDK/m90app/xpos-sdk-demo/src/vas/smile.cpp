@@ -265,7 +265,7 @@ VasStatus Smile::bundleCheck(const VasStatus& bundleCheck)
         std::string validity = data[i]("validity").getString();
 
         formatAmount(amount);
-        menuData.push_back(data[i]("name").getString() + '\n' + amount + " Naira, " + validity);
+        menuData.push_back(data[i]("name").getString() + menuendl() + amount + " Naira, " + validity);
     }
 
     int selection = UI_ShowSelection(60000, "Bundles", menuData, 0);

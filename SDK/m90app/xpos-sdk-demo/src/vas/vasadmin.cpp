@@ -15,11 +15,11 @@
 #include "jsobject.h"
 
 #include "electricity.h"
-// #include "cashio.h"
-// #include "airtime.h"
-// #include "data.h"
-// #include "paytv.h"
-// #include "smile.h"
+#include "cashio.h"
+#include "airtime.h"
+#include "data.h"
+#include "paytv.h"
+#include "smile.h"
 
 #include "vas.h"
 #include "vasdb.h"
@@ -292,9 +292,7 @@ int printRequery(iisys::JSObject& transaction)
         Electricity electricity(vasMenuString(ENERGY), postman);
         status = electricity.processPaymentResponse(response, KEDCO);
         record = electricity.storageMap(status);
-    }
-    /*
-     else if (productName == "withdrawal") {
+    } else if (productName == "withdrawal") {
         ViceBanking viceBanking(vasMenuString(CASHIO), postman);
         status = viceBanking.processPaymentResponse(response, WITHDRAWAL);
         record = viceBanking.storageMap(status);
@@ -314,7 +312,7 @@ int printRequery(iisys::JSObject& transaction)
         PayTV payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
         status = payTv.processPaymentResponse(response, STARTIMES);
         record = payTv.storageMap(status);
-    }*/
+    }
 
     // product = cJSON_GetObjectItemCaseSensitive(transaction, "product");
     // customerName = cJSON_GetObjectItemCaseSensitive(transaction, "VASCustomerName");
@@ -403,6 +401,7 @@ void vasAdmin()
         iisys::JSObject transaction;
 
         std::string seqNumber = getNumeric(0, 30000, "Sequence No", "", UI_DIALOG_TYPE_NONE);
+      
         if (seqNumber.empty()) {
             return;
         }

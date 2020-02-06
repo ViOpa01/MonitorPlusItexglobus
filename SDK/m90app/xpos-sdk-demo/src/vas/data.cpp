@@ -200,7 +200,7 @@ VasStatus Data::lookupCheck(const VasStatus& lookupStatus)
     const size_t size = data.size();
     std::vector<std::string> menuData;
     for (size_t i = 0; i < size; ++i) {
-        menuData.push_back(data[i]("description").getString() + '\n' + data[i]("amount").getString() + " Naira");
+        menuData.push_back(data[i]("description").getString() + menuendl() + data[i]("amount").getString() + " Naira");
     }
 
     int selection = UI_ShowSelection(60000, "Data Packages", menuData, 0);

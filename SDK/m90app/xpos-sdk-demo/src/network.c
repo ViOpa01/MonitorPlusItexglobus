@@ -448,7 +448,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 		if(netParam->isSsl == 1){
 			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)buffer/*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen*/);
 		}else{
-			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 700);
+			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 5000);
 		}
 
 		//printf("nret is : %d\n", nret);
