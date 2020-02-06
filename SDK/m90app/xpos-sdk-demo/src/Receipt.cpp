@@ -75,28 +75,6 @@ static char * getReceiptCopyLabel(enum receiptCopy copy)
 	}
 }
 
-static int formatAmount(std::string& ulAmount)
-{
-    int position;
-
-    if (ulAmount.empty()) return -1;
-
-    position = ulAmount.length();
-    if ((position -= 2) > 0) {
-        ulAmount.insert(position, ".");
-    } else if (position == 0) {
-        ulAmount.insert(0, "0.");
-    } else {
-        ulAmount.insert(0, "0.0");
-    }
-
-    while ((position -= 3) > 0) {
-        ulAmount.insert(position, ",");
-    }
-
-    return 0;
-}
-
 void getPrinterStatus(const int status)
 {
     if (status == UPRN_SUCCESS)
@@ -188,6 +166,28 @@ static char* transTypeToString(enum TransType type)
 	default:
 		return "NULL";
 	}
+}
+
+int formatAmount(std::string& ulAmount)
+{
+    int position;
+
+    if (ulAmount.empty()) return -1;
+
+    position = ulAmount.length();
+    if ((position -= 2) > 0) {
+        ulAmount.insert(position, ".");
+    } else if (position == 0) {
+        ulAmount.insert(0, "0.");
+    } else {
+        ulAmount.insert(0, "0.0");
+    }
+
+    while ((position -= 3) > 0) {
+        ulAmount.insert(position, ",");
+    }
+
+    return 0;
 }
 
 static const char *responseCodeToStr(const char responseCode[3])

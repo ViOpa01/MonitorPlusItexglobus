@@ -13,7 +13,7 @@ QL_LIB=ql_at ql_common_api ql_peripheral ql_qcmap_client
 		
 #���ӿ�
 APP_LIB=apppub atc vcps rupay quics paypass dpas amex emv emvpub entry emvapi api_xpos net power producttest pub rpc switchcheck tms ucosii xgui \
-    pthread  mf_driver mbedtls wifi json sqlite nibss8583 \
+    pthread  mf_driver mbedtls wifi json sqlite nibss8583 crypto ssl \
 	stdc++
     
 LINK_LIB= $(APP_LIB) $(QL_LIB) $(STD_LIB)
@@ -23,6 +23,7 @@ INC_PATH=$(LINUX_PLAT_COMPONENT_LINUX) \
 			$(LINUX_PLAT_COMPONENT_LINUX)/EntryPoint/lib_emvpub/inc \
 			$(LINUX_PLAT_COMPONENT_LINUX)/platform/inc \
 			$(PROJECT_PATH)/src \
+			$(PROJECT_PATH)/src/vas \
 			$(PROJECT_PATH)/../uninpayui/src \
 			$(PROJECT_PATH)/../uninpayui/src/page \
 			$(LINUX_PLAT_COMPONENT_LINUX)/apppub/inc \

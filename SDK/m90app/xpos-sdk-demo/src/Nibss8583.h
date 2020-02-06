@@ -190,6 +190,13 @@ typedef struct Eft
 
     char balance[256];
 
+    // Vas specific additions
+    int (*genAuxPayload)(char auxPayload[], const size_t auxPayloadSize, const struct Eft*);
+    void* callbackdata;
+    char auxResponse[4096];
+    char customRefCode[1024];
+    int  switchMerchant;
+
 } Eft;
 
 typedef struct NetworkKey

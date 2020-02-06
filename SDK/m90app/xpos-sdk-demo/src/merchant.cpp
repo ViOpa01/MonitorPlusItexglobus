@@ -128,7 +128,6 @@ int saveMerchantDataXml(const char* merchantXml)
 
     if (!root) {
         printf("\nError, Please Try Again\n");
-        ezxml_free(root);
         return ret;
     }
 

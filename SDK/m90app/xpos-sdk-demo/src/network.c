@@ -427,7 +427,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 	while(Sys_TimerCheck(tick1) > 0){
 		int ret;
 		int num;
-		unsigned char buffer[2048] = { '\0' };
+		unsigned char buffer[2048 * 4] = { '\0' };
 
 
 		if(strlen(netParam->title)>0){
@@ -505,7 +505,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	int result = -1;
 	int bytes = 0;
 	int count = 0;
-	int timeover = 60000;
+	int timeover = netParam->receiveTimeout;
 	unsigned int tick = Sys_TimerOpen(timeover);
 	
 	bytes = http_recv_buff(netParam, tick, timeover);

@@ -1,12 +1,12 @@
 #pragma once
 
-#define MAIN_MENU_PAGE	    "main"
-#define SUPERVISION		    "supervision"
-#define MAINTENANCE	        "maintenance"
+#define MAIN_MENU_PAGE	    "Main"
+#define SUPERVISION		    "Supervision"
+#define MAINTENANCE	        "Maintenance"
 
 #define UI_CARD_PAYMENT     "Card Payment"
 #define UI_VAS              "Value Added Service"
-
+/*
 #define UI_PURCHASE         "Purchase"          // Menu for Purchase
 #define UI_CASHBACK         "Cashback"
 #define UI_PREAUTH          "Pre Authorization"
@@ -15,7 +15,7 @@
 #define UI_REFUND           "Refund"
 #define UI_CASHADVANCE      "Cash Advance"
 #define UI_BALANCE          "Balance Inquiry"
-
+*/
 
 #define UI_REPRINT          "Reprint"       // Menu for Reprint
 

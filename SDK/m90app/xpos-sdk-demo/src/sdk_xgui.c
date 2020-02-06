@@ -13,6 +13,7 @@
 #include "menu_list.h"
 #include "merchant.h"
 #include "remoteLogo.h"
+#include "vas/vasbridge.h"
 
 #define LOGOIMG "xxxx\\logo.bmp"
 
@@ -44,43 +45,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
-	/*
-	{MAIN_MENU_PAGE, UI_PURCHASE,   ""},
-	{MAIN_MENU_PAGE, UI_PREAUTH,    ""},
-	{MAIN_MENU_PAGE, UI_COMPLETION, ""},
-	{MAIN_MENU_PAGE, UI_CASHBACK,   ""},
-	{MAIN_MENU_PAGE, UI_CASHADVANCE, ""},
-	{MAIN_MENU_PAGE, UI_REVERSAL,   ""},
-	{MAIN_MENU_PAGE, UI_REFUND,     ""},
-	{MAIN_MENU_PAGE, UI_BALANCE,    ""},
-	*/
-	/*
-	* Demo menus
-	{MAIN_MENU_PAGE, "Sales", ""},
-	{MAIN_MENU_PAGE, "My Plain", ""},
-	{MAIN_MENU_PAGE, "My Ssl", ""},
-	{MAIN_MENU_PAGE, "CodePay", ""},
-	{MAIN_MENU_PAGE, "Version", ""},
-	{MAIN_MENU_PAGE, "Test", ""},
-	{MAIN_MENU_PAGE, UI_SETTINGS, ""},
-	{MAIN_MENU_PAGE, "Others", ""},
-	
-	{"Test", "Print", ""},
-	{"Test", "Security", ""},
-	{"Test", "Http", ""},
-	{"Test", "Https", ""},
-	{"Test", "ShowQr", ""},
-	{"Test", "File", ""},
-	{"Test", "Led", ""},
-	{"Test", "ShowString", ""},
-	{"Test", "TMSTest", ""},
-	{"Test", "M1 Test", ""},
 
-	{"Security", "InitDukpt", ""},
-	{"Security", "SetMainKey", ""},
-	{"Security", "PinTest", ""},
-	{"Security", "RsaTest", ""},
-	*/
 	
 	{UI_SETTINGS, "Net Select", ""},
 	{UI_SETTINGS, "WIFI Settings", "WIFI Menu"},
@@ -408,6 +373,10 @@ static int _menu_proc(char *pid)
 
 	if(!strcmp(pid, UI_CARD_PAYMENT)) {
 		eftTrans(cardPaymentHandler());
+		return 0;
+	}
+	if(!strcmp(pid, UI_VAS)) {
+		vasTransactionTypesBridge();
 		return 0;
 	}
 	else if (!hanshakeHandler(pid))
