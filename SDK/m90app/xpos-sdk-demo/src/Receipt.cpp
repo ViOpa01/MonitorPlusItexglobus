@@ -657,9 +657,7 @@ static int printPaycodeReceipt(enum receiptCopy copy, Eft *eft)
     printLine("DATE TIME", buff);
     printDottedLine();
 
-    payCodeTypeToStr(subTransType);
-
-	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
+	UPrint_StrBold(payCodeTypeToStr(subTransType), 1, 4, 1);
 	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
 
 	UPrint_SetDensity(3); //Set print density to 3 normal
