@@ -14,6 +14,7 @@
 #include "vascomproxy.h"
 #include "jsobject.h"
 #include "libapi_xpos/inc/libapi_print.h"
+#include "util.h"
 
 #include "payvice.h"
 #include "virtualtid.h"
@@ -87,9 +88,8 @@ struct VasFlow_T {
         std::map<std::string, std::string> record = delegate->storageMap(completeStatus);
         if (record.find(VASDB_DATE) == record.end() || record[VASDB_DATE].empty()) {
             char dateTime[32] = { 0 };
-            time_t now = time(NULL);
-            strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S.000", localtime(&now));
-            record[VASDB_DATE] = dateTime;
+            formattedDateTime(dateTime, sizeof(dateTime));
+            record[VASDB_DATE] = std::string(dateTime).append(".000");
         }
         VasDB::saveVasTransaction(record);
 

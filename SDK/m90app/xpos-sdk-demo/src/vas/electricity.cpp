@@ -205,8 +205,8 @@ VasStatus Electricity::complete(const VasStatus& initiateStatus)
     }
 
     json("pin") = encryptedPin(Payvice(), pin.c_str());
-    // json("pfm")("state") = getState();
-    json("pfm")("journal")("amount") = amount;
+    json("pfm")("state") = getState();
+    
     json("clientReference") = getClientReference();
 
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");
@@ -254,6 +254,12 @@ std::map<std::string, std::string> Electricity::storageMap(const VasStatus& comp
     record[VASDB_REF] = paymentResponse.reference;
     record[VASDB_DATE] = paymentResponse.date;
     record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
+
+    if (cardPurchase.primaryIndex > 0) {
+        char primaryIndex[16] = { 0 };
+        sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
+        record[VASDB_CARD_ID] = primaryIndex;
+    }
 
     if (completionStatus.error == NO_ERRORS) {
         record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::APPROVED);

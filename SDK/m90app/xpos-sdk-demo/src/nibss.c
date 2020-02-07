@@ -757,10 +757,10 @@ short uiHandshake(void)
             break;
     }
 
-    gui_messagebox_show("MESSAGE" , "Master Key Ok!", "" , "" , 1000);
-
     if (i == maxRetry)
         return -1;
+
+    gui_messagebox_show("MESSAGE" , "Master Key Ok!", "" , "" , 1000);
 
     //printf("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
     //Sys_Delay(5000);

@@ -95,8 +95,12 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
 		// netParam->port = mParam.nibss_ssl_port;
 
-		strncpy(netParam->host, "192.168.137.4", strlen(mParam.nibss_ip));
+		// strncpy(netParam->host, "197.253.19.78", strlen(mParam.nibss_ip));
+		// netParam->port = 6001;
+
+		strncpy(netParam->host, "192.168.43.72", strlen(mParam.nibss_ip));
 		netParam->port = 5001;
+
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
 
@@ -392,7 +396,7 @@ static short sendPacket(NetWorkParameters *netParam)
 	int result = -1;
 
 	printf("packet size to send -> %d\n", netParam->packetSize);
-	printf("\npacket -> %s\n", &netParam->packet[2]);
+	printf("\npacket -> %s\n", netParam->packet);
 
 	if (netParam->isSsl)
 	{

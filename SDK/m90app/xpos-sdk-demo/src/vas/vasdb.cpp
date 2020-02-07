@@ -11,9 +11,10 @@
 
 
 #define VASDBLOG                    "VASDB"
-#define VASDB                       "itex/vas.db"
 #define VASDB_TABLE                 "vas"
 #define VASDB_TABLE_ROW_LIMIT       "14400"  
+
+const char* VASCARDTABLENAME = "CardTransactions";
 
 VasDB::VasDB()
 {

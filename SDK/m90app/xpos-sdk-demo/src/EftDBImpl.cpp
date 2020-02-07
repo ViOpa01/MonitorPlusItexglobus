@@ -23,7 +23,7 @@ extern "C"{
 #define DOTTEDLINE		"--------------------------------"
 #define DOUBLELINE		"================================"
 
-const  std::string DBNAME = "emvdb.db";
+const  std::string DBNAME = "itex/emvdb.db";    // To be in sync with system init private directory
 #define EFT_DEFAULT_TABLE "Transactions"
 #define EMVDBUTILLOG "EMVDBUTILLOG"
 

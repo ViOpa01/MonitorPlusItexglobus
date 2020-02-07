@@ -2,10 +2,13 @@
 #include <stdio.h>
 
 #include "vascomproxy.h"
+#include  "pfm.h"
 #include "payvice.h"
 #include "vasbridge.h"
 #include "merchant.h"
 #include "util.h"
+
+#include "vasdb.h"
 
 extern "C" {
 // #include "EmvEft.h"
@@ -214,17 +217,21 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
 
     memset((void*)&trxContext, 0, sizeof(Eft));
     trxContext.switchMerchant = 1;
+   
+    strcpy(trxContext.dbName, VASDB);
+    strcpy(trxContext.tableName, VASCARDTABLENAME);
+    
 
     if (json) {
         body = json->dump();
-        jsonReq("body") = body;
+        jsonReq("body") = *json;
         jsonReq("method") = "POST";
         jsonReq("headers")("Content-Type") = "application/json";
     } else {
         jsonReq("method") = "GET";
     }
     
-    jsonReq("host") = vas + url;
+    jsonReq("host") = std::string("http://") +  vas + url;
 
     if (!headers && json) {
         char timestamp[32] = { 0 };
@@ -311,6 +318,7 @@ int vasPayloadGenerator(char* auxPayload, const size_t auxPayloadSize, const str
     iisys::JSObject* jsonReq = static_cast<iisys::JSObject*>(context->callbackdata);
     
     // TODO: Add journal here
+    (*jsonReq)("journal") = getJournal(context);
     strncpy(auxPayload, jsonReq->dump().c_str(), auxPayloadSize -1 );
 
     return 0;

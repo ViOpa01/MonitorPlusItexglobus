@@ -137,8 +137,8 @@ VasStatus Airtime::complete(const VasStatus& initiateStatus)
 
     json("pin") = encryptedPin(Payvice(), pin.c_str());
     
-    // json("pfm")("state") = getState();
-    json("pfm")("journal")("amount") = amount;
+    json("pfm")("state") = getState();
+    
     json("clientReference") = getClientReference();
 
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");

@@ -298,7 +298,7 @@ void formattedDateTime(char* dateTime, size_t len)
 
     getDate(date);
     getTime(time);
-    sprintf(dateTime, "%s %s", date, time);
+    snprintf(dateTime, len, "%s %s", date, time);
 }
 
 void getImsi(char buff[20])

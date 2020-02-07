@@ -11,6 +11,8 @@
 
 #include "vas.h"
 
+#define VASDB                       "itex/vas.db"
+
 #define VASDB_CARD_TABLE           "vascard"
 #define VASDB_CARD_TABLE_ID        "id"
 
@@ -34,7 +36,7 @@
 #define VASDB_STATUS_MESSAGE       "message"
 #define VASDB_SERVICE_DATA         "serviceData"
 
-
+extern const char* VASCARDTABLENAME;
 
 struct VasDB {
 

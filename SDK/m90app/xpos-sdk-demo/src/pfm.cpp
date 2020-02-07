@@ -7,6 +7,13 @@
 #include <string.h>
 
 #include "pfm.h"
+#include "EmvDBUtil.h"
+
+
+extern "C" {
+#include "nibss.h"
+#include "Nibss8583.h"
+}
 
 iisys::JSObject getState()
 {
@@ -30,7 +37,8 @@ iisys::JSObject getState()
 
     // interface = Device().object(config::NETERFACE).getString();
 
-    // state("ptad") = "Itex Integrated Services";
+    state("ptad") = "Itex Integrated Services";
+    state("sv") = "7.8.18";
 
     // if (!sysGetPropertyString(vfisysinfo::SYS_PROP_HW_SERIALNO, posUid, sizeof(posUid))) {
     //     state("serial") = posUid;
@@ -238,31 +246,33 @@ iisys::JSObject getState()
 
 iisys::JSObject getJournal(const Eft* trxContext)
 {
+    MerchantParameters parameter = {'\0'};
     iisys::JSObject journal;
     // Merchant merchant;
-    // std::map<std::string, std::string> trx;
+    std::map<std::string, std::string> trx;
 
-    // EmvDB::trxContextToMap(trx, trxContext);
+    ctxToInsertMap(trx, trxContext);
     
-    // journal("mid") = merchant.object(config::MID);
-    // journal("stan") = trx[DB_STAN];
+    getParameters(&parameter);
+    journal("mid") = parameter.cardAcceptiorIdentificationCode;//merchant.object(config::MID);
+    journal("stan") = trx[DB_STAN];
 
 
-    // journal("mPan") = trx[DB_PAN];
-    // journal("cardName") = trx[DB_NAME];
-    // journal("expiryDate") = trx[DB_EXPDATE];
-    // journal("rrn") = trx[DB_RRN];
-    // // journal("acode") = trx[DB_E];
-    // journal("amount") = trx[DB_AMOUNT];
-    // journal("timestamp") = trx[DB_DATE];
-    // journal("mti") = trx[DB_MTI];
-    // journal("ps") = trx[DB_PS];
-    // // journal("resp") = trx[DB_PS]; 
-    // journal("merchantName") = merchant.object(config::NAME);
-    // journal("mcc") = merchant.object(config::MCC);
-    // journal("vm") = onlinePinEntered(trxContext) ? "OnlinePin" : "OfflinePin";
+    journal("mPan") = trx[DB_PAN];
+    journal("cardName") = trx[DB_NAME];
+    journal("expiryDate") = trx[DB_EXPDATE];
+    journal("rrn") = trx[DB_RRN];
+    // journal("acode") = trx[DB_E];
+    journal("amount") = trx[DB_AMOUNT];
+    journal("timestamp") = trx[DB_DATE];
+    journal("mti") = trx[DB_MTI];
+    journal("ps") = trx[DB_PS];
+    // journal("resp") = trx[DB_PS]; 
+    journal("merchantName") = parameter.merchantNameAndLocation; /*merchant.object(config::NAME);*/
+    journal("mcc") = parameter.currencyCode;/*merchant.object(config::MCC);*/
+    journal("vm") = trxContext->pinDataBcdLen ? "OnlinePin" : "OfflinePin";
 
-    // journal("ps") = trx[DB_PS];
+    journal("ps") = trx[DB_PS];
     
     return journal;
 }

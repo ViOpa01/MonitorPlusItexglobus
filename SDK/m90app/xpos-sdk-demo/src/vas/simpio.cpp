@@ -259,7 +259,7 @@ unsigned long getAmount(const char* title)
 
 void Demo_SplashScreen(const char *text, const char *text_additional)
 {
-    gui_messagebox_show((char *)text , (char *)text_additional, "" , "" , 2000);
+    gui_messagebox_show((char *)text , (char *)text_additional, "" , "" , 1);
 }
 
 

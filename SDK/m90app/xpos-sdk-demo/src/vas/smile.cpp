@@ -149,8 +149,8 @@ VasStatus Smile::complete(const VasStatus& initiateStatus)
     }
 
     json("pin") = encryptedPin(Payvice(), pin.c_str());
-    // json("pfm")("state") = getState();
-    json("pfm")("journal")("amount") = amount;
+    json("pfm")("state") = getState();
+    
     json("clientReference") = getClientReference();
 
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");
@@ -211,6 +211,12 @@ std::map<std::string, std::string> Smile::storageMap(const VasStatus& completion
     record[VASDB_DATE] = paymentResponse.date;
     if (!paymentResponse.transactionSeq.empty()) {
         record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
+    }
+
+    if (cardPurchase.primaryIndex > 0) {
+        char primaryIndex[16] = { 0 };
+        sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
+        record[VASDB_CARD_ID] = primaryIndex;
     }
 
     if (completionStatus.error == NO_ERRORS) {
