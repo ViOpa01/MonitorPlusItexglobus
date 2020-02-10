@@ -107,7 +107,7 @@ JSObject& JSObject::operator=(bool val)
 
 bool JSObject::isNull() const
 {
-    return type == NULL_T;
+    return type == NULL_T || type == NOT_SET;
 }
 
 bool JSObject::isBool() const
@@ -291,7 +291,7 @@ bool JSObject::getBool() const
         #ifdef JSONDEBUG
         message += "(\"" + key + "\"): ";
         #endif
-        message += typeToString(type) + " type is not convertible to number";
+        message += typeToString(type) + " type is not convertible to bool";
 
         throw std::runtime_error(message);
     }
@@ -360,6 +360,8 @@ std::string JSObject::typeToString(ValType t) const
     case NUMBER_FLOAT_T:
     case NUMBER_INTEGER_T:
         return "number";
+    case NOT_SET:
+        return "NotSet";
     default:
         return "";
     }

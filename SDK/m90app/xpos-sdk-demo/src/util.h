@@ -61,5 +61,5 @@ void hmac_sha256(
 }
 #endif
 
-#endif UTIL__H
+#endif
 

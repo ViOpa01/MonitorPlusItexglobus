@@ -255,7 +255,7 @@ int printRequery(iisys::JSObject& transaction)
     std::transform(productName.begin(), productName.end(), productName.begin(), ::tolower);
 
     iisys::JSObject response;
-    if (!response.load(transaction("response").dump())) {
+    if (!response.load(transaction("response").getString())) {
         return -1;
     }
 
@@ -312,6 +312,55 @@ int printRequery(iisys::JSObject& transaction)
         PayTV payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
         status = payTv.processPaymentResponse(response, STARTIMES);
         record = payTv.storageMap(status);
+    } else if (productName == "mtnvtu") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, MTNVTU);
+        record = airtime.storageMap(status);
+    } else if (productName == "glovtu") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, GLOVTU);
+        record = airtime.storageMap(status);
+    } else if (productName == "airtelvtu") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, AIRTELVTU);
+        record = airtime.storageMap(status);
+    } else if (productName == "etisalatvtu") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, ETISALATVTU);
+        record = airtime.storageMap(status);
+    } else if (productName == "mtndata") {
+        Data data(vasMenuString(DATA), postman);
+        status = data.processPaymentResponse(response, MTNDATA);
+        record = data.storageMap(status);
+    } else if (productName == "glodata") {
+        Data data(vasMenuString(DATA), postman);
+        status = data.processPaymentResponse(response, GLODATA);
+        record = data.storageMap(status);
+    } else if (productName == "airteldata") {
+        Data data(vasMenuString(DATA), postman);
+        status = data.processPaymentResponse(response, AIRTELDATA);
+        record = data.storageMap(status);
+    } else if (productName == "etisalatdata") {
+        Data data(vasMenuString(DATA), postman);
+        status = data.processPaymentResponse(response, ETISALATDATA);
+        record = data.storageMap(status);
+    }
+    else if (productName == "glovot") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, GLOVOT);
+        record = airtime.storageMap(status);
+    } else if (productName == "airtelvot") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, AIRTELVOT);
+        record = airtime.storageMap(status);
+    } else if (productName == "glovos") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, GLOVOS);
+        record = airtime.storageMap(status);
+    } else if (productName == "airtelvos") {
+        Airtime airtime(vasMenuString(AIRTIME), postman);
+        status = airtime.processPaymentResponse(response, AIRTELVOS);
+        record = airtime.storageMap(status);
     }
 
     // product = cJSON_GetObjectItemCaseSensitive(transaction, "product");

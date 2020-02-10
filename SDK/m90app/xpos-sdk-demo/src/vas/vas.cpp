@@ -3,8 +3,7 @@
 #include <string.h>
 
 #include <vector>
-
-
+#include <iterator>
 
 #include "vas.h"
 #include "simpio.h"
@@ -24,8 +23,6 @@
 #include "vas.h"
 
 #include "merchant.h"
-
-extern int formatAmount(std::string& ulAmount);
 
 extern "C" {
 #include "util.h"
@@ -361,21 +358,156 @@ int printVas(std::map<std::string, std::string>& record)
             }
         }
 
+ 
+
         if (record[VASDB_CATEGORY] == vasMenuString(ENERGY)) {
-            // printStatus = checkedPrint(record, "vaselectricity.html");
-        } else if (record[VASDB_CATEGORY] == vasMenuString(AIRTIME) || record[VASDB_CATEGORY] == vasMenuString(DATA)) {
-            // printStatus = checkedPrint(record, "vasairtimedata.html");
+            printStatus = printVasReceipt(record, ENERGY);
+        } else if (record[VASDB_CATEGORY] == vasMenuString(AIRTIME)) {
+            printStatus = printVasReceipt(record, AIRTIME);
+        } else if (record[VASDB_CATEGORY] == vasMenuString(DATA)) {
+            printStatus = printVasReceipt(record, DATA);
         } else if (record[VASDB_CATEGORY] == vasMenuString(TV_SUBSCRIPTIONS)) {
-            // printStatus = checkedPrint(record, "vastvsubs.html");
+            printStatus = printVasReceipt(record, TV_SUBSCRIPTIONS);
         } else if (record[VASDB_CATEGORY] == vasMenuString(SMILE)) {
-            // printStatus = checkedPrint(record, "vasReceipt.html");
+            printStatus = printVasReceipt(record, SMILE);
         } else {
             // printStatus = checkedPrint(record, "vasReceipt.html");
+            // printStatus = printVasReceipt(record);
         }
     }
 
 
     return printStatus;
+}
+
+void printAirtime(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, "pin", "pin_ref", "serial", "expiry", "dial"};
+    const char* labels[] = {"WALLET", "TXN TID", "PHONE", "PIN", "PIN REF", "SERIAL", "EXPIRY", "TO LOAD"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
+void printElectricity(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICARY_NAME, VASDB_BENEFICIARY_ADDR, VASDB_BENEFICIARY_PHONE
+        , "account_type", "type", "tran_id", "client_id", "sgc", "msno", "krn", "ti", "tt", "unit", "sgcti", "accountNo", "tariffCode"
+        , "rate", "units", "region", "token", "unit_value", "unit_cost", "vat", "agent", "arrears", "receipt_no", "invoiceNumber"
+        , "tariff", "lastTxDate", "collector", "csp"};
+    const char* labels[] = {"WALLET", "TXN TID", "METER NO", "NAME", "ADDRESS", "PHONE"
+        , "ACCOUNT TYPE", "TYPE", "TRAN ID", "CLIENT ID", "SGC", "MSNO", "KRN", "TI", "TT", "UNIT", "SGCTI", "ACCOUNT NO", "TARIFF CODE"
+        , "RATE", "UNITS", "REGION", "TOKEN", "UNIT VALUE", "UNIT COST", "VAT", "AGENT", "ARREARS", "RECEIPT NO", "INVOICE NUMBER"
+        , "TARIFF", "LAST TXN DATE", "COLLECTOR", "CSP"};
+
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
+void printTv(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICARY_NAME, VASDB_BENEFICIARY_PHONE, "paymentMethod", "reference"};
+    const char* labels[] = {"WALLET", "TXN TID", "IUC", "NAME", "PHONE", "PAYMENT METHOD", "REF"};
+
+     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
+static void printAsteric(size_t len)
+{
+    char line[32] = {'\0'};
+
+    memset(line, '*', len + 4);
+    UPrint_StrBold(line, 1, 4, 1);
+}
+
+int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T type)
+{
+    int ret = 0;
+    char buff[32] = {'\0'};
+    const char* energy[] = {"walletId", "- Agent Copy -"}; 
+    
+    std::map<std::string, std::string>::iterator itr;
+
+    for(itr = record.begin(); itr != record.end(); ++itr) {
+        printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
+    }
+
+    ret = UPrint_Init();
+
+    if (ret == UPRN_OUTOF_PAPER) {
+        UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION);
+	}
+
+    // Print Bank Logo
+    printVasHeader(record["date"].c_str());
+
+    strcpy(buff, record["service"].c_str());
+    UPrint_StrBold(buff, 1, 4, 1);
+
+    memset(buff, '\0', sizeof(buff));
+    strcpy(buff, record["receipt_copy"].c_str());
+	UPrint_StrBold(buff, 1, 4, 1);
+
+    UPrint_SetDensity(3); //Set print density to 3 normal
+	UPrint_SetFont(7, 2, 2);
+
+    memset(buff, '\0', sizeof(buff));
+    strcpy(buff, record["paymentStatus"].c_str());
+    UPrint_StrBold(buff, 1, 4, 1);
+    UPrint_Feed(12);
+
+    if (type == ENERGY) {
+        printElectricity(record);
+    } else if(type == AIRTIME || type == DATA || type == SMILE) {
+        printAirtime(record);
+    } else if(type == TV_SUBSCRIPTIONS) {
+        printTv(record);
+    }
+
+    printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
+
+    if(!record[VASDB_REF].empty())
+    {
+        printLine("REF", record[VASDB_REF].c_str());
+    }
+    
+    if(!record[VASDB_TRANS_SEQ].empty())
+    {
+        printLine("TRANS SEQ", record[VASDB_TRANS_SEQ].c_str());
+    }
+   
+
+    memset(buff, '\0', sizeof(buff));
+    sprintf(buff, "NGN %s", record["amount"].c_str());
+
+    printAsteric(strlen(buff));
+	UPrint_StrBold(buff, 1, 4, 1);
+    printAsteric(strlen(buff));
+
+    UPrint_Feed(12);
+
+    memset(buff, '\0', sizeof(buff));
+    strcpy(buff, record["message"].c_str());
+    UPrint_StrBold(buff, 1, 4, 1);
+
+    printDottedLine();
+	printFooter();
+
+	ret = UPrint_Start();
+	getPrinterStatus(ret);
+
+    return ret;
 }
 
 
@@ -525,6 +657,7 @@ VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const 
     } else if (status.getInt() != 1 || error.getBool() == true ) {
         return VAS_ERROR;
     }
+
 
     transaction = json("transaction");  // I hope this is an implicit copy
 

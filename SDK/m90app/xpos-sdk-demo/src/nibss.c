@@ -78,6 +78,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     char simId[24] = {'\0'};
     int signalLevel = 0;
     char lac[12] = {'\0'};
+    char ss[4] = {'\0'};
 
 
     callHomeJson = cJSON_CreateObject();
@@ -103,6 +104,8 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     getImsi(imsi);
     
     signalLevel = getSignalLevel();
+    signalLevel *=  25;
+    sprintf(ss, "%d", signalLevel);
 
     printf("IMSI : %s\n", imsi);
     printf("Cell id : %s\n Signal level : %d\n lac : %s\n", cellId, signalLevel, lac);
@@ -129,7 +132,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     cJSON_AddItemToObject(callHomeJson, "serial", cJSON_CreateString(terminalSn));
     cJSON_AddItemToObject(callHomeJson, "sim", cJSON_CreateString("MTN"));  // SIM Operator's name 
     cJSON_AddItemToObject(callHomeJson, "simID", cJSON_CreateString(getSimId()));   // SIM id
-    cJSON_AddItemToObject(callHomeJson, "ss", cJSON_CreateString("33"));
+    cJSON_AddItemToObject(callHomeJson, "ss", cJSON_CreateString(ss));
     cJSON_AddItemToObject(callHomeJson, "sv", cJSON_CreateString(softwareVersion));
     cJSON_AddItemToObject(callHomeJson, "tid", cJSON_CreateString(tid));
     cJSON_AddItemToObject(callHomeJson, "tmanu", cJSON_CreateString("Morefun"));

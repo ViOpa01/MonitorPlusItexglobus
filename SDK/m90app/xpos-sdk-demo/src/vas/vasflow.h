@@ -13,11 +13,14 @@
 #include "vas.h"
 #include "vascomproxy.h"
 #include "jsobject.h"
-#include "libapi_xpos/inc/libapi_print.h"
 #include "util.h"
 
 #include "payvice.h"
 #include "virtualtid.h"
+
+extern "C" {
+#include "libapi_xpos/inc/libapi_print.h"
+}
 
 struct FlowDelegate {
     virtual VasStatus beginVas() = 0;

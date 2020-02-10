@@ -5,6 +5,7 @@
 #include <map>
 #include "jsobject.h"
 
+
 typedef enum {
     ENERGY,
     AIRTIME,
@@ -99,6 +100,9 @@ VasStatus vasErrorCheck(const iisys::JSObject& data);
 VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const char *serverRef);
 
 int printVas(std::map<std::string, std::string>& record);
+
+int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T type);
+
 
 std::string getCurrencySymbol();
 const char * getDeviceTerminalId();

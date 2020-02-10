@@ -1555,8 +1555,13 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		displayBalance(eft->balance);
 		printf("Balance detail : %s\n", eft->balance);
 	}
-
-	printReceipts(eft, 0);
+	
+	if(!eft->isVasTrans || !eft->switchMerchant)
+	{
+		// Print card payment receipt alone here
+		printReceipts(eft, 0);
+	}
+	
 
 	printf("Result After IccUpdate -> %d\n", result);
 

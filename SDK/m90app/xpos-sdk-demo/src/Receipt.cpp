@@ -39,8 +39,7 @@ enum AlignType{
 	ALIGH_RIGHT,
 };
 
-
-static void printDottedLine()
+void printDottedLine()
 {
     UPrint_SetFont(8, 2, 2);
     UPrint_Str(DOTTEDLINE, 2, 1);
@@ -58,6 +57,44 @@ void printFooter()
 
 	UPrint_Feed(108);
 }
+
+void printReceiptHeader()
+{
+    MerchantParameters parameter = {'\0'};
+	MerchantData mParam = {'\0'};
+
+    char dt[14] = {'\0'};
+	char buff[64] = {'\0'};
+
+    getParameters(&parameter);
+	readMerchantData(&mParam);
+    getDateAndTime(dt);
+    sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
+
+    UPrint_SetFont(8, 2, 2);
+	UPrint_StrBold(mParam.name, 1, 0, 1);
+    UPrint_StrBold(mParam.address, 1, 0, 1);
+    printLine("MID", parameter.cardAcceptiorIdentificationCode);
+    printLine("DATE TIME", buff);
+    printDottedLine();
+}
+
+void printVasHeader(const char *transDate)
+{
+    MerchantParameters parameter = {'\0'};
+	MerchantData mParam = {'\0'};
+
+    getParameters(&parameter);
+	readMerchantData(&mParam);
+    
+    UPrint_SetFont(8, 2, 2);
+	UPrint_StrBold(mParam.name, 1, 0, 1);
+    UPrint_StrBold(mParam.address, 1, 0, 1);
+    printLine("MID", parameter.cardAcceptiorIdentificationCode);
+    printLine("DATE TIME", transDate);
+    printDottedLine();
+}
+
 
 static char * getReceiptCopyLabel(enum receiptCopy copy)
 {
@@ -426,16 +463,17 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
 	}
 }
 
-//Add a line of print data
-static void printLine(char *head, char *val)
+void printLine(const char *head, const char *val)
 {
 	char rightAligned[45] = {'\0'};
 	int printerWidth = 32;
+    char buff[32] = {'\0'};
 
 	alignBuffer(rightAligned, val, printerWidth - strlen(head), ALIGH_RIGHT);
 	
+    strcpy(buff, head);
 	UPrint_SetFont(8, 2, 2);
-	UPrint_Str(head, 1, 0);
+	UPrint_Str(buff, 1, 0);
 	UPrint_Str(rightAligned, 1, 1);
 }
 
@@ -526,19 +564,11 @@ static void processBalance(char *buff)
 static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 {
 	int ret = 0;
-	char dt[14] = {'\0'};
-	char buff[64] = {'\0'};
 	char maskedPan[25] = {'\0'};
-	// char filename[128] = {'\0'};
-    MerchantParameters parameter = {'\0'};
-	MerchantData mParam = {'\0'};
-	short isApproved = isApprovedResponse(eft->responseCode);
+    MerchantData mParam = {'\0'};
 	
-    getParameters(&parameter);
-	readMerchantData(&mParam);
-    getDateAndTime(dt);
-    sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
-
+    readMerchantData(&mParam);
+	short isApproved = isApprovedResponse(eft->responseCode);
 	displayPaymentStatus(eft->responseCode);
 
 	ret = UPrint_Init();
@@ -548,14 +578,8 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
 	}
 
-	printBankLogo();	// Prints Logo
-	
-	UPrint_SetFont(8, 2, 2);
-	UPrint_StrBold(mParam.name, 1, 0, 1);
-    UPrint_StrBold(mParam.address, 1, 0, 1);
-    printLine("MID", parameter.cardAcceptiorIdentificationCode);
-    printLine("DATE TIME", buff);
-    printDottedLine();
+	printBankLogo();	// Print Logo
+    printReceiptHeader();      // Print Receipt header
 
 	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
 	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
