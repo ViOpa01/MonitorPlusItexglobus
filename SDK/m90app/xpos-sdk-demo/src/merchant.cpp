@@ -191,6 +191,9 @@ int saveMerchantDataXml(const char* merchantXml)
     strncpy(merchant.platform_label, ezxml_child(tran, "PREFIX")->txt, sizeof(merchant.platform_label) - 1);
     printf("Platform Label: %s\n", merchant.platform_label);
 
+    strncpy(merchant.notificationIdentifier, ezxml_child(tran, "NOTIFICATION_ID")->txt, sizeof(merchant.notificationIdentifier) - 1);
+    printf("Notification id: %s\n", merchant.notificationIdentifier);
+
 
     if(strcmp(merchant.platform_label, "POSVAS") == 0)
     {
@@ -257,7 +260,7 @@ int readMerchantData(MerchantData* merchant)
     // populate the data
 
     cJSON *json, *pkey;
-    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
+    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold, *jsonNotfId;
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonTransType, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
     char buffer[1024] = {'\0'};
@@ -280,6 +283,7 @@ int readMerchantData(MerchantData* merchant)
     jsonTID = cJSON_GetObjectItemCaseSensitive(json, "tid");
     jsonStampLabel = cJSON_GetObjectItemCaseSensitive(json, "stamp_label"); // String
     jsonPlatformLabel = cJSON_GetObjectItemCaseSensitive(json, "platform_label"); // String
+    jsonNotfId = cJSON_GetObjectItemCaseSensitive(json, "notification_id"); // String
     jsonStampDuty = cJSON_GetObjectItemCaseSensitive(json, "stamp_duty");   // Int
     jsonIsPrep = cJSON_GetObjectItemCaseSensitive(json, "is_prepped");   // Int
     jsonStampDutyThreshold = cJSON_GetObjectItemCaseSensitive(json, "stamp_threshold");    // Int
@@ -309,6 +313,12 @@ int readMerchantData(MerchantData* merchant)
     {
         strncpy(merchant->rrn, jsonRrn->valuestring, sizeof(merchant->rrn) - 1);
         // printf("rrn : %s\n", merchant->rrn);
+    }
+
+    if(cJSON_IsString(jsonNotfId))
+    {
+        strncpy(merchant->notificationIdentifier, jsonNotfId->valuestring, sizeof(merchant->notificationIdentifier) - 1);
+        // printf("notification id : %s\n", merchant->notificationIdentifier);
     }
 
     if(cJSON_IsString(jsonTID))
@@ -428,6 +438,7 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "address", cJSON_CreateString(merchant->address));
     cJSON_AddItemToObject(requestJson, "name", cJSON_CreateString(merchant->name));
     cJSON_AddItemToObject(requestJson, "rrn", cJSON_CreateString(merchant->rrn));
+    cJSON_AddItemToObject(requestJson, "notification_id", cJSON_CreateString(merchant->notificationIdentifier));
     cJSON_AddItemToObject(requestJson, "tid", cJSON_CreateString(merchant->tid));
     cJSON_AddItemToObject(requestJson, "status", cJSON_CreateNumber(merchant->status));
     cJSON_AddItemToObject(requestJson, "stamp_label", cJSON_CreateString(merchant->stamp_label));

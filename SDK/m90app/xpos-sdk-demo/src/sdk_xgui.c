@@ -565,6 +565,13 @@ static int _menu_proc(char *pid)
 		int ret = enableAndDisableOtherTrans();
 		printf("Enable / Disable ret : %d\n", ret);
 	}
+	else if (!strcmp(pid, UI_NOTIF_ID))
+	{
+		MerchantData mParam = {'\0'};
+		readMerchantData(&mParam);
+
+		gui_messagebox_show("Notification ID", mParam.notificationIdentifier, "", "", 3000);
+	}
 	else if(!strcmp(pid, UI_REBOOT))
 	{
 		Sys_Reboot();

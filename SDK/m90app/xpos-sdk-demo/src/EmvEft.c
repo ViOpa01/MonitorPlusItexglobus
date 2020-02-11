@@ -324,17 +324,23 @@ static enum TechMode cardTypeToTechMode(const int cardType, const int mode)
 void populateEchoData(char echoData[256])
 {
 	// char de59[] = "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300";
-
+	MerchantData mParam = {'\0'};
 	char terminalSn[22] = {'\0'};
-	char de59[80] = {'\0'};
+	char de59[124] = {'\0'};
 	char dt[15] = {'\0'};
 
+	readMerchantData(&mParam);
 	getTerminalSn(terminalSn);
 	Sys_GetDateTime(dt);
 
-	sprintf(de59, "%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
-	strncpy(echoData, de59, strlen(de59));
+	if(mParam.notificationIdentifier[0])
+	{
+		sprintf(de59, "%s~%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", mParam.notificationIdentifier, APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
+	} else {
+		sprintf(de59, "%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
+	}
 
+	strncpy(echoData, de59, strlen(de59));
 }
 
 void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters)
