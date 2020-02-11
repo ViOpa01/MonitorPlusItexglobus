@@ -196,7 +196,7 @@ std::map<std::string, std::string> Smile::storageMap(const VasStatus& completion
     record[VASDB_AMOUNT] = amountStr;
 
 
-    record[VASDB_BENEFICARY_NAME] = lookupResponse.name;
+    record[VASDB_BENEFICIARY_NAME] = lookupResponse.name;
     if (!customerID.empty()) {
         record[VASDB_BENEFICIARY] = customerID;
     }

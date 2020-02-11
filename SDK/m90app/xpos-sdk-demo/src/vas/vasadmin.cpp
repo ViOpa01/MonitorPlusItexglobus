@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <iterator>
 
 #include "simpio.h"
 #include "util.h"
@@ -81,10 +82,10 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
     }
     values["menu"] = jHelp.dump();
 
-    printf("Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
+    // printf("Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
     formatAmount(amountApproved);
     formatAmount(amountDeclined);
-    printf("Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
+    // printf("Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
 
     values["approvedAmount"] = amountSymbol + " " + amountApproved;
     values["declinedAmount"] = amountSymbol + " " + amountDeclined;
@@ -178,6 +179,8 @@ void vasEndofDay()
 
         values["trxType"] = service.empty() ? "Services" : service;
         // TODO: Print EOD receipt here
+        printVasEod(values);
+
     }
 }
 
@@ -385,7 +388,7 @@ int printRequery(iisys::JSObject& transaction)
 
 
     if (name.isString()) {
-        record[VASDB_BENEFICARY_NAME] = name.getString();
+        record[VASDB_BENEFICIARY_NAME] = name.getString();
     }
 
     if (account.isString()) {

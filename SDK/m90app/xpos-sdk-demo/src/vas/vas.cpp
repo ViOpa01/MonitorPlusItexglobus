@@ -370,9 +370,17 @@ int printVas(std::map<std::string, std::string>& record)
             printStatus = printVasReceipt(record, TV_SUBSCRIPTIONS);
         } else if (record[VASDB_CATEGORY] == vasMenuString(SMILE)) {
             printStatus = printVasReceipt(record, SMILE);
+        } else if(record[VASDB_CATEGORY] == vasMenuString(CASHIO)){
+            std::map<std::string, std::string>::iterator itr;
+
+            for(itr = record.begin(); itr != record.end(); ++itr) {
+                printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
+            }
+
+            printStatus = printVasReceipt(record, CASHIO);
+            
         } else {
-            // printStatus = checkedPrint(record, "vasReceipt.html");
-            // printStatus = printVasReceipt(record);
+
         }
     }
 
@@ -392,9 +400,22 @@ void printAirtime(std::map<std::string, std::string> &record)
     } 
 }
 
+
+void printCashio(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, "recBank"};
+    const char* labels[] = {"WALLET", "TID","RECIPIENT", "ACC NAME", "BANK "};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
 void printElectricity(std::map<std::string, std::string> &record)
 {
-    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICARY_NAME, VASDB_BENEFICIARY_ADDR, VASDB_BENEFICIARY_PHONE
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_ADDR, VASDB_BENEFICIARY_PHONE
         , "account_type", "type", "tran_id", "client_id", "sgc", "msno", "krn", "ti", "tt", "unit", "sgcti", "accountNo", "tariffCode"
         , "rate", "units", "region", "token", "unit_value", "unit_cost", "vat", "agent", "arrears", "receipt_no", "invoiceNumber"
         , "tariff", "lastTxDate", "collector", "csp"};
@@ -413,7 +434,7 @@ void printElectricity(std::map<std::string, std::string> &record)
 
 void printTv(std::map<std::string, std::string> &record)
 {
-    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICARY_NAME, VASDB_BENEFICIARY_PHONE, "paymentMethod", "reference"};
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_PHONE, "paymentMethod", "reference"};
     const char* labels[] = {"WALLET", "TXN TID", "IUC", "NAME", "PHONE", "PAYMENT METHOD", "REF"};
 
      for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
@@ -435,7 +456,6 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
 {
     int ret = 0;
     char buff[32] = {'\0'};
-    const char* energy[] = {"walletId", "- Agent Copy -"}; 
     
     std::map<std::string, std::string>::iterator itr;
 
@@ -473,13 +493,15 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
         printAirtime(record);
     } else if(type == TV_SUBSCRIPTIONS) {
         printTv(record);
+    } else if(type == CASHIO) {
+        printCashio(record);
     }
 
     printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
 
     if(!record[VASDB_REF].empty())
     {
-        printLine("REF", record[VASDB_REF].c_str());
+        printLine("REF ", record[VASDB_REF].c_str());
     }
     
     if(!record[VASDB_TRANS_SEQ].empty())
@@ -509,6 +531,88 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
 
     return ret;
 }
+
+int printVasEod(std::map<std::string, std::string> &records)
+{
+    int ret = 0;
+    char buff[64] = {'\0'};
+
+    /*
+    std::map<std::string, std::string>::iterator itr;
+
+    for(itr = records.begin(); itr != records.end(); ++itr) {
+        printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
+    }
+    */
+
+    iisys::JSObject json;
+
+    if(!json.load(records["menu"]) || !json.isArray()) {
+        return -1;
+    }
+
+    ret = UPrint_Init();
+    if (ret == UPRN_OUTOF_PAPER) {
+        UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION);
+	}
+
+    printBankLogo();
+    printVasHeader(records["date"].c_str());
+
+    UPrint_SetFont(8, 2, 2);
+    UPrint_StrBold("SUMMARY", 1, 4, 1);
+    printDottedLine();
+
+    UPrint_Feed(12);
+
+    printLine("Approved Amnt", records["approvedAmount"].c_str());
+    printLine("Approved Count", records["approvedCount"].c_str());
+    printLine("Declined Amnt", records["declinedAmount"].c_str());
+    printLine("Declined Count", records["declinedCount"].c_str());
+    printLine("Total Count", records["totalCount"].c_str());
+
+    UPrint_Feed(12);
+
+    memset(buff, '\0', sizeof(buff));
+    strcpy(buff, records["trxType"].c_str());
+    UPrint_StrBold(buff, 1, 4, 1);
+    printDottedLine();
+
+    UPrint_Feed(10);
+
+    for(int i = 0; i < json.size(); i++) {
+
+        char leftAlign[32] = {'\0'};
+        char rightAlign[32] = {'\0'};
+        char amount[14] = {'\0'};
+        char time[8] = {'\0'};
+        char status[3] = {'\0'};
+        char preferredField[24] = {'\0'};
+        
+        iisys::JSObject& itex = json[i];
+
+        strcpy(amount, itex("amount").getString().c_str());
+        strcpy(time, itex("tstamp").getString().c_str());
+        strcpy(preferredField, itex("preferredField").getString().c_str());
+        strcpy(status, itex("status").getString().c_str());
+
+        sprintf(leftAlign, "%s %s", time, preferredField);
+        sprintf(rightAlign, "%s %s", amount, status);
+        printLine(leftAlign, rightAlign);
+
+        printDottedLine();
+
+    }
+
+	printFooter();
+
+	ret = UPrint_Start();
+	getPrinterStatus(ret);
+
+    return ret;
+
+}
+
 
 
 std::string getCurrencySymbol()

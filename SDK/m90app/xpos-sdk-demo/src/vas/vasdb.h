@@ -22,7 +22,7 @@
 #define VASDB_DATE                 "date"
 #define VASDB_REF                  "reference"
 #define VASDB_BENEFICIARY          "beneficiary"
-#define VASDB_BENEFICARY_NAME      "beneficiaryName"
+#define VASDB_BENEFICIARY_NAME      "beneficiaryName"
 #define VASDB_BENEFICIARY_ADDR     "beneficiaryAddr"
 #define VASDB_BENEFICIARY_PHONE    "beneficiaryPhone"
 #define VASDB_PRODUCT              "product"

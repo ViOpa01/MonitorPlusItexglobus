@@ -41,7 +41,9 @@ VasStatus ViceBanking::beginVas()
         if (bankSelection == BANKUNKNOWN) {
             return VasStatus(USER_CANCELLATION);
         }
-        vendorBankCode = bankCode(bankSelection).code;
+        Bank bank = bankCode(bankSelection);
+        vendorBankCode = bank.code;
+        bankName = bank.name;
     } 
 
     return VasStatus(NO_ERRORS);
@@ -193,6 +195,8 @@ std::map<std::string, std::string> ViceBanking::storageMap(const VasStatus& comp
     record[VASDB_SERVICE] = serviceStr;
     record[VASDB_AMOUNT] = amountStr;
 
+    record[VASDB_BENEFICIARY_NAME] = lookupResponse.name;
+    record[VASDB_BENEFICIARY] = beneficiary;
     record[VASDB_BENEFICIARY_PHONE] = phoneNumber;
     record[VASDB_PAYMENT_METHOD] = paymentString(payMethod);
 
@@ -212,7 +216,8 @@ std::map<std::string, std::string> ViceBanking::storageMap(const VasStatus& comp
         record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::DECLINED);
     }
     record[VASDB_STATUS_MESSAGE] = paymentResponse.message;
-    // record[VASDB_SERVICE_DATA] = paymentResponse.serviceData;
+
+    record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + bankName + "\"}";
 
     return record;
 }
@@ -318,7 +323,7 @@ VasStatus ViceBanking::processPaymentResponse(iisys::JSObject& json, Service ser
     VasStatus response = vasErrorCheck(json);
     paymentResponse.message = response.message;
 
-    iisys::JSObject ref = json("ref");
+    iisys::JSObject ref = json("reference");
     if (!ref.isNull()) {
         paymentResponse.reference = ref.getString();
     }

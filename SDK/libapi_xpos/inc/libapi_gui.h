@@ -143,6 +143,16 @@ return: the background color
 *************************************************************************************/
 LIB_EXPORT int gui_get_bg_color();
 
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linzhu
+Functions:Set to full screen display 
+Input : full:1set full screen display, cancel full screen display			
+Output : Nothing			
+return: Nothing			
+*************************************************************************************/
+LIB_EXPORT void gui_set_full_screen(int full);
+
 
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
@@ -272,6 +282,27 @@ Output : Nothing
 return: Nothing
 *************************************************************************************/
 LIB_EXPORT void gui_clear_dc(void);
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:lx
+Functions:Set text magnification
+Input : size		Multiple, the default value is 2
+Output : Nothing			
+return: 0			success
+*************************************************************************************/
+LIB_EXPORT void gui_set_text_zoom(int size) ;
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:lx
+Functions:Get text magnification
+Input : Nothing
+Output : Nothing			
+return: Multiple
+*************************************************************************************/
+LIB_EXPORT int gui_get_text_zoom() ;
+
 
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
@@ -516,6 +547,23 @@ Output : Nothing
 return: Nothing£¬Show attention to release pbits
 *************************************************************************************/
 LIB_EXPORT void gui_out_bits_ex(int x, int y, unsigned char *pbits, int width , int height, int mode , int color);
+
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linzhu
+Functions:display image
+Input : x				X coordinate
+		  y				Y coordinate	
+		  pbits			Image data
+		  width			Image width
+		  height		Picture height
+		  mode			0 Positive display, 1 Reverse display
+		  zoom			Magnification
+Output : Nothing
+return: Nothing£¬Show attention to release pbits
+*************************************************************************************/
+LIB_EXPORT void gui_out_bits_zoom(int x, int y, unsigned char *pbits, int width , int height, int mode , int zoom);
 
 
 /*************************************************************************************

@@ -246,7 +246,7 @@ std::map<std::string, std::string> Electricity::storageMap(const VasStatus& comp
     record[VASDB_SERVICE] = serviceToString(service);
     record[VASDB_AMOUNT] = amountStr;
     record[VASDB_BENEFICIARY] = meterNo;
-    record[VASDB_BENEFICARY_NAME] = lookupResponse.name;
+    record[VASDB_BENEFICIARY_NAME] = lookupResponse.name;
     record[VASDB_BENEFICIARY_ADDR] = lookupResponse.address;
     record[VASDB_BENEFICIARY_PHONE] = phoneNumber;
     record[VASDB_PAYMENT_METHOD] = paymentString(payMethod);

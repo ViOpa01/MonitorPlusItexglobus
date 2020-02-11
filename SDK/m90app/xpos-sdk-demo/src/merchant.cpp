@@ -191,8 +191,11 @@ int saveMerchantDataXml(const char* merchantXml)
     strncpy(merchant.platform_label, ezxml_child(tran, "PREFIX")->txt, sizeof(merchant.platform_label) - 1);
     printf("Platform Label: %s\n", merchant.platform_label);
 
-    strncpy(merchant.notificationIdentifier, ezxml_child(tran, "NOTIFICATION_ID")->txt, sizeof(merchant.notificationIdentifier) - 1);
-    printf("Notification id: %s\n", merchant.notificationIdentifier);
+    if(ezxml_child(tran, "NOTIFICATION_ID")) {
+        strncpy(merchant.notificationIdentifier, ezxml_child(tran, "NOTIFICATION_ID")->txt, sizeof(merchant.notificationIdentifier) - 1);
+        printf("Notification id: %s\n", merchant.notificationIdentifier);
+    }
+    
 
 
     if(strcmp(merchant.platform_label, "POSVAS") == 0)

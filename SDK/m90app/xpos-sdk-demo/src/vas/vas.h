@@ -102,6 +102,7 @@ VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const 
 int printVas(std::map<std::string, std::string>& record);
 
 int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T type);
+int printVasEod(std::map<std::string, std::string> &records);
 
 
 std::string getCurrencySymbol();

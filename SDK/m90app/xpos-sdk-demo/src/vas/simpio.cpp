@@ -205,7 +205,7 @@ int getPassword(std::string& password)
     strncpy(pass, password.c_str(), password.length());
     
     gui_clear_dc();
-    result = Util_InputMethod(GUI_LINE_TOP(2), "Enter Password", GUI_LINE_TOP(5), pass, 4, sizeof(pass) - 1, 1, 1000);
+    result = Util_InputMethod(GUI_LINE_TOP(2), "Enter Password", GUI_LINE_TOP(5), pass, 4, sizeof(pass) - 1, 1, 10000);
 	
 	if (result > 0)
 	{

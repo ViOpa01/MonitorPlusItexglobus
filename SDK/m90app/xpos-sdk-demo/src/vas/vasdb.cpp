@@ -431,7 +431,7 @@ int  VasDB::init()
           VASDB_DATE              " TEXT NOT NULL, "
           VASDB_REF               " TEXT, "
           VASDB_BENEFICIARY       " TEXT, "
-          VASDB_BENEFICARY_NAME   " TEXT, "
+          VASDB_BENEFICIARY_NAME   " TEXT, "
           VASDB_BENEFICIARY_ADDR  " TEXT, "
           VASDB_BENEFICIARY_PHONE " TEXT, "
           VASDB_PRODUCT           " TEXT, "

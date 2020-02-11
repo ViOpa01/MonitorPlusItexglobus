@@ -157,10 +157,10 @@ std::map<std::string, std::string> PayTV::storageMap(const VasStatus& completion
 
     if (service == DSTV || service == GOTV) {
         record[VASDB_PRODUCT] = multichoice.selectedPackage("name").getString(); 
-        record[VASDB_BENEFICARY_NAME] = multichoice.name;
+        record[VASDB_BENEFICIARY_NAME] = multichoice.name;
     } else if (service == STARTIMES) {
         record[VASDB_PRODUCT] = startimes.bouquet; 
-        record[VASDB_BENEFICARY_NAME] = startimes.name;
+        record[VASDB_BENEFICIARY_NAME] = startimes.name;
     }
     record[VASDB_CATEGORY] = _title;
     record[VASDB_SERVICE] = serviceToString(service);
