@@ -10,6 +10,7 @@
 #include <string>
 #include "appInfo.h"
 #include "merchant.h"
+#include "EftDbImpl.h"
 #include "vas/virtualtid.h"
 
 extern "C" {
@@ -39,7 +40,6 @@ static void initTamsParameters(NetWorkParameters * netParam)
     netParam->isHttp = 1;
     netParam->isSsl = 0;
 }
-
 
 static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
 {
@@ -142,6 +142,15 @@ int saveMerchantDataXml(const char* merchantXml)
 
     int len = strlen(itexPosMessage);    
     if (len == 8 && isdigit(itexPosMessage[0])) {
+
+        readMerchantData(&merchant);
+        printf("Old tid : %s\nNew tid : %s\n", merchant.old_tid, itexPosMessage);
+        if(strncmp(merchant.old_tid, itexPosMessage, 8)) {
+            if(clearDb()) {
+                return ret;
+            }
+        }
+
         memset(merchant.tid, '\0', sizeof(merchant.tid));
         strncpy(merchant.tid, itexPosMessage, strlen(itexPosMessage));
 
@@ -263,7 +272,7 @@ int readMerchantData(MerchantData* merchant)
     // populate the data
 
     cJSON *json, *pkey;
-    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold, *jsonNotfId;
+    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonOldTid, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold, *jsonNotfId;
     cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonTransType, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
     char buffer[1024] = {'\0'};
@@ -284,6 +293,7 @@ int readMerchantData(MerchantData* merchant)
     jsonName = cJSON_GetObjectItemCaseSensitive(json, "name");
     jsonRrn = cJSON_GetObjectItemCaseSensitive(json, "rrn");
     jsonTID = cJSON_GetObjectItemCaseSensitive(json, "tid");
+    jsonOldTid = cJSON_GetObjectItemCaseSensitive(json, "old_tid");
     jsonStampLabel = cJSON_GetObjectItemCaseSensitive(json, "stamp_label"); // String
     jsonPlatformLabel = cJSON_GetObjectItemCaseSensitive(json, "platform_label"); // String
     jsonNotfId = cJSON_GetObjectItemCaseSensitive(json, "notification_id"); // String
@@ -328,6 +338,12 @@ int readMerchantData(MerchantData* merchant)
     {
         strncpy(merchant->tid, jsonTID->valuestring, sizeof(merchant->tid) - 1);
         // printf("TID : %s\n", merchant->tid);
+    }
+
+    if(cJSON_IsString(jsonOldTid))
+    {
+        strncpy(merchant->old_tid, jsonOldTid->valuestring, sizeof(merchant->old_tid) - 1);
+        // printf("OLD TID : %s\n", merchant->old_tid);
     }
 
     if(cJSON_IsString(jsonStampLabel))
@@ -443,6 +459,7 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "rrn", cJSON_CreateString(merchant->rrn));
     cJSON_AddItemToObject(requestJson, "notification_id", cJSON_CreateString(merchant->notificationIdentifier));
     cJSON_AddItemToObject(requestJson, "tid", cJSON_CreateString(merchant->tid));
+    cJSON_AddItemToObject(requestJson, "old_tid", cJSON_CreateString(merchant->old_tid));
     cJSON_AddItemToObject(requestJson, "status", cJSON_CreateNumber(merchant->status));
     cJSON_AddItemToObject(requestJson, "stamp_label", cJSON_CreateString(merchant->stamp_label));
     cJSON_AddItemToObject(requestJson, "platform_label", cJSON_CreateString(merchant->platform_label));
@@ -467,9 +484,6 @@ int saveMerchantData(const MerchantData* merchant)
     requestJsonStr = cJSON_PrintUnformatted(requestJson);
     memcpy(jsonData, requestJsonStr, sizeof(jsonData));
 
-    // printf("Parameter in json format :\n%s\n", jsonData);
-
-    // 4. Save the json file
     ret = saveRecord((void *)jsonData, MERCHANT_DETAIL_FILE, sizeof(jsonData), 0);
 
     return ret;
@@ -478,6 +492,7 @@ int saveMerchantData(const MerchantData* merchant)
 int getMerchantData()
 {
     NetWorkParameters netParam;
+    MerchantData mParam = {'\0'};
     int ret = -1;
     char responseXml[0x1000] = {'\0'};
 
@@ -485,6 +500,13 @@ int getMerchantData()
     initTamsParameters(&netParam);
     
     if(getMerchantDetails(&netParam, responseXml)) return ret;
+
+    // Getting a copy of tid before prepping
+    readMerchantData(&mParam);
+    if(mParam.tid[0]) {
+        strncpy(mParam.old_tid, mParam.tid, 8);
+        saveMerchantData(&mParam);
+    }
 
     if ((ret = saveMerchantDataXml(responseXml)) != 0) {
         printf("Error saving merchant data, ret : %d\n", ret);

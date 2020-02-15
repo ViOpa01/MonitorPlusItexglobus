@@ -37,6 +37,7 @@ short updateEft(const Eft * eft);
 void getListOfEod(Eft * eft, TrxType txtype);
 short getLastTransaction(Eft * eft);
 void getListofEftToday();
+int clearDb();
 #ifdef __cplusplus
 }
 #endif

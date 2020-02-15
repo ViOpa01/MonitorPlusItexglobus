@@ -7,6 +7,7 @@
 #include "vasbridge.h"
 #include "merchant.h"
 #include "util.h"
+#include "Receipt.h"
 
 #include "vasdb.h"
 
@@ -81,10 +82,16 @@ std::string Postman::generateRequestAuthorization(const std::string& requestBody
     i = strlen(digestHex);
     while (i--) { digestHex[i] = tolower(digestHex[i]); }
 
+
+    printf("Body(%zu): %s\n", requestBody.length(), requestBody.c_str());
+    printf("SHA 512 of body: %s\n", digestHex);
+
     {
         std::string key = vasApiKey() + "itex";
         token = (char*)base64_encode((const unsigned char*)key.c_str(), key.length(), &i);
     }
+
+    printf("Token: %s\n", token);
 
     if (!token) {
         return std::string();
@@ -97,6 +104,8 @@ std::string Postman::generateRequestAuthorization(const std::string& requestBody
     bin2hex((unsigned char*)signature, signaturehex, sizeof(signature));
     i = strlen(signaturehex);
     while (i--) { signaturehex[i] = tolower(signaturehex[i]); }
+
+    printf("HMAC: %s\n", signaturehex);
     
     std::string full = std::string(signaturehex) + date + vasOrganizationCode();
     char* fullStr = (char*)base64_encode((const unsigned char*)full.c_str(), full.length(), &i);
@@ -218,7 +227,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
     memset((void*)&trxContext, 0, sizeof(Eft));
     trxContext.switchMerchant = 1;
    
-    strcpy(trxContext.dbName, VASDB);
+    strcpy(trxContext.dbName, VASDB_FILE);
     strcpy(trxContext.tableName, VASCARDTABLENAME);
     
 
@@ -270,8 +279,8 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
         // Extra check to assert that card tranaction was successful?
         if (!strcmp(trxContext.responseCode, "00") && trxContext.transType == EFT_PURCHASE) {
             status.error = NO_ERRORS;
-            status.message = trxContext.auxResponse;
         }
+        status.message = trxContext.auxResponse;
         return status;
     }
     
@@ -281,7 +290,10 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
         return status;
     }
     
-    if (!strcmp(trxContext.responseCode, "00") && trxContext.transType == EFT_PURCHASE) {
+    if (strcmp(trxContext.responseCode, "00")) {
+        status.message = responseCodeToStr(trxContext.responseCode);
+        
+    } else if (trxContext.transType == EFT_PURCHASE) {
         // So card approved and we didn't get vas response
         iisys::JSObject transaction;
 

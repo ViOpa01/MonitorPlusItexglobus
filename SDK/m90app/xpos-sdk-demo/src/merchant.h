@@ -27,7 +27,8 @@ typedef struct MerchantData
     int  nibss_ssl_port;
     int  nibss_plain_port;
     char port_type[12];
-    char tid[14];       
+    char tid[14];
+    char old_tid[14];
     char phone_no[14];
     short account_selection;
     short trans_type;

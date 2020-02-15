@@ -11,30 +11,30 @@
 
 #include "vas.h"
 
-#define VASDB                       "itex/vas.db"
+#define VASDB_FILE                 "itex/vas.db"
 
-#define VASDB_CARD_TABLE           "vascard"
+#define VASDB_CARD_TABLE           "CardTransactions"
 #define VASDB_CARD_TABLE_ID        "id"
 
-#define VASDB_ID                   "vasid"
-#define VASDB_SERVICE              "service"
-#define VASDB_AMOUNT               "amount"
-#define VASDB_DATE                 "date"
-#define VASDB_REF                  "reference"
-#define VASDB_BENEFICIARY          "beneficiary"
-#define VASDB_BENEFICIARY_NAME      "beneficiaryName"
-#define VASDB_BENEFICIARY_ADDR     "beneficiaryAddr"
-#define VASDB_BENEFICIARY_PHONE    "beneficiaryPhone"
-#define VASDB_PRODUCT              "product"
-#define VASDB_CATEGORY             "category"
-#define VASDB_FEE                  "transactionFee"
-#define VASDB_VIRTUAL_TID          "virtualTid"
-#define VASDB_TRANS_SEQ            "transactionSeq"
-#define VASDB_PAYMENT_METHOD       "paymentMethod"
-#define VASDB_STATUS               "paymentStatus"
-#define VASDB_CARD_ID              "cardId"
-#define VASDB_STATUS_MESSAGE       "message"
-#define VASDB_SERVICE_DATA         "serviceData"
+#define VASDB_ID                   "vas_id"
+#define VASDB_SERVICE              "vas_service"
+#define VASDB_AMOUNT               "vas_amount"
+#define VASDB_DATE                 "vas_date"
+#define VASDB_REF                  "vas_reference"
+#define VASDB_BENEFICIARY          "vas_beneficiary"
+#define VASDB_BENEFICIARY_NAME     "vas_beneficiaryName"
+#define VASDB_BENEFICIARY_ADDR     "vas_beneficiaryAddr"
+#define VASDB_BENEFICIARY_PHONE    "vas_beneficiaryPhone"
+#define VASDB_PRODUCT              "vas_product"
+#define VASDB_CATEGORY             "vas_category"
+#define VASDB_FEE                  "vas_transactionFee"
+#define VASDB_VIRTUAL_TID          "vas_virtualTid"
+#define VASDB_TRANS_SEQ            "vas_transactionSeq"
+#define VASDB_PAYMENT_METHOD       "vas_paymentMethod"
+#define VASDB_STATUS               "vas_paymentStatus"
+#define VASDB_CARD_ID              "vas_cardId"
+#define VASDB_STATUS_MESSAGE       "vas_message"
+#define VASDB_SERVICE_DATA         "vas_serviceData"
 
 extern const char* VASCARDTABLENAME;
 
@@ -49,7 +49,9 @@ struct VasDB {
 
     VasDB();
     ~VasDB();
-    // int selectUniqueCategories(std::vector<std::string>& services);
+
+    int select(std::map<std::string, std::string>& record, unsigned long atIndex);
+    int select(std::map<std::string, std::string>& record, const std::string& atIndex);
     int selectUniqueDates(std::vector<std::string>& dates, std::string service = "");
     int selectUniqueServices(std::vector<std::string>& services, std::string date = "");
     int selectTransactions(std::vector<std::map<std::string, std::string> >& transactions, TrxStatus status, const std::string& service);
@@ -68,7 +70,7 @@ struct VasDB {
     // long beginTransaction(const EMV_TRX_CONTEXT *transaction);
 
     static const char * trxStatusString(TrxStatus status);
-    static int saveVasTransaction(std::map<std::string, std::string>& record);
+    static long saveVasTransaction(std::map<std::string, std::string>& record);
     static int init();    // Use only during startup
     static int countAllTransactions();
     

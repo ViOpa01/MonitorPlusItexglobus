@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
 #include "EftDbImpl.h"
 #include "EmvDBUtil.h"
 #include "Nibss8583.h"
@@ -16,6 +17,7 @@ extern "C"{
 #include "libapi_xpos/inc/libapi_util.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "libapi_xpos/inc/libapi_print.h"
+#include "remoteLogo.h"
 }
 #include "Receipt.h"
 #include "merchant.h"
@@ -85,6 +87,7 @@ public:
 
     void convertData(bool isRRN){
         EmvDB db(EFT_DEFAULT_TABLE, DBNAME);
+        std::string filename = "xxxx\\bank.bmp"; // + BANKLOGO;
 
         if(data.empty()) return;
        
@@ -144,7 +147,7 @@ public:
         printf("Starting to print\n");
         printf("Size of label list is %zu", labelList.size());
         
-        printBankLogo();
+        printReceiptLogo(filename.c_str());
         printHeader();
         UPrint_SetFont(7, 2, 2);
         UPrint_StrBold("EOD SUMMARY", 1, 0,1 );
@@ -256,7 +259,7 @@ short getEft(Eft * eft)
 {
     EmvDB db(*eft->tableName ? eft->tableName : EFT_DEFAULT_TABLE,  *eft->dbName ? eft->dbName : DBNAME);
     std::vector<std::map<std::string, std::string> > vec_map;
-
+    std::string yyyymmddhhmmss;
     std::map<std::string, std::string> dbmap;
 
     if (db.selectTransactionsByRef(vec_map, eft->rrn, ALL_TRX_TYPES)) {
@@ -270,24 +273,32 @@ short getEft(Eft * eft)
     
     dbmap = vec_map[0];
 
-    strncpy(eft->pan, dbmap[DB_PAN].c_str(), sizeof(eft->pan));
-    strncpy(eft->aid, dbmap[DB_AID].c_str(), sizeof(eft->aid));
-    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), sizeof(eft->additionalAmount));
-    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), sizeof(eft->authorizationCode));
-    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), sizeof(eft->cardHolderName));
-    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), sizeof(eft->cardLabel));
-    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), sizeof(eft->responseCode));
-    strncpy(eft->stan, dbmap[DB_STAN].c_str(), sizeof(eft->stan));
-    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), sizeof(eft->rrn));
-    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), sizeof(eft->tvr));
-    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), sizeof(eft->tsi));
-    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), sizeof(eft->originalMti));
-    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), sizeof(eft->originalMti));
-    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), sizeof(eft->expiryDate));
+    strncpy(eft->pan, dbmap[DB_PAN].c_str(), dbmap[DB_PAN].length());
+    strncpy(eft->aid, dbmap[DB_AID].c_str(), dbmap[DB_AID].length());
+    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), dbmap[DB_ADDITIONAL_AMOUNT].length());
+    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), dbmap[DB_AUTHID].length());
+    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), dbmap[DB_NAME].length());
+    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), dbmap[DB_LABEL].length());
+    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), dbmap[DB_RESP].length());
+    strncpy(eft->stan, dbmap[DB_STAN].c_str(), dbmap[DB_STAN].length());
+    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), dbmap[DB_RRN].length());
+    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), dbmap[DB_TVR].length());
+    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), dbmap[DB_TSI].length());
+    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), dbmap[DB_MTI].length());
+    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), dbmap[DB_FISC].length());
+    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), dbmap[DB_EXPDATE].length());
+    strncpy(eft->dateAndTime, dbmap[DB_DATE].c_str(), dbmap[DB_DATE].length() - 4);
 
     sprintf(eft->amount, "%012li", atol(dbmap[DB_AMOUNT].c_str()));
-    normalizeDateTime(eft->yyyymmddhhmmss, dbmap[DB_DATE].c_str());
-    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss));
+
+    yyyymmddhhmmss = dbmap[DB_DATE].substr(0, dbmap[DB_DATE].find('.'));     // 
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), ' '), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), ':'), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), '-'), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), '.'), yyyymmddhhmmss.end());
+
+    strncpy(eft->yyyymmddhhmmss, yyyymmddhhmmss.c_str(), strlen(yyyymmddhhmmss.c_str()));
+    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, strlen(eft->yyyymmddhhmmss));
 
     if (decodeProcessingCode(&eft->transType, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str(), dbmap[DB_MTI].c_str())) {
         fprintf(stderr, "Error decoding processing code...\n");
@@ -302,7 +313,7 @@ short getEft(Eft * eft)
 short getLastTransaction(Eft * eft)
 {
     EmvDB db(*eft->tableName ? eft->tableName : EFT_DEFAULT_TABLE,  *eft->dbName ? eft->dbName : DBNAME);
-    
+    std::string yyyymmddhhmmss;
     std::map<std::string, std::string> dbmap;
     eft->atPrimaryIndex = db.lastTransactionId();
 
@@ -314,24 +325,32 @@ short getLastTransaction(Eft * eft)
 
     db.select(dbmap, eft->atPrimaryIndex);
 
-    strncpy(eft->pan, dbmap[DB_PAN].c_str(), sizeof(eft->pan));
-    strncpy(eft->aid, dbmap[DB_AID].c_str(), sizeof(eft->aid));
-    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), sizeof(eft->additionalAmount));
-    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), sizeof(eft->authorizationCode));
-    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), sizeof(eft->cardHolderName));
-    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), sizeof(eft->cardLabel));
-    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), sizeof(eft->responseCode));
-    strncpy(eft->stan, dbmap[DB_STAN].c_str(), sizeof(eft->stan));
-    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), sizeof(eft->rrn));
-    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), sizeof(eft->tvr));
-    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), sizeof(eft->tsi));
-    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), sizeof(eft->originalMti));
-    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), sizeof(eft->originalMti));
-    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), sizeof(eft->expiryDate));
+    strncpy(eft->pan, dbmap[DB_PAN].c_str(), dbmap[DB_PAN].length());
+    strncpy(eft->aid, dbmap[DB_AID].c_str(), dbmap[DB_AID].length());
+    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), dbmap[DB_ADDITIONAL_AMOUNT].length());
+    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), dbmap[DB_AUTHID].length());
+    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), dbmap[DB_NAME].length());
+    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), dbmap[DB_LABEL].length());
+    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), dbmap[DB_RESP].length());
+    strncpy(eft->stan, dbmap[DB_STAN].c_str(), dbmap[DB_STAN].length());
+    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), dbmap[DB_RRN].length());
+    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), dbmap[DB_TVR].length());
+    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), dbmap[DB_TSI].length());
+    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), dbmap[DB_MTI].length());
+    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), dbmap[DB_FISC].length());
+    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), dbmap[DB_EXPDATE].length());
+    strncpy(eft->dateAndTime, dbmap[DB_DATE].c_str(), dbmap[DB_DATE].length() - 4);
 
     sprintf(eft->amount, "%012li", atol(dbmap[DB_AMOUNT].c_str()));
-    normalizeDateTime(eft->yyyymmddhhmmss, dbmap[DB_DATE].c_str());
-    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss));
+
+    yyyymmddhhmmss = dbmap[DB_DATE].substr(0, dbmap[DB_DATE].find('.'));     // 
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), ' '), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), ':'), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), '-'), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), '.'), yyyymmddhhmmss.end());
+
+    strncpy(eft->yyyymmddhhmmss, yyyymmddhhmmss.c_str(), strlen(yyyymmddhhmmss.c_str()));
+    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, strlen(eft->yyyymmddhhmmss));
 
     if (decodeProcessingCode(&eft->transType, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str(), dbmap[DB_MTI].c_str())) {
         fprintf(stderr, "Error decoding processing code...\n");
@@ -434,24 +453,34 @@ void contextMapToEft(std::map<std::string, std::string> dbmap ,  Eft * eft){
         return;
     }
 
-    strncpy(eft->pan, dbmap[DB_PAN].c_str(), sizeof(eft->pan));
-    strncpy(eft->aid, dbmap[DB_AID].c_str(), sizeof(eft->aid));
-    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), sizeof(eft->additionalAmount));
-    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), sizeof(eft->authorizationCode));
-    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), sizeof(eft->cardHolderName));
-    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), sizeof(eft->cardLabel));
-    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), sizeof(eft->responseCode));
-    strncpy(eft->stan, dbmap[DB_STAN].c_str(), sizeof(eft->stan));
-    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), sizeof(eft->rrn));
-    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), sizeof(eft->tvr));
-    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), sizeof(eft->tsi));
-    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), sizeof(eft->originalMti));
-    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), sizeof(eft->originalMti));
-    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), sizeof(eft->expiryDate));
+    std::string yyyymmddhhmmss;
 
+    strncpy(eft->pan, dbmap[DB_PAN].c_str(), dbmap[DB_PAN].length());
+    strncpy(eft->aid, dbmap[DB_AID].c_str(), dbmap[DB_AID].length());
+    strncpy(eft->additionalAmount, dbmap[DB_ADDITIONAL_AMOUNT].c_str(), dbmap[DB_ADDITIONAL_AMOUNT].length());
+    strncpy(eft->authorizationCode, dbmap[DB_AUTHID].c_str(), dbmap[DB_AUTHID].length());
+    strncpy(eft->cardHolderName, dbmap[DB_NAME].c_str(), dbmap[DB_NAME].length());
+    strncpy(eft->cardLabel, dbmap[DB_LABEL].c_str(), dbmap[DB_LABEL].length());
+    strncpy(eft->responseCode, dbmap[DB_RESP].c_str(), dbmap[DB_RESP].length());
+    strncpy(eft->stan, dbmap[DB_STAN].c_str(), dbmap[DB_STAN].length());
+    strncpy(eft->rrn, dbmap[DB_RRN].c_str(), dbmap[DB_RRN].length());
+    strncpy(eft->tvr, dbmap[DB_TVR].c_str(), dbmap[DB_TVR].length());
+    strncpy(eft->tsi, dbmap[DB_TSI].c_str(), dbmap[DB_TSI].length());
+    strncpy(eft->originalMti, dbmap[DB_MTI].c_str(), dbmap[DB_MTI].length());
+    strncpy(eft->forwardingInstitutionIdCode, dbmap[DB_FISC].c_str(), dbmap[DB_FISC].length());
+    strncpy(eft->expiryDate, dbmap[DB_EXPDATE].c_str(), dbmap[DB_EXPDATE].length());
     sprintf(eft->amount, "%012li", atol(dbmap[DB_AMOUNT].c_str()));
-    strcpy(eft->yyyymmddhhmmss, dbmap[DB_DATE].c_str());
-    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss));
+    strncpy(eft->dateAndTime, dbmap[DB_DATE].c_str(), dbmap[DB_DATE].length() - 4);
+    
+    yyyymmddhhmmss = dbmap[DB_DATE].substr(0, dbmap[DB_DATE].find('.'));     // 
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), ' '), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), ':'), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), '-'), yyyymmddhhmmss.end());
+    yyyymmddhhmmss.erase(std::remove(yyyymmddhhmmss.begin(), yyyymmddhhmmss.end(), '.'), yyyymmddhhmmss.end());
+
+    strncpy(eft->yyyymmddhhmmss, yyyymmddhhmmss.c_str(), strlen(yyyymmddhhmmss.c_str()));
+    strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, strlen(eft->yyyymmddhhmmss));
+    printf("originalyyyymmddhhmmss : %s\n", eft->originalYyyymmddhhmmss);
 
     if (decodeProcessingCode(&eft->transType, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str(), dbmap[DB_MTI].c_str())) {
         fprintf(stderr, "Error decoding processing code...\n");
@@ -467,7 +496,6 @@ void getListofEftToday(){
     EmvDB db(EFT_DEFAULT_TABLE, DBNAME);
     std::vector<std::map<std::string, std::string> > transactions;
     char ** menulist;
-    char normallizedDate[30] = {0};
     char todayDate[20] = { 0 };
     int numberOfTrans;
     int index;
@@ -503,26 +531,32 @@ void getListofEftToday(){
         return;
     }
     
-	char d[32] = {0};
-    strcpy(d, eft.yyyymmddhhmmss);
-	
-    strncpy(normallizedDate, d, 10);
+
     memset(&eft, '\0', sizeof(eft));
     contextMapToEft(transactions[selectedOption], &eft);
-    strncpy(normallizedDate, eft.originalYyyymmddhhmmss, 10);
-    sprintf(message, "AMOUNT: NGN %.2f\nPAN: %s\nDATE:%s\n", (atol(eft.amount)/100.00), eft.pan, normallizedDate);
+    sprintf(message, "AMOUNT: NGN %.2f\nPAN: %s\nDATE:%.10s\n", (atol(eft.amount)/100.00), eft.pan, eft.dateAndTime);
     
     if (gui_messagebox_show("PRINT ?", message , "No", "Yes", 0) == 1)
-    {
-        
+    {  
         printReceipts(&eft, 1);
         
     }
 
 	for(index = 0; index < numberOfTrans; index++)
     {
-
         free(menulist[index]);
     }
+
     free(menulist);
+}
+
+int clearDb() {
+    EmvDB db(EFT_DEFAULT_TABLE, DBNAME);
+
+    if (gui_messagebox_show("Notification", "Do you wish to print transaction record?" , "No", "Yes", 0) == 1)
+    {
+       return 1; 
+        
+    }
+    return db.clear();
 }

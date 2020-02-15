@@ -14,13 +14,15 @@
 #define VASDB_TABLE                 "vas"
 #define VASDB_TABLE_ROW_LIMIT       "14400"  
 
-const char* VASCARDTABLENAME = "CardTransactions";
+#define LEFT_JOIN_CARD " LEFT JOIN " VASDB_CARD_TABLE" ON " VASDB_TABLE"." VASDB_CARD_ID " = " VASDB_CARD_TABLE "." VASDB_CARD_TABLE_ID
+
+const char* VASCARDTABLENAME = VASDB_CARD_TABLE;
 
 VasDB::VasDB()
 {
     int rc;
 
-    rc = sqlite3_open_v2(VASDB, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
     if (rc != SQLITE_OK) {
         printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
@@ -71,7 +73,7 @@ const char * VasDB::trxStatusString(TrxStatus status)
     }
 }
 
-int VasDB::saveVasTransaction(std::map<std::string, std::string>& record)
+long VasDB::saveVasTransaction(std::map<std::string, std::string>& record)
 {
     sqlite3_stmt* res;
     int step;
@@ -84,7 +86,7 @@ int VasDB::saveVasTransaction(std::map<std::string, std::string>& record)
     string sql;
     string query;
 
-    rc = sqlite3_open_v2(VASDB, &db, SQLITE_OPEN_READWRITE, NULL);
+    rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READWRITE, NULL);
     if (rc != SQLITE_OK) {
         printf("Can't open database: %s\n", sqlite3_errmsg(db));
         return -1;
@@ -124,6 +126,51 @@ int VasDB::saveVasTransaction(std::map<std::string, std::string>& record)
     sqlite3_close_v2(db);
 
     return rowid;
+}
+
+int VasDB::select(std::map<std::string, std::string>& record, unsigned long atIndex)
+{
+    char pIndex[64] = { 0 };
+    snprintf(pIndex, sizeof(pIndex), "%lu", atIndex);
+
+    return select(record, pIndex);
+}
+
+int VasDB::select(std::map<std::string, std::string>& record, const std::string& atIndex)
+{
+    sqlite3_stmt* stmt;
+    std::string sql;
+    int ret = -1;
+    int rc;
+    int columns;
+
+    sql = "SELECT * FROM " VASDB_TABLE LEFT_JOIN_CARD " WHERE " VASDB_ID " = " + atIndex + ";";
+
+    printf("-> %s\n", sql.c_str());
+
+    rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        return ret;
+    }
+
+    if (sqlite3_step(stmt) != SQLITE_ROW) {
+        return ret;
+    }
+
+    columns = sqlite3_column_count(stmt);
+
+    for (int i = 0; i < columns; i++) {
+        if (sqlite3_column_type(stmt, i) == SQLITE_NULL) {
+            continue;
+        }
+        const char* name = sqlite3_column_name(stmt, i);
+        const unsigned char* text = sqlite3_column_text(stmt, i);
+        record[name] = reinterpret_cast<const char*>(text);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return 0;
 }
 
 int VasDB::selectUniqueServices(std::vector<std::string>& services, std::string date)
@@ -201,10 +248,10 @@ int VasDB::selectTransactionsOnDate(std::vector<std::map<std::string, std::strin
     char dateTrim[16] = {0};
 
     if (service.empty()) {
-        sprintf(sql, "SELECT * FROM " VASDB_TABLE " WHERE strftime('%%Y-%%m-%%d', " VASDB_DATE ") = '%s' ORDER BY " VASDB_DATE " ASC"
+        sprintf(sql, "SELECT * FROM " VASDB_TABLE LEFT_JOIN_CARD " WHERE strftime('%%Y-%%m-%%d', " VASDB_DATE ") = '%s' ORDER BY " VASDB_DATE " ASC"
         , strncpy(dateTrim, date, 10));
     } else {
-        sprintf(sql, "SELECT * FROM " VASDB_TABLE " WHERE strftime('%%Y-%%m-%%d', " VASDB_DATE ") = '%s' and " VASDB_SERVICE " = '%s' ORDER BY " VASDB_DATE " ASC"
+        sprintf(sql, "SELECT * FROM " VASDB_TABLE LEFT_JOIN_CARD " WHERE strftime('%%Y-%%m-%%d', " VASDB_DATE ") = '%s' and " VASDB_SERVICE " = '%s' ORDER BY " VASDB_DATE " ASC"
         , strncpy(dateTrim, date, 10), service.c_str());
     }
 
@@ -382,7 +429,7 @@ int  VasDB::countAllTransactions()
     sqlite3* db;
     int rc;
 
-    rc = sqlite3_open_v2(VASDB, &db, SQLITE_OPEN_READONLY, NULL);
+    rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READONLY, NULL);
     if (rc != SQLITE_OK) {
         printf("Can't open database: %s\n", sqlite3_errmsg(db));
         sqlite3_close_v2(db);
@@ -415,7 +462,7 @@ int  VasDB::init()
     int rc;
     sqlite3* db;
 
-    rc = sqlite3_open_v2(VASDB, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
     if (rc != SQLITE_OK) {
         printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));

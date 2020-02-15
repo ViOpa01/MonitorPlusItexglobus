@@ -15,8 +15,8 @@ enum receiptCopy{
 };
 
 void printDottedLine();
-void printBankLogo();
-void printReceiptHeader();
+void printReceiptLogo(const char filename[32]);
+void printReceiptHeader(const char *transDate);
 void printFooter();
 void printLine(const char *head, const char *val);
 short printReceipts(Eft * eft, const short isReprint);
@@ -25,8 +25,8 @@ void reprintByRrn(void);
 void reprintLastTrans(void);
 void getPrinterStatus(const int status);
 
+const char *responseCodeToStr(const char responseCode[3]);
 
-void printVasHeader(const char *transDate);
 
 
 #ifdef __cplusplus

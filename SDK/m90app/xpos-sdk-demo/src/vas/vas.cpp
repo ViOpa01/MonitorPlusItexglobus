@@ -21,10 +21,12 @@
 
 #include "vasadmin.h"
 #include "vas.h"
+#include "EmvDB.h"
 
 #include "merchant.h"
 
 extern "C" {
+#include "remoteLogo.h"
 #include "util.h"
 }
 
@@ -121,46 +123,46 @@ const char* serviceToString(Service service)
 const char* serviceStringToLogoFile(const std::string& serviceString)
 {
     if (serviceString == serviceToString(IKEJA)) {
-        return "../../../flash/vaslogo/ikeja.bmp";
+        return "vaslogos/ikeja.bmp";
     } else if (serviceString == serviceToString(EKEDC)) {
-        return "../../../flash/vaslogo/ekedc.bmp";
+        return "vaslogos/ekedc.bmp";
     } else if (serviceString == serviceToString(EEDC)) {
-        return "../../../flash/vaslogo/eedc.bmp";
+        return "vaslogos/eedc.bmp";
     } else if (serviceString == serviceToString(IBEDC)) {
-        return "../../../flash/vaslogo/ibedc.bmp";
+        return "vaslogos/ibedc.bmp";
     } else if (serviceString == serviceToString(PHED)) {
-        return "../../../flash/vaslogo/phed.bmp";
+        return "vaslogos/phed.bmp";
     } else if (serviceString == serviceToString(AEDC)) {
-        return "../../../flash/vaslogo/aedc.bmp";
+        return "vaslogos/aedc.bmp";
     } else if (serviceString == serviceToString(KEDCO)) {
-        return "../../../flash/vaslogo/kano.bmp";
+        return "vaslogos/kano.bmp";
     } else if (serviceString == serviceToString(DSTV)) {
-        return "../../../flash/vaslogo/dstv.bmp";
+        return "vaslogos/dstv.bmp";
     } else if (serviceString == serviceToString(GOTV)) {
-        return "../../../flash/vaslogo/gotv.bmp";
+        return "vaslogos/gotv.bmp";
     } else if (serviceString == serviceToString(SMILETOPUP)
                 || serviceString == serviceToString(SMILEBUNDLE)) {
-        return "../../../flash/vaslogo/smile.bmp";
+        return "vaslogos/smile.bmp";
     } else if (serviceString == serviceToString(ETISALATVTU)
                 || serviceString == serviceToString(ETISALATDATA)
                 ||  serviceString == serviceToString(ETISALATVOS)
                 ||  serviceString == serviceToString(ETISALATVOT) ) {
-        return "../../../flash/vaslogo/etisalat.bmp";
+        return "vaslogos/etisalat.bmp";
     } else if (serviceString == serviceToString(AIRTELVTU)
                 || serviceString == serviceToString(AIRTELDATA)
                 ||  serviceString == serviceToString(AIRTELVOS)
                 ||  serviceString == serviceToString(AIRTELVOT) ) {
-        return "../../../flash/vaslogo/airtel.bmp";
+        return "vaslogos/airtel.bmp";
     } else if (serviceString == serviceToString(GLOVTU)
                 || serviceString == serviceToString(GLODATA)
                 ||  serviceString == serviceToString(GLOVOS)
                 ||  serviceString == serviceToString(GLOVOT) ) {
-        return "../../../flash/vaslogo/glo.bmp";
+        return "vaslogos/glo.bmp";
     } else if (serviceString == serviceToString(MTNVTU)
                 || serviceString == serviceToString(MTNDATA)
                 ||  serviceString == serviceToString(MTNVOS)
                 ||  serviceString == serviceToString(MTNVOT) ) {
-        return "../../../flash/vaslogo/mtn.bmp";
+        return "vaslogos/mtn.bmp";
 
     }
     return "";
@@ -419,7 +421,7 @@ void printElectricity(std::map<std::string, std::string> &record)
         , "account_type", "type", "tran_id", "client_id", "sgc", "msno", "krn", "ti", "tt", "unit", "sgcti", "accountNo", "tariffCode"
         , "rate", "units", "region", "token", "unit_value", "unit_cost", "vat", "agent", "arrears", "receipt_no", "invoiceNumber"
         , "tariff", "lastTxDate", "collector", "csp"};
-    const char* labels[] = {"WALLET", "TXN TID", "METER NO", "NAME", "ADDRESS", "PHONE"
+    const char* labels[] = {"WALLET", "TXN TID", "METER NO", "NAME ", "ADDRESS ", "PHONE"
         , "ACCOUNT TYPE", "TYPE", "TRAN ID", "CLIENT ID", "SGC", "MSNO", "KRN", "TI", "TT", "UNIT", "SGCTI", "ACCOUNT NO", "TARIFF CODE"
         , "RATE", "UNITS", "REGION", "TOKEN", "UNIT VALUE", "UNIT COST", "VAT", "AGENT", "ARREARS", "RECEIPT NO", "INVOICE NUMBER"
         , "TARIFF", "LAST TXN DATE", "COLLECTOR", "CSP"};
@@ -427,7 +429,31 @@ void printElectricity(std::map<std::string, std::string> &record)
 
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {
-            printLine(labels[i], record[keys[i]].c_str());
+
+            if(!strcmp("ADDRESS ", labels[i])) {
+                char buff[25] = {'\0'};
+                strncpy(buff, record[keys[i]].c_str(), sizeof(buff) - 1);
+                printLine(labels[i], buff);
+
+            } else if(!strcmp("TOKEN", labels[i])) {
+                char buff[80] = {'\0'};
+
+
+                printDottedLine();
+                UPrint_SetFont(8, 2, 2);
+
+                strncpy(buff, "**Token**", 9);
+                UPrint_StrBold(buff, 1, 1, 1);
+
+                memset(buff, '\0', sizeof(buff));
+                strncpy(buff, record[keys[i]].c_str(), record[keys[i]].length());
+                UPrint_StrBold(buff, 1, 4, 1);
+                printDottedLine();
+
+            } else {
+                printLine(labels[i], record[keys[i]].c_str());
+            }
+            
         }
     } 
 }
@@ -456,6 +482,7 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
 {
     int ret = 0;
     char buff[32] = {'\0'};
+    char logoFileName[64] = {'\0'};
     
     std::map<std::string, std::string>::iterator itr;
 
@@ -470,9 +497,11 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
 	}
 
     // Print Bank Logo
-    printVasHeader(record["date"].c_str());
+    strcpy(logoFileName, record["vaslogo"].c_str());
+    printReceiptLogo(logoFileName);
+    printReceiptHeader(record[VASDB_DATE].c_str());
 
-    strcpy(buff, record["service"].c_str());
+    strcpy(buff, record[VASDB_SERVICE].c_str());
     UPrint_StrBold(buff, 1, 4, 1);
 
     memset(buff, '\0', sizeof(buff));
@@ -483,7 +512,7 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
 	UPrint_SetFont(7, 2, 2);
 
     memset(buff, '\0', sizeof(buff));
-    strcpy(buff, record["paymentStatus"].c_str());
+    strcpy(buff, record[VASDB_STATUS].c_str());
     UPrint_StrBold(buff, 1, 4, 1);
     UPrint_Feed(12);
 
@@ -508,10 +537,26 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
     {
         printLine("TRANS SEQ", record[VASDB_TRANS_SEQ].c_str());
     }
+
+    if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD)) {
+
+        printLine("CARD NAME ", record[DB_NAME].c_str());
+        printLine("PAN", record[DB_PAN].c_str());
+        printLine("AID", record[DB_AID].c_str());
+        printLine("LABEL", record[DB_LABEL].c_str());
+        printLine("EXPIRY", record[DB_EXPDATE].c_str());
+        printLine("CREF", record[DB_RRN].c_str());
+
+        if(!record[DB_AUTHID].empty()) {
+            printLine("AUTH CODE", record[DB_AUTHID].c_str()); 
+        }
+        printLine("RESP CODE", record[DB_RESP].c_str());
+    }
+  
    
 
     memset(buff, '\0', sizeof(buff));
-    sprintf(buff, "NGN %s", record["amount"].c_str());
+    sprintf(buff, "NGN %s", record[VASDB_AMOUNT].c_str());
 
     printAsteric(strlen(buff));
 	UPrint_StrBold(buff, 1, 4, 1);
@@ -520,7 +565,7 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
     UPrint_Feed(12);
 
     memset(buff, '\0', sizeof(buff));
-    strcpy(buff, record["message"].c_str());
+    strcpy(buff, record[VASDB_STATUS_MESSAGE].c_str());
     UPrint_StrBold(buff, 1, 4, 1);
 
     printDottedLine();
@@ -536,6 +581,7 @@ int printVasEod(std::map<std::string, std::string> &records)
 {
     int ret = 0;
     char buff[64] = {'\0'};
+    char filename[32] = {'\0'};
 
     /*
     std::map<std::string, std::string>::iterator itr;
@@ -556,8 +602,9 @@ int printVasEod(std::map<std::string, std::string> &records)
         UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION);
 	}
 
-    printBankLogo();
-    printVasHeader(records["date"].c_str());
+    sprintf(filename, "xxxx\\%s", BANKLOGO);
+    printReceiptLogo(filename);
+    printReceiptHeader(records[VASDB_DATE].c_str());
 
     UPrint_SetFont(8, 2, 2);
     UPrint_StrBold("SUMMARY", 1, 4, 1);

@@ -94,14 +94,24 @@ struct VasFlow_T {
             formattedDateTime(dateTime, sizeof(dateTime));
             record[VASDB_DATE] = std::string(dateTime).append(".000");
         }
-        VasDB::saveVasTransaction(record);
+        long index = VasDB::saveVasTransaction(record);
 
         if (completeStatus.error) {
+            printf("Vas Delined Message\n");
              UI_ShowButtonMessage(3000, "Declined", completeStatus.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
         } else {
              UI_ShowButtonMessage(3000, "Approved", completeStatus.message.c_str(), "OK", UI_DIALOG_TYPE_CONFIRMATION);
         }
-        
+
+        if (index <= 0) {
+            UI_ShowButtonMessage(3000, "Error", "Could not persist record", "OK", UI_DIALOG_TYPE_WARNING);
+            return -1;
+        }
+
+        VasDB database;
+        database.select(record, (unsigned long)index);
+
+       
         record["walletId"] = Payvice().object(Payvice::WALLETID).getString();
         int printStatus = printVas(record);
         if (printStatus != UPRN_SUCCESS) {

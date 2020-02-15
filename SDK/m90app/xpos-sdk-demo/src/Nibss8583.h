@@ -141,6 +141,7 @@ typedef struct Eft
     char amount[13];
     char additionalAmount[13];
     char yyyymmddhhmmss[15];
+    char dateAndTime[32];
     char stan[7];
     char expiryDate[7];
     char tvr[12];
