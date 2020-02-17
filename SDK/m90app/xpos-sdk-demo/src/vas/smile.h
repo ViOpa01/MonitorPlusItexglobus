@@ -30,7 +30,7 @@ protected:
     std::string customerID;
     std::string phoneNumber;
     PaymentMethod payMethod;
-    unsigned long amount;
+    long long amount;
 
     CardPurchase cardPurchase;
 

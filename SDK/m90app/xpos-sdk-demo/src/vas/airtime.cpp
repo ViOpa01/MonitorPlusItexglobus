@@ -79,7 +79,7 @@ VasStatus Airtime::initiate(const VasStatus& lookupStatus)
 
     while (1) {
         amount = getAmount(serviceToString(service));
-        if (!amount) {
+        if (amount <= 0) {
             return VasStatus(USER_CANCELLATION);
         } else if (amount < 5000) {
             char message[128] = { 0 };

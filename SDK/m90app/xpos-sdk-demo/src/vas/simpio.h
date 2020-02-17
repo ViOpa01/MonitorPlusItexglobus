@@ -37,7 +37,7 @@ int getText(std::string& val, int display, int timeout, const char* title, const
 std::string getPhoneNumber(const char* title, const char* prompt, bool uselocale = 1);
 int getPassword(std::string& password);
 
-unsigned long getAmount(const char* title);
+long long getAmount(const char* title);
 
 int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE dialogType);
 int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const char* button, UI_DIALOG_TYPE type);

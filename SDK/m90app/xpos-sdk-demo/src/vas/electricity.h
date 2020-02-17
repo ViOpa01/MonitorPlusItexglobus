@@ -41,7 +41,7 @@ protected:
     std::string phoneNumber;
     PaymentMethod payMethod;
     EnergyType energyType;
-    unsigned long amount;
+    long long amount;
 
     CardPurchase cardPurchase;
 

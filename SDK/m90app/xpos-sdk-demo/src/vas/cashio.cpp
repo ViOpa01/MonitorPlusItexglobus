@@ -27,7 +27,7 @@ VasStatus ViceBanking::beginVas()
     }
 
     amount = getAmount(serviceToString(service));
-    if (!amount) {
+    if (amount <= 0) {
         return VasStatus(USER_CANCELLATION);
     }
 

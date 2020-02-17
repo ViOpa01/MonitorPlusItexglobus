@@ -445,7 +445,7 @@ int printRequery(iisys::JSObject& transaction)
 
 void vasAdmin()
 {
-    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date" };
+    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Wallet Transfer", "Balance Enquiry" };
     std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
 
     switch (UI_ShowSelection(30000, "Vas Admin", optionMenu, 0)) {
@@ -478,6 +478,12 @@ void vasAdmin()
         break;
     case 3:
         vasReprintByDate();
+        break;
+    case 4:
+        walletRequest(2);
+        break;   
+    case 5:
+        walletRequest(1);
         break;
     default:
         break;

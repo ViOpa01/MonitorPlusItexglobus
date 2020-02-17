@@ -85,7 +85,7 @@ VasStatus Smile::initiate(const VasStatus& lookupStatus)
 {
     if (service == SMILETOPUP) {
         amount = getAmount("TOP-UP");
-        if (!amount) {
+        if (amount <= 0) {
             return VasStatus(USER_CANCELLATION);
         }
     } else {

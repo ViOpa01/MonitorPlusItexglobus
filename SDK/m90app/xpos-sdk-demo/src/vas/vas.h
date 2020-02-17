@@ -98,6 +98,8 @@ PaymentMethod getPaymentMethod(const PaymentMethod preferredMethods);
 Service selectService(const char * title, std::vector<Service>& services);
 VasStatus vasErrorCheck(const iisys::JSObject& data);
 VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const char *serverRef);
+int walletRequest(int balanceOrTransfer);
+int parseWalletResponse(char* response, int balanceOrTransfer, long long amount);
 
 int printVas(std::map<std::string, std::string>& record);
 

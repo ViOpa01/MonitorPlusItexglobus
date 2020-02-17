@@ -232,6 +232,11 @@ VasStatus PayTV::startimesLookupCheck(const VasStatus& lookupStatus)
         }
 
         amount = getAmount("Startimes");
+
+        if(amount <= 0) {
+            return VasStatus(USER_CANCELLATION);
+        }
+        
         if (amount) {
             break;
         }

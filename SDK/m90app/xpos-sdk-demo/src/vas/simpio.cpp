@@ -244,16 +244,20 @@ int UI_ShowSelection(int timeout, const char* title, const std::vector<std::stri
 	}
 
     return option;
-
 }
 
-unsigned long getAmount(const char* title)
+long long getAmount(const char* title)
 {
+    long long amount = 0L;
     char buff[24] = {'\0'};
 
     strncpy(buff, title, sizeof(buff) - 1);
+
+    amount = inputamount_page(buff, 12, 30000);
+
+    if(amount <= 0) return -1;
      
-    return inputamount_page(buff, 12, 30000);
+    return amount;
 }
 
 
