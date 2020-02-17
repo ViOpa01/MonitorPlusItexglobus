@@ -238,6 +238,10 @@ short saveEft(Eft *eft)
     EmvDB db(*eft->tableName ? eft->tableName : EFT_DEFAULT_TABLE,  *eft->dbName ? eft->dbName : DBNAME);
     std::map<std::string, std::string> dbmap;
 
+    char formattedDate[26] = {'\0'};
+    beautifyDateTime(formattedDate, sizeof(formattedDate), eft->yyyymmddhhmmss);
+    strncpy(eft->dateAndTime, formattedDate, strlen(formattedDate) - 4);
+
     if (ctxToInsertMap(dbmap, eft)) {
         return -1;
     }
