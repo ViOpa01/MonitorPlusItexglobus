@@ -45,9 +45,7 @@ static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
 
     char terminalSn[22] = {0};
     char path[0x500] = {'\0'};
-    string add;
-
-
+   
     strncpy((char *)netParam->host, ITEX_TAMS_PUBLIC_IP, strlen(ITEX_TAMS_PUBLIC_IP));
     netParam->port = atoi(ITEX_TASM_PUBLIC_PORT);
     netParam->endTag = "</efttran>";
@@ -259,8 +257,8 @@ int readMerchantData(MerchantData* merchant)
     // populate the data
 
     cJSON *json;
-    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonStatus, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
-    cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
+    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold;
+    cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonTransType, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
    
     char buffer[1024] = {'\0'};
     int ret = -1;
@@ -271,7 +269,7 @@ int readMerchantData(MerchantData* merchant)
         return ret;
     }
 
-    printf("After read record :\n%s\n", (char *)buffer);
+    // printf("After read record :\n%s\n", (char *)buffer);
 
     // if(merchant->status = parseJsonFile(buffer, &json) == -1) return;
     parseJsonFile(buffer, &json);
@@ -292,101 +290,108 @@ int readMerchantData(MerchantData* merchant)
     jsonNibssPlainPort = cJSON_GetObjectItemCaseSensitive(json, "plain_port");    // Int
     jsonPortType = cJSON_GetObjectItemCaseSensitive(json, "port_type"); // String
     jsonAccntSelection = cJSON_GetObjectItemCaseSensitive(json, "account_selection"); // Int
+    jsonTransType = cJSON_GetObjectItemCaseSensitive(json, "trans_type");
 
     if(cJSON_IsString(jsonAddress))
     {
         strncpy(merchant->address, jsonAddress->valuestring, sizeof(merchant->address) - 1);
-        printf("Address : %s\n", merchant->address);
+        // printf("Address : %s\n", merchant->address);
     }
 
     if(cJSON_IsString(jsonName))
     {
         strncpy(merchant->name, jsonName->valuestring, sizeof(merchant->name) - 1);
-        printf("Name : %s\n", merchant->name);
+        // printf("Name : %s\n", merchant->name);
     }
 
     if(cJSON_IsString(jsonRrn))
     {
         strncpy(merchant->rrn, jsonRrn->valuestring, sizeof(merchant->rrn) - 1);
-        printf("rrn : %s\n", merchant->rrn);
+        // printf("rrn : %s\n", merchant->rrn);
     }
 
     if(cJSON_IsString(jsonTID))
     {
         strncpy(merchant->tid, jsonTID->valuestring, sizeof(merchant->tid) - 1);
-        printf("TID : %s\n", merchant->tid);
+        // printf("TID : %s\n", merchant->tid);
     }
 
     if(cJSON_IsString(jsonStampLabel))
     {
         memcpy(merchant->stamp_label, jsonStampLabel->valuestring, sizeof(merchant->stamp_label) - 1);
-        printf("Stamp Label : %s\n", merchant->stamp_label);
+        // printf("Stamp Label : %s\n", merchant->stamp_label);
     }
 
      if(cJSON_IsString(jsonPlatformLabel))
     {
         memcpy(merchant->platform_label, jsonPlatformLabel->valuestring, sizeof(merchant->platform_label) - 1);
-        printf("Platform Label : %s\n", merchant->platform_label);
+        // printf("Platform Label : %s\n", merchant->platform_label);
     }
 
     if(cJSON_IsNumber(jsonStampDuty))
     {
         merchant->stamp_duty = jsonStampDuty->valueint;
-        printf("Stamp duty : %d\n", merchant->stamp_duty);
+        // printf("Stamp duty : %d\n", merchant->stamp_duty);
     }
 
     if(cJSON_IsNumber(jsonIsPrep))
     {
         merchant->is_prepped = jsonIsPrep->valueint;
-        printf("Is prepped : %d\n", merchant->is_prepped);
+        // printf("Is prepped : %d\n", merchant->is_prepped);
     }
 
     if(cJSON_IsNumber(jsonStampDutyThreshold))
     {
         merchant->stamp_duty_threshold = jsonStampDutyThreshold->valueint;
-        printf("Stamp duty threshold: %d\n", merchant->stamp_duty_threshold);
+        // printf("Stamp duty threshold: %d\n", merchant->stamp_duty_threshold);
     }
 
     if(cJSON_IsNumber(jsonPlatform))
     {
         merchant->nibss_platform = jsonPlatform->valueint;
-        printf("Nibss platform : %d\n", merchant->nibss_platform);
+        // printf("Nibss platform : %d\n", merchant->nibss_platform);
     }
 
     if(cJSON_IsString(jsonNibssIp))
     {
         strncpy(merchant->nibss_ip, jsonNibssIp->valuestring, sizeof(merchant->nibss_ip) - 1);
-        printf("Nibss ip : %s\n", merchant->nibss_ip);
+        // printf("Nibss ip : %s\n", merchant->nibss_ip);
     }
 
     if(cJSON_IsNumber(jsonNibssPort))
     {
         merchant->nibss_ssl_port = jsonNibssPort->valueint;
-        printf("Nibss port : %d\n", merchant->nibss_ssl_port);
+        // printf("Nibss port : %d\n", merchant->nibss_ssl_port);
     }
 
     if(cJSON_IsNumber(jsonNibssPlainPort))
     {
         merchant->nibss_plain_port = jsonNibssPlainPort->valueint;
-        printf("Nibss plain port : %d\n", merchant->nibss_plain_port);
+        // printf("Nibss plain port : %d\n", merchant->nibss_plain_port);
     }
 
     if(cJSON_IsString(jsonPhone))
     {
         strncpy(merchant->phone_no, jsonPhone->valuestring, sizeof(merchant->phone_no) - 1);
-        printf("Customer Phone : %s\n", merchant->phone_no);
+        // printf("Customer Phone : %s\n", merchant->phone_no);
     }
 
     if(cJSON_IsString(jsonPortType))
     {
         strncpy(merchant->port_type, jsonPortType->valuestring, sizeof(merchant->port_type) - 1);
-        printf("Port Type : %s\n", merchant->port_type);
+        // printf("Port Type : %s\n", merchant->port_type);
     }
 
     if(cJSON_IsNumber(jsonAccntSelection))
     {
         merchant->account_selection = jsonAccntSelection->valueint;
-        printf("Account Selections : %d\n", merchant->account_selection);
+        // printf("Account Selections : %d\n", merchant->account_selection);
+    }
+
+    if(cJSON_IsNumber(jsonTransType))
+    {
+        merchant->trans_type = jsonTransType->valueint;
+        // printf("Trans Type : %d\n", merchant->trans_type);
     }
 
     cJSON_Delete(json);
@@ -399,7 +404,7 @@ int saveMerchantData(const MerchantData* merchant)
 {
     // json equivalent of merchant
 
-    cJSON *json, *requestJson;
+    cJSON *requestJson;
     char *requestJsonStr;
     char jsonData[1024] = {'\0'};
     int ret = -1;
@@ -432,12 +437,14 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "is_prepped", cJSON_CreateNumber(merchant->is_prepped));
 
     cJSON_AddItemToObject(requestJson, "account_selection", cJSON_CreateNumber(merchant->account_selection));
+    cJSON_AddItemToObject(requestJson, "trans_type", cJSON_CreateNumber(merchant->trans_type));
+
 
 
     requestJsonStr = cJSON_PrintUnformatted(requestJson);
     memcpy(jsonData, requestJsonStr, sizeof(jsonData));
 
-    printf("Parameter in json format :\n%s\n", jsonData);
+    // printf("Parameter in json format :\n%s\n", jsonData);
 
     // 4. Save the json file
     ret = saveRecord((void *)jsonData, MERCHANT_DETAIL_FILE, sizeof(jsonData), 0);
@@ -457,7 +464,6 @@ int getMerchantData()
     if(getMerchantDetails(&netParam, responseXml)) return ret;
 
     if ((ret = saveMerchantDataXml(responseXml)) != 0) {
-        // error
         printf("Error saving merchant data, ret : %d\n", ret);
         return ret;
     }

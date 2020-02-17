@@ -28,8 +28,9 @@ typedef struct MerchantData
     char port_type[12];
     char tid[14];
     char phone_no[14];
-    int account_selection;
-    int is_prepped;
+    short account_selection;
+    short trans_type;
+    short is_prepped;
     
     Network gprsSettings;
 } MerchantData;

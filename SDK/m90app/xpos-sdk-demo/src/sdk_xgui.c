@@ -14,7 +14,7 @@
 #include "merchant.h"
 #include "remoteLogo.h"
 
-#define LOGOIMG "xxxx\\logo2.bmp"
+#define LOGOIMG "xxxx\\logo.bmp"
 
 #include "nibss.h"
 #include "Nibss8583.h"
@@ -42,6 +42,9 @@
 // and the second parameter is set when the name is duplicated.
 static const st_gui_menu_item_def _menu_def[] = {
 
+	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
+	{MAIN_MENU_PAGE, UI_VAS,          ""},
+	/*
 	{MAIN_MENU_PAGE, UI_PURCHASE,   ""},
 	{MAIN_MENU_PAGE, UI_PREAUTH,    ""},
 	{MAIN_MENU_PAGE, UI_COMPLETION, ""},
@@ -50,7 +53,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_REVERSAL,   ""},
 	{MAIN_MENU_PAGE, UI_REFUND,     ""},
 	{MAIN_MENU_PAGE, UI_BALANCE,    ""},
-
+	*/
 	/*
 	* Demo menus
 	{MAIN_MENU_PAGE, "Sales", ""},
@@ -113,12 +116,13 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{UI_EOD, UI_EOD_REFUND, ""},
 	{UI_EOD, UI_EOD_REVERSAL, ""},
 
-	{MAINTAINANCE, UI_PREP_TERMINAL, ""},
-	{MAINTAINANCE, UI_GET_PARAMETER, ""},
-	{MAINTAINANCE, UI_CALL_HOME, ""},
-	{MAINTAINANCE, UI_ACCNT_SELECTION, ""},
-	{MAINTAINANCE, UI_TRANS_TYPE, ""},
-	{MAINTAINANCE, UI_NOTIF_ID, ""},
+	{MAINTENANCE, UI_PREP_TERMINAL, ""},
+	{MAINTENANCE, UI_GET_PARAMETER, ""},
+	{MAINTENANCE, UI_CALL_HOME, ""},
+	{MAINTENANCE, UI_ACCNT_SELECTION, ""},
+	{MAINTENANCE, UI_TRANS_TYPE, ""},
+	{MAINTENANCE, UI_NOTIF_ID, ""},
+	{MAINTENANCE, UI_REBOOT},
 
 };
 
@@ -246,8 +250,7 @@ static int enableAndDisableAccountSelection()
 	{
 		sprintf(msg, "%s", "Enable");
 	}
-	char *menuOption[] = {
-		msg};
+	char *menuOption[] = {msg};
 
 	option = gui_select_page_ex("Select", menuOption, 1, 3000, 0); // if it timesout it return -ve no else index on the menu list
 	// printf("Option : %d\n", option);
@@ -257,7 +260,7 @@ static int enableAndDisableAccountSelection()
 		option = gui_messagebox_show("Message", msg, "Exit", "Confrim", 0); // Exit : 2, Confirm : 1
 		if (option == 1)
 		{
-			mParam.account_selection = mParam.account_selection ? 0 : 1;
+			mParam.account_selection = !mParam.account_selection;
 			saveMerchantData(&mParam);
 		}
 	}
@@ -265,6 +268,42 @@ static int enableAndDisableAccountSelection()
 	return option;
 }
 
+static int enableAndDisableOtherTrans()
+{
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char msg[12] = {'\0'};
+
+	readMerchantData(&mParam);
+
+	if (mParam.trans_type == 1)
+	{
+		sprintf(msg, "%s", "Disable");
+	}
+	else if (mParam.trans_type == 0)
+	{
+		sprintf(msg, "%s", "Enable");
+	}
+	char *menuOption[] = {msg};
+
+	option = gui_select_page_ex("Select", menuOption, 1, 3000, 0); // if it timesout it return -ve no else index on the menu list
+
+	if (!option)
+	{
+		option = gui_messagebox_show("Message", msg, "Exit", "Confrim", 0); // Exit : 2, Confirm : 1
+		if (option == 1)
+		{
+			mParam.trans_type = !mParam.trans_type;
+			
+			saveMerchantData(&mParam);
+		}
+	}
+
+	return option;
+}
+
+/*
 static short eftHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PURCHASE) == 0)
@@ -306,6 +345,7 @@ static short eftHandler(const char *pid)
 
 	return 0;
 }
+*/
 
 #include "sdk_security.h"
 
@@ -366,11 +406,9 @@ static int _menu_proc(char *pid)
 
 	printf("pid -> %s\n", pid);
 
-	if (!eftHandler(pid))
-	{
+	if(!strcmp(pid, UI_CARD_PAYMENT)) {
+		eftTrans(cardPaymentHandler());
 		return 0;
-	} else if(!strcmp(pid, "hot test")) {
-		// hostTest();
 	}
 	else if (!hanshakeHandler(pid))
 	{
@@ -552,6 +590,15 @@ static int _menu_proc(char *pid)
 	{
 		int ret = enableAndDisableAccountSelection();
 		printf("Enable / Disable ret : %d\n", ret);
+	} 
+	else if (!strcmp(pid, UI_TRANS_TYPE))
+	{
+		int ret = enableAndDisableOtherTrans();
+		printf("Enable / Disable ret : %d\n", ret);
+	}
+	else if(!strcmp(pid, UI_REBOOT))
+	{
+		Sys_Reboot();
 	}
 	else if (!strcmp(pid, UI_DOWNLOAD_LOGO))
 	{
@@ -614,7 +661,7 @@ static short validateUsersPin()
 	int result = 0;
 
 	gui_clear_dc();
-	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(2), pin, 4, 4, 1, 2, 10000)) == 4)
+	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(2), pin, 4, 4, 0, 2, 10000)) == 4)
 	{
 		printf("Password : %s, ret : %d\n", pin, result);
 		if(!strncmp(pin, "4839", 4)) 
@@ -648,23 +695,23 @@ void standby_pagepaint()
 	gui_begin_batch_paint();
 	gui_clear_dc();
 
-	logoleft = 30;
-	logotop = 16;
+	logoleft = 10;
+	logotop = 36;
 
-	// pbmp = gui_load_bmp(LOGOIMG, &logowidth, &logoheight);
-	pbmp = gui_load_bmp(BANKLOGO, &logowidth, &logoheight);
+	pbmp = gui_load_bmp("data//logo.bmp"/*LOGOIMG*/, &logowidth, &logoheight);
+	// pbmp = gui_load_bmp("itex//bank.bmp"/*BANKLOGO*/, &logowidth, &logoheight);
 
-	printf("Width of the picture : %d\n", logowidth);
-	printf("Height of the picture : %d\n", logoheight);
-
+	// printf("Logo width : %d\n", logowidth);
+	// printf("Logo Height : %d\n", logoheight);
 
 	if (pbmp != 0)
 	{
+		// printf("==============\n");
 		gui_out_bits(logoleft, logotop, pbmp, logowidth, logoheight, 0);
 		free(pbmp);
 	}
 
-
+	
 	get_yyyymmdd_str(data);
 	data[10] = ' ';
 	data[11] = ' ';
@@ -674,7 +721,6 @@ void standby_pagepaint()
 	sprintf(data, "Version:%s", APP_VER);
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
 
-	//TODO: don't hardcode 32, get it at run time
 	pos = 32 - strlen(f1Msg) - strlen(f2Msg);
 	memset(spaceRequired, ' ', pos);
 
@@ -757,7 +803,7 @@ BEGIN :
 				{
 					if(validateUsersPin()) goto BEGIN;
 
-					gui_main_menu_show(MAINTAINANCE, 0);
+					gui_main_menu_show(MAINTENANCE, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 			}

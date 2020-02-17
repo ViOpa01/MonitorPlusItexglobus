@@ -406,6 +406,61 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	return 0;
 }
 
+enum TransType cardPaymentHandler()
+{
+	int option = -1;
+	MerchantData mParam = {'\0'};
+
+	char *payment_list[] = {
+		"Purchase",
+		"Pre Authorization",
+		"Completion",
+		"Cashback",
+		"Cash Advance",
+		"Reversal",
+		"Refund",
+		"Balance Inquiry"
+	};
+
+	readMerchantData(&mParam);
+	if (mParam.trans_type != 1)
+		return EFT_PURCHASE;
+
+	switch (option = gui_select_page_ex("Select Payment Type", payment_list, 8, 30000, 0)) // if exit : -1, timout : -2
+	{
+	case -1:
+	case -2:
+		return EFT_TRANS_END;
+	case 0:
+
+		return EFT_PURCHASE;
+	case 1:
+		
+		return EFT_PREAUTH;
+	case 2:
+		
+		return EFT_COMPLETION;
+	case 3:
+		
+		return EFT_CASHBACK;
+	case 4:
+		
+		return EFT_CASHADVANCE;
+	case 5:
+		
+		return EFT_REVERSAL;
+	case 6:
+		
+		return EFT_REFUND;
+	case 7:
+		
+		return EFT_BALANCE;
+	default:
+		return EFT_PURCHASE;
+	}
+
+}
+
 static enum AccountType getAccountType(void)
 {
 	int option = -1;
