@@ -113,7 +113,7 @@ int getText(char *val, size_t len, int display, int timeout, const char* title, 
     int result = 0;
 
     gui_clear_dc();
-    result = Util_InputText(GUI_LINE_TOP(0), (char *)title, GUI_LINE_TOP(2), val, 1, len - 1, 1, 1, timeout);
+    result = Util_InputMethod(GUI_LINE_TOP(0), (char *)title, GUI_LINE_TOP(2), val, 1, len - 1, 1, timeout);
 
     if (result < 0) {
         switch (result) {

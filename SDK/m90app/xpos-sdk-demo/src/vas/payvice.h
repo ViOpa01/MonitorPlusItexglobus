@@ -59,8 +59,8 @@ struct Payvice : public FileJson {
     int resetFile()
     {
         object(WALLETID) = "";
-        object(USER) = "itextest@hotmail.com";
-        object(PASS) = "God@777";
+        object(USER) = "";
+        object(PASS) = "";
         object(KEY) = "";
         object(SESSION) = "";
 
