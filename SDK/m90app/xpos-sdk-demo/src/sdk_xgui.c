@@ -18,6 +18,7 @@
 
 #include "nibss.h"
 #include "Nibss8583.h"
+#include "EmvEft.h"
 
 //Used By EOD RECIEPT PRINTING DECLARED IN EMVDB//
 #ifndef TXTYPE
@@ -44,6 +45,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
+	{MAIN_MENU_PAGE, UI_PAYCODE,          ""},
 	/*
 	{MAIN_MENU_PAGE, UI_PURCHASE,   ""},
 	{MAIN_MENU_PAGE, UI_PREAUTH,    ""},
@@ -54,6 +56,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_REFUND,     ""},
 	{MAIN_MENU_PAGE, UI_BALANCE,    ""},
 	*/
+
 	/*
 	* Demo menus
 	{MAIN_MENU_PAGE, "Sales", ""},
@@ -308,35 +311,43 @@ static short eftHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PURCHASE) == 0)
 	{
-		eftTrans(EFT_PURCHASE);
+		eftTrans(EFT_PURCHASE, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_CASHBACK) == 0)
 	{
-		eftTrans(EFT_CASHBACK);
+		eftTrans(EFT_CASHBACK, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_PREAUTH) == 0)
 	{
-		eftTrans(EFT_PREAUTH);
+		eftTrans(EFT_PREAUTH, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_COMPLETION) == 0)
 	{
-		eftTrans(EFT_COMPLETION);
+		eftTrans(EFT_COMPLETION, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_REVERSAL) == 0)
 	{
-		eftTrans(EFT_REVERSAL);
+		eftTrans(EFT_REVERSAL, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_REFUND) == 0)
 	{
-		eftTrans(EFT_REFUND);
+		eftTrans(EFT_REFUND, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_CASHADVANCE) == 0)
 	{
-		eftTrans(EFT_CASHADVANCE);
+		eftTrans(EFT_CASHADVANCE, SUB_NONE);
 	}
 	else if (strcmp(pid, UI_BALANCE) == 0)
 	{
-		eftTrans(EFT_BALANCE);
+		eftTrans(EFT_BALANCE, SUB_NONE);
+	}
+	else if (strcmp(pid, UI_PAYCODE_CASHOUT) == 0)
+	{
+		eftTrans(EFT_CASHADVANCE, SUB_PAYCODE_CASHOUT);
+	}
+	else if (strcmp(pid, UI_PAYCODE_CASHIN) == 0)
+	{
+		eftTrans(EFT_PURCHASE, SUB_PAYCODE_CASHIN);
 	}
 	else
 	{
@@ -391,7 +402,6 @@ static void removeMerchantData(void)
 }
 
 
-
 //gui_get_message()
 // The menu callback function, as long as all the menu operations of this function are registered,
 // this function will be called, and the selected menu name will be returned.
@@ -407,7 +417,11 @@ static int _menu_proc(char *pid)
 	printf("pid -> %s\n", pid);
 
 	if(!strcmp(pid, UI_CARD_PAYMENT)) {
-		eftTrans(cardPaymentHandler());
+		eftTrans(cardPaymentHandler(), SUB_NONE);
+		return 0;
+	}
+	else if(!strcmp(pid, UI_PAYCODE)) {
+		paycodeHandler();
 		return 0;
 	}
 	else if (!hanshakeHandler(pid))

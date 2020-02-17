@@ -17,8 +17,17 @@ extern "C"
 
 #include "nibss.h"
 
-void eftTrans(const enum TransType transType);
+enum SubTransType
+{
+    SUB_PAYCODE_CASHOUT,
+    SUB_PAYCODE_CASHIN,
+    SUB_NONE,
+};
+
+void eftTrans(const enum TransType transType, const enum SubTransType subTransType);
+char * payCodeTypeToStr(const enum SubTransType subTransType);
 enum TransType cardPaymentHandler();
+void paycodeHandler(void);
 
 #ifdef __cplusplus
 }

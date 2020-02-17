@@ -21,7 +21,7 @@
 #include "sdk_security.h"
 #include "EftDbImpl.h"
 
-
+#include "paycode.h"
 
 #include <pthread.h>
 
@@ -406,6 +406,43 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	return 0;
 }
 
+void paycodeHandler(void)
+{
+	int option = -1;
+	//MerchantData mParam = {'\0'};
+
+	char *payment_list[] = {
+		"PURCHASE(PAYCODE)",
+		"WITHDRAWAL(PAYCODE)",
+	};
+
+	/*
+	readMerchantData(&mParam);
+	if (mParam.trans_type != 1)
+		return EFT_PURCHASE;
+	*/
+
+  while (1) 
+  {
+		switch (option = gui_select_page_ex("Select Paycode Type", payment_list, 2, 30000, 0)) // if exit : -1, timout : -2
+		{
+		case -1:
+		case -2:
+			return;
+		case 0:
+			eftTrans(EFT_PURCHASE, SUB_PAYCODE_CASHIN);
+			break;
+
+		case 1:
+			eftTrans(EFT_CASHADVANCE, SUB_PAYCODE_CASHOUT);
+			break;
+
+		default: 
+			continue;
+  		}	
+   }
+}
+
 enum TransType cardPaymentHandler()
 {
 	int option = -1;
@@ -716,7 +753,31 @@ static void logNetworkParameters(NetWorkParameters *netWorkParameters)
 	LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
 }
 
-void eftTrans(const enum TransType transType)
+
+
+static short isPayCode(const enum SubTransType subTransType)
+{
+	switch (subTransType) {
+		case SUB_PAYCODE_CASHOUT:
+		case  SUB_PAYCODE_CASHIN:
+			return 1;
+
+			default: return 0;
+	}
+   
+}
+
+char * payCodeTypeToStr(const enum SubTransType subTransType)
+{
+	switch (subTransType) {
+		case SUB_PAYCODE_CASHOUT: return "PAYCODE CASHOUT";
+		case  SUB_PAYCODE_CASHIN: return "PAYCODE CASHIN";
+
+		default : return NULL;
+	}
+}
+
+void eftTrans(const enum TransType transType, const enum SubTransType subTransType)
 {
 	Eft eft;
 
@@ -767,13 +828,28 @@ void eftTrans(const enum TransType transType)
 	}
 
 	copyMerchantParams(&eft, &merchantParameters);
-	populateEchoData(eft.echoData);
+	
 	strncpy(eft.sessionKey, sessionKey, sizeof(eft.sessionKey));
 	strncpy(eft.posConditionCode, POS_CONDITION_CODE, sizeof(eft.posConditionCode));
 	strncpy(eft.posPinCaptureCode, PIN_CAPTURE_CODE, sizeof(eft.posPinCaptureCode));
-	strcpy(netParam.title, transTypeToTitle(transType));
+	
 	pthread_create(&thread, NULL, preDial, &mParam.gprsSettings);
-	performEft(&eft, &netParam, transTypeToTitle(transType));
+
+	
+
+	if (subTransType == SUB_NONE) 
+	{
+		populateEchoData(eft.echoData);
+		strcpy(netParam.title, transTypeToTitle(transType));
+		performEft(&eft, &netParam, transTypeToTitle(transType));
+	} else {
+		if (isPayCode(subTransType)) {
+			printf("PayCode trans mode\n");
+			strncpy(eft.echoData, PTAD_CODE, strlen(PTAD_CODE));
+			strcpy(netParam.title, payCodeTypeToStr(subTransType));
+			performPayCode(&eft, &netParam, subTransType);
+		}
+	}
 }
 
 static short amountRequired(const Eft *eft)
@@ -1140,6 +1216,89 @@ static short persistEft(const Eft * eft)
 static void displayBalance(char * balance)
 {
 	gui_messagebox_show("BALANCE", balance, "", "", 0);
+}
+
+
+
+int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransType subTransType)
+{
+	int ret;
+	long long namt = 0;
+	int result = -1;
+	unsigned char packet[2048] = {0x00};
+	struct HostType hostType;
+	char display[65] = {'\0'};
+	char transDate[7] = {'\0'};
+	char payCode[13] = {'\0'};
+	unsigned long payCodeAmount = 0L;
+	const char * title = payCodeTypeToStr(subTransType);
+	eft->techMode = CHIP_MODE;
+	int year = 0;
+
+    if (title == NULL) {
+		printf("PayCode title is null\n");
+		return -1;
+	}
+
+   if (getPayCodeData(payCode, sizeof(payCode), &payCodeAmount)) {
+       return -1;
+   }
+
+   sprintf(eft->amount, "%012ld", payCodeAmount);
+
+    if (buildCardNumber(eft->pan, sizeof(eft->pan), payCode)) {
+        return -2;
+    }
+
+	if (subTransType == SUB_PAYCODE_CASHOUT) {
+		if (getPayCodePin(eft->pinDataBcd, eft->pan)) {
+			return -3;
+		}
+
+		eft->pinDataBcdLen = 8;
+	}
+
+	eft->otherTrans = (int) subTransType;
+	strncpy(eft->otherData, payCode, sizeof(eft->otherData));
+	getPaycodeExpiry(eft->expiryDate);
+
+	//if (!orginalDataRequired(eft))
+	//{
+		Sys_GetDateTime(eft->yyyymmddhhmmss);
+		strncpy(eft->stan, &eft->yyyymmddhhmmss[8], sizeof(eft->stan));
+		getRrn(eft->rrn);
+		//strncpy(eft.serviceRestrictionCode, "221", sizeof(eft.serviceRestrictionCode)); //TODO: Get this card from kernel
+	//}
+
+	
+
+	strncpy(transDate, &eft->yyyymmddhhmmss[2], 6);
+	transDate[6] = 0;
+    buildPaycodeIccData(eft->iccData, transDate, eft->amount);
+	sprintf(eft->track2Data, "%sD%s", eft->pan, eft->expiryDate);
+	strncpy(eft->posDataCode, "510101561344101", 15);
+	 strncpy(eft->cardSequenceNumber, "000", sizeof(eft->cardSequenceNumber));
+	 strncpy(eft->serviceRestrictionCode, "501", sizeof(eft->serviceRestrictionCode));
+
+	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
+	{
+		return -3;
+	}
+
+	netParam->packetSize = result;
+	memcpy(netParam->packet, packet, netParam->packetSize);
+	
+	result = processPacketOnline(eft, &hostType, netParam);
+
+	if (result < 0)
+	{ //Error occured,
+		return -5;
+	}
+
+	persistEft(eft);
+	printPaycodeReceipts(eft, 0);
+
+	return result;
 }
 
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)

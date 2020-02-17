@@ -21,8 +21,9 @@ extern "C" {
 #include "libapi_xpos/inc/libapi_file.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "libapi_xpos/inc/libapi_util.h"
-
 }
+
+#include "EmvEft.h"
 
 #ifdef WIN32
 #define ATOLL _atoi64
@@ -522,6 +523,12 @@ static void processBalance(char *buff)
 	free(account);
 }
 
+ static void printExpiry(char * expiry)
+{
+    if (expiry && *expiry) {
+        printLine("EXPIRY", expiry);
+    }
+}
 
 static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 {
@@ -575,8 +582,10 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	UPrint_Feed(12);
 	
 
-	printLine("AID", eft->aid);
-
+    if (*eft->aid) {
+        printLine("AID", eft->aid);
+    }
+	
 	MaskPan(eft->pan, maskedPan);
 	printLine("PAN", maskedPan);
 	printLine("EXPIRY", eft->expiryDate);
@@ -591,7 +600,9 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	printLine("STAN", eft->stan);
 	printLine("TID", mParam.tid);
 
-	printLine("CARD NAME", eft->cardHolderName);
+    if (*eft->cardHolderName) {
+        printLine("CARD NAME", eft->cardHolderName);
+    }
 
 	if(eft->transType == EFT_BALANCE && isApproved)
 	{
@@ -601,8 +612,111 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	}
 
 	UPrint_Str("\n\n", 2, 1);
-	printLine("TVR", eft->tvr);
-	printLine("TSI", eft->tsi);
+
+    if (*eft->tvr) {
+        printLine("TVR", eft->tvr);
+    }
+
+    if (*eft->tsi) {
+        printLine("TSI", eft->tsi);
+    }
+
+	UPrint_Feed(12);
+
+	if (*eft->message) {
+		printLine("", eft->message);
+	}
+
+	if (!isApproved) { 
+		char declinedMessage[65];
+
+		sprintf(declinedMessage, "%s: %s", eft->responseCode, responseCodeToStr(eft->responseCode));
+		printLine(declinedMessage, eft->message);
+	}
+
+	printDottedLine();
+	
+	printFooter();
+
+	ret = UPrint_Start(); // Output to printer
+	getPrinterStatus(ret);
+
+	return 0;
+}
+
+
+
+static int printPaycodeReceipt(enum receiptCopy copy, Eft *eft)
+{
+	int ret = 0;
+	char dt[14] = {'\0'};
+	char buff[64] = {'\0'};
+	char maskedPan[25] = {'\0'};
+	// char filename[128] = {'\0'};
+    MerchantParameters parameter = {'\0'};
+	MerchantData mParam = {'\0'};
+	short isApproved = isApprovedResponse(eft->responseCode);
+    SubTransType subTransType = (SubTransType) eft->otherTrans;
+	
+    getParameters(&parameter);
+	readMerchantData(&mParam);
+    getDateAndTime(dt);
+    sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
+
+	displayPaymentStatus(eft->responseCode);
+
+	ret = UPrint_Init();
+
+	if (ret == UPRN_OUTOF_PAPER)
+	{
+		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
+	}
+
+	printBankLogo();	// Prints Logo
+	
+	UPrint_SetFont(8, 2, 2);
+	UPrint_StrBold(mParam.name, 1, 0, 1);
+    UPrint_StrBold(mParam.address, 1, 0, 1);
+    printLine("MID", parameter.cardAcceptiorIdentificationCode);
+    printLine("DATE TIME", buff);
+    printDottedLine();
+
+	UPrint_StrBold(payCodeTypeToStr(subTransType), 1, 4, 1);
+	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
+
+	UPrint_SetDensity(3); //Set print density to 3 normal
+	UPrint_SetFont(7, 2, 2);
+
+	
+	if (isApprovedResponse(eft->responseCode))
+	{
+		UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
+	}
+	else{
+		UPrint_StrBold("DECLINED", 1, 4, 1); 
+	}
+
+	UPrint_Feed(12);
+
+    printExpiry(eft->expiryDate);
+
+	if (isApproved) {
+		printLine("AUTH CODE", eft->authorizationCode);
+	}
+	
+    printLine("PAYCODE", eft->otherData);
+	printLine("RRN", eft->rrn);
+	printLine("STAN", eft->stan);
+	printLine("TID", mParam.tid);
+
+    if (*eft->cardHolderName) {
+        printLine("CARD NAME", eft->cardHolderName);
+    }
+
+    printReceiptAmount(atoll(eft->amount), isApproved);
+
+	UPrint_Str("\n\n", 2, 1);
+
 
 	UPrint_Feed(12);
 
@@ -646,6 +760,28 @@ short printReceipts(Eft * eft, const short isReprint)
 
 	return ret;
 }
+
+
+short printPaycodeReceipts(Eft * eft, const short isReprint)
+{
+	int ret = -1;
+
+	ret = printPaycodeReceipt(isReprint ? REPRINT_COPY : CUSTOMER_COPY, eft);
+
+	if (isApprovedResponse(eft->responseCode) && !isReprint) {
+
+		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
+		{
+			printf("Merchant copy\n");
+
+			ret = printPaycodeReceipt(MERCHANT_COPY, eft);
+			
+		}
+	}
+
+	return ret;
+}
+
 
 void printHandshakeReceipt(MerchantData *mParam)
 {
