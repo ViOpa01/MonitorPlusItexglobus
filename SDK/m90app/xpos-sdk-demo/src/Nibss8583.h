@@ -141,6 +141,7 @@ typedef struct Eft
     char amount[13];
     char additionalAmount[13];
     char yyyymmddhhmmss[15];
+    char dateAndTime[32];
     char stan[7];
     char expiryDate[7];
     char tvr[12];
@@ -193,6 +194,14 @@ typedef struct Eft
     char entryMode[5];
     int otherTrans; //Used for other transaction type like paycode cashin and cashout
     char otherData[256]; //Used for saving other data like paycode.
+
+    // Vas specific additions
+    int (*genAuxPayload)(char auxPayload[], const size_t auxPayloadSize, const struct Eft*);
+    void* callbackdata;
+    char auxResponse[4096];
+    char customRefCode[1024];
+    int  switchMerchant;
+    short isVasTrans;
 
 } Eft;
 

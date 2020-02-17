@@ -18,6 +18,7 @@ typedef struct MerchantData
     char rrn[13];
     int status;
     char stamp_label[12];
+    char notificationIdentifier[32];
     int stamp_duty_threshold;
     int stamp_duty;
     int nibss_platform;    // 1 : EPMS, 2 : POSVAS
@@ -27,10 +28,13 @@ typedef struct MerchantData
     int  nibss_plain_port;
     char port_type[12];
     char tid[14];
+    char old_tid[14];
     char phone_no[14];
     short account_selection;
     short trans_type;
     short is_prepped;
+
+    char pKey[33];
     
     Network gprsSettings;
 } MerchantData;

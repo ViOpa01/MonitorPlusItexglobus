@@ -40,8 +40,7 @@ enum AlignType{
 	ALIGH_RIGHT,
 };
 
-
-static void printDottedLine()
+void printDottedLine()
 {
     UPrint_SetFont(8, 2, 2);
     UPrint_Str(DOTTEDLINE, 2, 1);
@@ -60,6 +59,25 @@ void printFooter()
 	UPrint_Feed(108);
 }
 
+void printReceiptHeader(const char *transDate)
+{
+    MerchantParameters parameter = {'\0'};
+	MerchantData mParam = {'\0'};
+
+	// char buff[64] = {'\0'};
+
+    getParameters(&parameter);
+	readMerchantData(&mParam);
+
+    UPrint_SetFont(8, 2, 2);
+	UPrint_StrBold(mParam.name, 1, 0, 1);
+    UPrint_StrBold(mParam.address, 1, 0, 1);
+    printLine("MID", parameter.cardAcceptiorIdentificationCode);
+    printLine("DATE TIME", transDate);
+    printDottedLine();
+}
+
+
 static char * getReceiptCopyLabel(enum receiptCopy copy)
 {
 	if(copy == MERCHANT_COPY)
@@ -74,28 +92,6 @@ static char * getReceiptCopyLabel(enum receiptCopy copy)
 	{
 		return "";
 	}
-}
-
-static int formatAmount(std::string& ulAmount)
-{
-    int position;
-
-    if (ulAmount.empty()) return -1;
-
-    position = ulAmount.length();
-    if ((position -= 2) > 0) {
-        ulAmount.insert(position, ".");
-    } else if (position == 0) {
-        ulAmount.insert(0, "0.");
-    } else {
-        ulAmount.insert(0, "0.0");
-    }
-
-    while ((position -= 3) > 0) {
-        ulAmount.insert(position, ",");
-    }
-
-    return 0;
 }
 
 void getPrinterStatus(const int status)
@@ -122,12 +118,11 @@ void getPrinterStatus(const int status)
 	}
 }
 
-void printBankLogo()
+void printReceiptLogo(const char filename[32])
 {
-	char filename[32] = {'\0'};
-
-	sprintf(filename, "xxxx\\%s", BANKLOGO);
-	UPrint_BitMap(filename, 1);//print image
+    char path[32] = {'\0'};
+    strcpy(path, filename);
+	UPrint_BitMap(path, 1);//print image
 }
 
 static char* accountTypeToString(enum AccountType type)
@@ -191,7 +186,29 @@ static char* transTypeToString(enum TransType type)
 	}
 }
 
-static const char *responseCodeToStr(const char responseCode[3])
+int formatAmount(std::string& ulAmount)
+{
+    int position;
+
+    if (ulAmount.empty()) return -1;
+
+    position = ulAmount.length();
+    if ((position -= 2) > 0) {
+        ulAmount.insert(position, ".");
+    } else if (position == 0) {
+        ulAmount.insert(0, "0.");
+    } else {
+        ulAmount.insert(0, "0.0");
+    }
+
+    while ((position -= 3) > 0) {
+        ulAmount.insert(position, ",");
+    }
+
+    return 0;
+}
+
+const char *responseCodeToStr(const char responseCode[3])
 {
 
     if (strcmp(responseCode, "00") == 0)
@@ -359,7 +376,7 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
 {
     int len = 0;
     int requiredSpaces = 0;
-    char tempBuffer[33] = {0};
+    char tempBuffer[64] = {0};
 
 
     if(output == NULL || input == NULL){
@@ -367,7 +384,6 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
     }
 
 	len = strlen(input);
-	// requiredSpaces = expectedLen - len;
 	requiredSpaces = expectedLen;
 
 	printf("Len -> %d, requireSpace -> %d\n", len, requiredSpaces);
@@ -427,16 +443,17 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
 	}
 }
 
-//Add a line of print data
-static void printLine(char *head, char *val)
+void printLine(const char *head, const char *val)
 {
-	char rightAligned[45] = {'\0'};
+	char rightAligned[64] = {'\0'};
 	int printerWidth = 32;
+    char buff[32] = {'\0'};
 
 	alignBuffer(rightAligned, val, printerWidth - strlen(head), ALIGH_RIGHT);
 	
+    strcpy(buff, head);
 	UPrint_SetFont(8, 2, 2);
-	UPrint_Str(head, 1, 0);
+	UPrint_Str(buff, 1, 0);
 	UPrint_Str(rightAligned, 1, 1);
 }
 
@@ -532,20 +549,13 @@ static void processBalance(char *buff)
 
 static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 {
+    char filename[32] = {'\0'};
 	int ret = 0;
-	char dt[14] = {'\0'};
-	char buff[64] = {'\0'};
 	char maskedPan[25] = {'\0'};
-	// char filename[128] = {'\0'};
-    MerchantParameters parameter = {'\0'};
-	MerchantData mParam = {'\0'};
-	short isApproved = isApprovedResponse(eft->responseCode);
+    MerchantData mParam = {'\0'};
 	
-    getParameters(&parameter);
-	readMerchantData(&mParam);
-    getDateAndTime(dt);
-    sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
-
+    readMerchantData(&mParam);
+	short isApproved = isApprovedResponse(eft->responseCode);
 	displayPaymentStatus(eft->responseCode);
 
 	ret = UPrint_Init();
@@ -555,14 +565,9 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
 	}
 
-	printBankLogo();	// Prints Logo
-	
-	UPrint_SetFont(8, 2, 2);
-	UPrint_StrBold(mParam.name, 1, 0, 1);
-    UPrint_StrBold(mParam.address, 1, 0, 1);
-    printLine("MID", parameter.cardAcceptiorIdentificationCode);
-    printLine("DATE TIME", buff);
-    printDottedLine();
+    sprintf(filename, "xxxx\\%s", BANKLOGO);
+	printReceiptLogo(filename);	// Print Logo
+    printReceiptHeader(eft->dateAndTime);      // Print Receipt header
 
 	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
 	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
@@ -597,6 +602,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	}
 	
 	printLine("RRN", eft->rrn);
+    printf("Pius Stan : %s\n", eft->stan);
 	printLine("STAN", eft->stan);
 	printLine("TID", mParam.tid);
 
@@ -672,7 +678,7 @@ static int printPaycodeReceipt(enum receiptCopy copy, Eft *eft)
 		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
 	}
 
-	printBankLogo();	// Prints Logo
+	//printBankLogo();	// Prints Logo
 	
 	UPrint_SetFont(8, 2, 2);
 	UPrint_StrBold(mParam.name, 1, 0, 1);

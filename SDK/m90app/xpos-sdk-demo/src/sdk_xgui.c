@@ -13,6 +13,7 @@
 #include "menu_list.h"
 #include "merchant.h"
 #include "remoteLogo.h"
+#include "vas/vasbridge.h"
 
 #define LOGOIMG "xxxx\\logo.bmp"
 
@@ -84,6 +85,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{"Security", "PinTest", ""},
 	{"Security", "RsaTest", ""},
 	*/
+
 	
 	{UI_SETTINGS, "Net Select", ""},
 	{UI_SETTINGS, "WIFI Settings", "WIFI Menu"},
@@ -424,6 +426,10 @@ static int _menu_proc(char *pid)
 		paycodeHandler();
 		return 0;
 	}
+	if(!strcmp(pid, UI_VAS)) {
+		vasTransactionTypesBridge();
+		return 0;
+	}
 	else if (!hanshakeHandler(pid))
 	{
 		return 0;
@@ -609,6 +615,13 @@ static int _menu_proc(char *pid)
 	{
 		int ret = enableAndDisableOtherTrans();
 		printf("Enable / Disable ret : %d\n", ret);
+	}
+	else if (!strcmp(pid, UI_NOTIF_ID))
+	{
+		MerchantData mParam = {'\0'};
+		readMerchantData(&mParam);
+
+		gui_messagebox_show("Notification ID", mParam.notificationIdentifier, "", "", 3000);
 	}
 	else if(!strcmp(pid, UI_REBOOT))
 	{

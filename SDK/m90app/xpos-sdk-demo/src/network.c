@@ -92,8 +92,14 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		// 196.6.103.72 5042  nibss epms port and ip test environment
 		// 196.6.103.18 5014  nibss posvas port and ip live environment
 
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = mParam.nibss_ssl_port;
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = mParam.nibss_ssl_port;
+
+		strncpy(netParam->host, "197.253.19.78", strlen(mParam.nibss_ip));
+		netParam->port = 6003;
+
+		// strncpy(netParam->host, "192.168.43.72", strlen(mParam.nibss_ip));
+		// netParam->port = 5001;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
@@ -210,7 +216,7 @@ static int _connect_server_func_proc()
 		ret = 1;
 	}
 	else if(m_connect_exit == 0){
-		sprintf(msg , "Connect(%d)" , num);
+		sprintf(msg , "Connecting(%d)" , num);
 		comm_page_set_page("Http", msg , 0);
 	}
 	else{
@@ -263,7 +269,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	m_connect_exit = 0;
 	m_connect_time = i + 1;
 
-	sprintf(tmp, "Connecting (%d) ...", i + 1);
+	sprintf(tmp, "Connecting...(%d)", i + 1);
 	comm_page_set_page(netParam->title, tmp, 1);
 
 	//comm_page_set_page("COM", tmp , 1);
@@ -390,7 +396,7 @@ static short sendPacket(NetWorkParameters *netParam)
 	int result = -1;
 
 	printf("packet size to send -> %d\n", netParam->packetSize);
-	printf("\npacket -> %s\n", &netParam->packet[2]);
+	printf("\npacket -> %s\n", netParam->packet);
 
 	if (netParam->isSsl)
 	{
@@ -427,14 +433,14 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 	while(Sys_TimerCheck(tick1) > 0){
 		int ret;
 		int num;
-		unsigned char buffer[2048] = { '\0' };
+		unsigned char buffer[2048 * 4] = { '\0' };
 
 
 		if(strlen(netParam->title)>0){
 			num = Sys_TimerCheck(tick1)/1000;
 			num = num < 0 ? 0 : num;
 
-			sprintf(msg , "%s(%d)" , "Recving" , num);
+			sprintf(msg , "%s(%d)" , "Receiving..." , num);
 
 			comm_page_set_page(netParam->title , msg , 0);
 			ret = comm_page_get_exit();
@@ -448,7 +454,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 		if(netParam->isSsl == 1){
 			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)buffer/*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen*/);
 		}else{
-			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 700);
+			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 5000);
 		}
 
 		//printf("nret is : %d\n", nret);
@@ -505,7 +511,7 @@ static short receivePacket(NetWorkParameters *netParam)
 	int result = -1;
 	int bytes = 0;
 	int count = 0;
-	int timeover = 60000;
+	int timeover = netParam->receiveTimeout;
 	unsigned int tick = Sys_TimerOpen(timeover);
 	
 	bytes = http_recv_buff(netParam, tick, timeover);

@@ -26,6 +26,9 @@ enum SubTransType
 
 void eftTrans(const enum TransType transType, const enum SubTransType subTransType);
 char * payCodeTypeToStr(const enum SubTransType subTransType);
+void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters);
+int performEft(Eft *eft, NetWorkParameters *netParam, const char *title);
+
 enum TransType cardPaymentHandler();
 void paycodeHandler(void);
 

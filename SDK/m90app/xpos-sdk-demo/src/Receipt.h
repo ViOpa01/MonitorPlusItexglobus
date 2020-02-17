@@ -3,6 +3,7 @@
 
 #include "merchant.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,14 +14,20 @@ enum receiptCopy{
 	REPRINT_COPY
 };
 
-void printBankLogo();
+void printDottedLine();
+void printReceiptLogo(const char filename[32]);
+void printReceiptHeader(const char *transDate);
 void printFooter();
+void printLine(const char *head, const char *val);
 short printReceipts(Eft * eft, const short isReprint);
 short printPaycodeReceipts(Eft * eft, const short isReprint);
 void printHandshakeReceipt(MerchantData *mParam);
 void reprintByRrn(void);
 void reprintLastTrans(void);
 void getPrinterStatus(const int status);
+
+const char *responseCodeToStr(const char responseCode[3]);
+
 
 
 #ifdef __cplusplus

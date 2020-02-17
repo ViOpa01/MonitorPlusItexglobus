@@ -9,7 +9,7 @@
 #include <map>
 #include <ctype.h>
 
-//#include "LogManager.hpp"
+//
 
 #define DB_ID "id"
 #define DB_MTI "mti"

@@ -33,15 +33,9 @@ int ctxToUpdateMap(std::map<std::string, std::string>& trx, const Eft *eft);
 std::map<std::string, std::string> ctxToInsertMap(const Eft *eft);
 std::map<std::string, std::string> ctxToUpdateMap(const Eft *eft);
 
-//int printFromEmvDB(const EMV_TRX_CONTEXT *transaction, EMV_ADK_INFO eEMVInfo, bool isPrintingEnabled);
 int formatEmvMap(std::map<std::string, std::string>& transaction);
 
 int previewReceiptMap(std::map<std::string, std::string>& values, int display, const char *url);
-
-//vfiprt::PrtError checkedPrint(std::map<std::string, std::string>& values, const char *url);
-
-int fillReceiptHeader(std::map<std::string, std::string>& values);
-int fillReceiptFooter(std::map<std::string, std::string>& values);
 
 TrxType toEMVDBTransactionType(TransType txtype);
 

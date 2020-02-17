@@ -9,18 +9,13 @@
 
 extern "C" {
 #include "util.h"
+#include "../pages/inputamount_page.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "libapi_xpos/inc/libapi_util.h"
 }
 
 
-// using namespace std;
-// using namespace vfigui;
-
-// typedef std::map<std::string, std::string> UIParams;
-
-
-int getPin(std::string& pin, const char* title, const int minLength)
+InputStatus getPin(std::string& pin, const char* title, const int minLength)
 {
     char buff[minLength + 1] = {0};
 	int result = 0;
@@ -51,7 +46,7 @@ int getPin(std::string& pin, const char* title, const int minLength)
 	
 }
 
-std::string getNumeric(int display, int timeout, const char* title, const char* prompt)
+std::string getNumeric(int display, int timeout, const char* title, const char* prompt, UI_DIALOG_TYPE dialogType)
 {
     char number[128 + 1] = { 0 };
     int result = 0;
@@ -66,13 +61,13 @@ std::string getNumeric(int display, int timeout, const char* title, const char* 
     return std::string(number);
 }
 
-int getNumeric(char *val, size_t len, int display, int timeout, const char* title, const char* prompt)
+int getNumeric(char *val, size_t len, int display, int timeout, const char* title, const char* prompt, UI_DIALOG_TYPE dialogType)
 {
-    return getNumeric(val, 1, len - 1, display, timeout, title, prompt);
+    return getNumeric(val, 1, len - 1, display, timeout, title, prompt, dialogType);
 
 }
 
-int getNumeric(char *val, size_t minlength, size_t maxlength, int display, int timeout, const char* title, const char* prompt)
+int getNumeric(char *val, size_t minlength, size_t maxlength, int display, int timeout, const char* title, const char* prompt, UI_DIALOG_TYPE dialogType)
 {
     int result = 0;
 
@@ -113,7 +108,7 @@ std::string getPhoneNumber(const char* title, const char* prompt, bool uselocale
 }
 
 
-int getText(char *val, size_t len, int display, int timeout, const char* title, const char* prompt)
+int getText(char *val, size_t len, int display, int timeout, const char* title, const char* prompt, UI_DIALOG_TYPE type)
 {
     int result = 0;
 
@@ -135,40 +130,44 @@ int getText(char *val, size_t len, int display, int timeout, const char* title, 
 
 }
 
-int getText(std::string& val, int display, int timeout, const char* title, const char* prompt)
+int getText(std::string& val, int display, int timeout, const char* title, const char* prompt, UI_DIALOG_TYPE type)
 {
     char buff[128 + 1] = { 0 };
-    int result = getText(buff, sizeof(buff) - 1, display, timeout, title, prompt);
+    int result;
+
+    strncpy(buff, val.c_str(), val.length());
     
-    val.append(buff);
+    result = getText(buff, sizeof(buff) - 1, display, timeout, title, prompt, type);
+    
+    if (result > 0) {
+        val = buff;
+    }
 
     return result;
 }
 
-int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text)
+int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE type)
 {
     int result = 0;
 
     gui_clear_dc();
-	result = gui_messagebox_show((char *)title, (char *)text, "Cancel", "", timeout);
+	result = gui_messagebox_show((char *)title, (char *)text, "Cancel", "Ok", timeout);
 
-    switch (result)
-    {
-
+    switch (result) {
+    case 1:
+        return CONFIRM;
     case 2:
        return CANCEL;
-
     case 3:
-       return TIMEOUT;
-    
+       return MSG_TIMEOUT;
     default:
         break;
     }
 
-    return CONFIRM;
+    return CANCEL;
 }
 
-int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const char* button)
+int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const char* button, UI_DIALOG_TYPE type)
 {
 
     int result = 0;
@@ -193,10 +192,30 @@ int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const
 
 }
 
-// int getPassword(std::string& password)
-// {
+int getPassword(std::string& password)
+{
+    int result;
+    char pass[33] = {0};
 
-// }
+	// Timeout : -3
+	// Cancel  : -2
+	// Fail    : -1
+	// success  : no of byte(character) entered
+
+    strncpy(pass, password.c_str(), password.length());
+    
+    gui_clear_dc();
+    result = Util_InputMethod(GUI_LINE_TOP(2), "Enter Password", GUI_LINE_TOP(5), pass, 4, sizeof(pass) - 1, 1, 10000);
+	
+	if (result > 0)
+	{
+		printf("Password input failed ret : %d\n", result);
+		printf("Password %s\n", pass);
+        password = pass;
+	}
+
+	return result;
+}
 
 
 int UI_ShowSelection(int timeout, const char* title, const std::vector<std::string>& elements, int preselect)
@@ -226,6 +245,21 @@ int UI_ShowSelection(int timeout, const char* title, const std::vector<std::stri
 
     return option;
 
+}
+
+unsigned long getAmount(const char* title)
+{
+    char buff[24] = {'\0'};
+
+    strncpy(buff, title, sizeof(buff) - 1);
+     
+    return inputamount_page(buff, 12, 30000);
+}
+
+
+void Demo_SplashScreen(const char *text, const char *text_additional)
+{
+    gui_messagebox_show((char *)text , (char *)text_additional, "" , "" , 1);
 }
 
 
