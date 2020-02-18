@@ -674,19 +674,18 @@ void standby_pagepaint()
 	logoleft = 10;
 	logotop = 36;
 
-	pbmp = gui_load_bmp("data//logo.bmp"/*LOGOIMG*/, &logowidth, &logoheight);
+	// pbmp = gui_load_bmp("data//logo.bmp"/*LOGOIMG*/, &logowidth, &logoheight);
 	// pbmp = gui_load_bmp("itex//bank.bmp"/*BANKLOGO*/, &logowidth, &logoheight);
 
-	// printf("Logo width : %d\n", logowidth);
-	// printf("Logo Height : %d\n", logoheight);
-
+	
+	/*
 	if (pbmp != 0)
 	{
 		// printf("==============\n");
 		gui_out_bits(logoleft, logotop, pbmp, logowidth, logoheight, 0);
 		free(pbmp);
 	}
-
+	*/
 	
 	get_yyyymmdd_str(data);
 	data[10] = ' ';
