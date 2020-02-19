@@ -138,12 +138,5 @@ int swithMerchantToVas(Eft* trxContext)
     strncpy(trxContext->terminalId, payvice.object(Payvice::VIRTUAL)(Payvice::TID).getString().c_str(), sizeof(trxContext->terminalId) - 1);
     strncpy(trxContext->sessionKey, payvice.object(Payvice::VIRTUAL)(Payvice::SKEY).getString().c_str(), sizeof(trxContext->sessionKey) - 1);
 
-    // merchant.object(config::TID) = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
-    // merchant.object(config::MCC) = payvice.object(Payvice::VIRTUAL)(Payvice::MCC);
-    // merchant.object(config::MID) = payvice.object(Payvice::VIRTUAL)(Payvice::MID);
-    // merchant.object(config::NAME) = payvice.object(Payvice::VIRTUAL)(Payvice::NAME);
-    // merchant.object(config::CUR_CODE) = payvice.object(Payvice::VIRTUAL)(Payvice::CUR_CODE);
-    // merchant.object(config::SKEY) = payvice.object(Payvice::VIRTUAL)(Payvice::SKEY);
-
     return 0;
 }

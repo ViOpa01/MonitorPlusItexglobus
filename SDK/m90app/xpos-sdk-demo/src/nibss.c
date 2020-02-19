@@ -63,11 +63,11 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     //TODO: get the values at runtime, the hardcoded data will still work
     MerchantParameters parameter = {'\0'};
     MerchantData mParam = {'\0'};
+    Network netProfile = {'\0'};
     char *callHomeJsonStr;
     cJSON *callHomeJson;
     cJSON *cloc;
 
-    char buff[64] = {'\0'};
     char softwareVersion[64] = {'\0'};
     char mid[20] = {'\0'};
     char tid[10] = {'\0'};
@@ -92,16 +92,16 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     getParameters(&parameter);
     readMerchantData(&mParam);
     getTerminalSn(terminalSn);
-    getDateAndTime(buff);
 
     strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid));
     strncpy(tid, mParam.tid, 8);
-    sprintf(dateAndTime, "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", &buff[0], &buff[4], &buff[6], &buff[8], &buff[10], &buff[12]);
+    formattedDateTime(dateAndTime, sizeof(dateAndTime));
     sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simId, "%s", getSimId());
     getImsi(imsi);
+    imsiToNetProfile(&netProfile, imsi);
     
     signalLevel = getSignalLevel();
     signalLevel *=  25;
@@ -109,6 +109,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
 
     printf("IMSI : %s\n", imsi);
     printf("Cell id : %s\n Signal level : %d\n lac : %s\n", cellId, signalLevel, lac);
+    printf("SIM Operator : %s\n", netProfile.operatorName);
 
     cJSON_AddItemToObject(cloc, "cid", cJSON_CreateString(cellId));
     cJSON_AddItemToObject(cloc, "lac", cJSON_CreateString(lac));
@@ -130,8 +131,8 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     cJSON_AddItemToObject(callHomeJson, "ps", cJSON_CreateString("PrinterAvailable"));
     cJSON_AddItemToObject(callHomeJson, "ptad", cJSON_CreateString("Itex Integrated Services"));
     cJSON_AddItemToObject(callHomeJson, "serial", cJSON_CreateString(terminalSn));
-    cJSON_AddItemToObject(callHomeJson, "sim", cJSON_CreateString("MTN"));  // SIM Operator's name 
-    cJSON_AddItemToObject(callHomeJson, "simID", cJSON_CreateString(getSimId()));   // SIM id
+    cJSON_AddItemToObject(callHomeJson, "sim", cJSON_CreateString(netProfile.operatorName)); 
+    cJSON_AddItemToObject(callHomeJson, "simID", cJSON_CreateString(getSimId()));
     cJSON_AddItemToObject(callHomeJson, "ss", cJSON_CreateString(ss));
     cJSON_AddItemToObject(callHomeJson, "sv", cJSON_CreateString(softwareVersion));
     cJSON_AddItemToObject(callHomeJson, "tid", cJSON_CreateString(tid));

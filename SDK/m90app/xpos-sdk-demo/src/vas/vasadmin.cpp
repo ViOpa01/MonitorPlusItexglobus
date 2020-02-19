@@ -24,6 +24,7 @@
 
 #include "vas.h"
 #include "vasdb.h"
+#include "wallet.h"
 
 extern int formatAmount(std::string& ulAmount);
 
@@ -178,7 +179,7 @@ void vasEndofDay()
         }
 
         values["trxType"] = service.empty() ? "Services" : service;
-        // TODO: Print EOD receipt here
+    
         printVasEod(values);
 
     }
@@ -366,16 +367,6 @@ int printRequery(iisys::JSObject& transaction)
         record = airtime.storageMap(status);
     }
 
-    // product = cJSON_GetObjectItemCaseSensitive(transaction, "product");
-    // customerName = cJSON_GetObjectItemCaseSensitive(transaction, "VASCustomerName");
-    // customerAccount = cJSON_GetObjectItemCaseSensitive(transaction, "VASCustomerAccount");
-    // tid = cJSON_GetObjectItemCaseSensitive(transaction, "terminal");
-    // walletId = cJSON_GetObjectItemCaseSensitive(transaction, "wallet");
-    // paymentMethod = cJSON_GetObjectItemCaseSensitive(transaction, "paymentMethod");
-    // date = cJSON_GetObjectItemCaseSensitive(transaction, "date");
-    // sequence = cJSON_GetObjectItemCaseSensitive(transaction, "sequence");
-    // amount = cJSON_GetObjectItemCaseSensitive(transaction, "amount");
-
     iisys::JSObject& account = transaction("VASCustomerAccount");
     iisys::JSObject& paymentMethod = transaction("paymentMethod");
     iisys::JSObject& address = transaction("VASCustomerAddress");
@@ -419,22 +410,6 @@ int printRequery(iisys::JSObject& transaction)
     record[VASDB_AMOUNT] = transaction("amount").getString();
     record[VASDB_DATE] = transaction("date").getString();
 
-    // cardName = cJSON_GetObjectItemCaseSensitive(transaction, "cardName");
-    // cardPAN = cJSON_GetObjectItemCaseSensitive(transaction, "cardPAN");
-    // cardExpiry = cJSON_GetObjectItemCaseSensitive(transaction, "cardExpiry");
-    // stan = cJSON_GetObjectItemCaseSensitive(transaction, "transactionSTAN");
-    // authCode = cJSON_GetObjectItemCaseSensitive(transaction, "transactionAuthCode");
-    // rrn = cJSON_GetObjectItemCaseSensitive(transaction, "transactionRRN");
-    // responseCode = cJSON_GetObjectItemCaseSensitive(transaction, "transactionResponseCode");
-    // virtualTid = cJSON_GetObjectItemCaseSensitive(transaction, "virtualTID");
-
-
-    // typedef std::vector<std::map<std::string, std::string> >::const_iterator vi;
-    // typedef std::map<std::string, std::string>::const_iterator mi;
-    // for(mi col = record.begin(); col != record.end(); ++col) 
-    //     LOGF_INFO(LogManager("TLITE").handle, "(%s) -> (%s : %s)", __FUNCTION__, col->first.c_str(), col->second.c_str());
-
-
     record["walletId"] = wallet.getString();
     record["terminalId"] = tid.getString();
     record["receipt_copy"] += "- Reprint -";
@@ -445,7 +420,7 @@ int printRequery(iisys::JSObject& transaction)
 
 void vasAdmin()
 {
-    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Wallet Transfer", "Balance Enquiry" };
+    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Balance Enquiry", "Commission Transfer"  };
     std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
 
     switch (UI_ShowSelection(30000, "Vas Admin", optionMenu, 0)) {
@@ -480,10 +455,10 @@ void vasAdmin()
         vasReprintByDate();
         break;
     case 4:
-        walletRequest(2);
+        walletRequest(1);
         break;   
     case 5:
-        walletRequest(1);
+        walletRequest(2);
         break;
     default:
         break;

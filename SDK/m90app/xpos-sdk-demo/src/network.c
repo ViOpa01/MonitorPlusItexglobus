@@ -45,22 +45,22 @@ void platformAutoSwitch(NetType *netType)
 	}
 }
 
-static const char* networkProfiles[][4] = {
-    { "62160", "etisalat", "", "" }, // etisalat
+static const char* networkProfiles[][5] = {
+    { "62160", "etisalat", "", "", "ETISALAT" }, // etisalat
     // { "42402", "etisalat", "", ""},     // etisalat
-    { "62130", "web.gprs.mtnnigeria.net", "web", "web" },
-    { "62001", "INTERNET", "", "" }, //EMP MTN PRIVATE SIM
-    { "62150", "glosecure", "gprs", "gprs" },
-    { "62120", "internet.ng.airtel.com", "internet", "internet" },
-    { "23450", "globasure", "web", "web" },
-    { "20408", "FAST.M2M", "", "" },
-    { "20404", "ESEYE.COM", "USER", "PASS" },
-    { "20601", "bicsapn", "", ""}
+    { "62130", "web.gprs.mtnnigeria.net", "web", "web", "MTN" },
+    { "62001", "INTERNET", "", "", "" }, //EMP MTN PRIVATE SIM
+    { "62150", "glosecure", "gprs", "gprs", "GLO" },
+    { "62120", "internet.ng.airtel.com", "internet", "internet", "AIRTEL" },
+    { "23450", "globasure", "web", "web", "GLO" },
+    { "20408", "FAST.M2M", "", "", "" },
+    { "20404", "ESEYE.COM", "USER", "PASS", "" },
+    { "20601", "bicsapn", "", "", ""}
     //{"", "public_fast", ""},
     //{"", "public_wlapn", ""},
 };
 
-static const int netProfileList = (sizeof(networkProfiles) / sizeof(char*)) / 4;
+static const int netProfileList = (sizeof(networkProfiles) / sizeof(char*)) / 5;
 
 int imsiToNetProfile(Network* profile, const char* imsi)
 {
@@ -71,6 +71,7 @@ int imsiToNetProfile(Network* profile, const char* imsi)
             strcpy(profile->apn, networkProfiles[i][1]);
             strcpy(profile->username, networkProfiles[i][2]);
             strcpy(profile->password, networkProfiles[i][3]);
+			strcpy(profile->operatorName, networkProfiles[i][4]);
             return 0;
         }
     }
