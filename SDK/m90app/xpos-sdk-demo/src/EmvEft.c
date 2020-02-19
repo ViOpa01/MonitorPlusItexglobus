@@ -361,6 +361,11 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	int i;
 	struct HostType hostType;
 
+	if(eft->isVasTrans)
+	{
+		return 0;
+	}
+
 	//copy original MTI first before setting transaction type to reversal.
 	strncpy(eft->originalMti, transTypeToMti(eft->transType), sizeof(eft->originalMti));
 

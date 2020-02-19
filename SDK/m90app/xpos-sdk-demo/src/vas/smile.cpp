@@ -213,10 +213,16 @@ std::map<std::string, std::string> Smile::storageMap(const VasStatus& completion
         record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
     }
 
-    if (cardPurchase.primaryIndex > 0) {
-        char primaryIndex[16] = { 0 };
-        sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
-        record[VASDB_CARD_ID] = primaryIndex;
+    if (payMethod == PAY_WITH_CARD) {
+        if(cardPurchase.primaryIndex > 0) {
+            char primaryIndex[16] = { 0 };
+            sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
+            record[VASDB_CARD_ID] = primaryIndex;
+        }
+        
+        if (!itexIsMerchant()) {
+            record[VASDB_VIRTUAL_TID] = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+        }
     }
 
     if (completionStatus.error == NO_ERRORS) {
@@ -325,6 +331,10 @@ int Smile::getPaymentJson(iisys::JSObject& json, Service service)
 
     json("phone") = phoneNumber;
 
+    if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
+        json("virtualTid") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
+    }
+
     return 0;
 }
 
@@ -333,6 +343,8 @@ VasStatus Smile::processPaymentResponse(iisys::JSObject& json, Service service)
     VasStatus response;
     iisys::JSObject status = json("status");
     iisys::JSObject msg =  json("message");
+
+    this->service = service;
 
     if (status.isNull() || status.getInt() != 1) {
         response = VasStatus(STATUS_ERROR, msg.isNull() ? "Status Error" : msg.getString().c_str());

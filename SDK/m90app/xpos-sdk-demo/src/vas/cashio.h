@@ -70,7 +70,7 @@ protected:
     std::string beneficiary;
     std::string phoneNumber;
     std::string vendorBankCode;
-    std::string bankName;
+    std::string vendorBankName;
 
     PaymentMethod payMethod;
     CardPurchase cardPurchase;

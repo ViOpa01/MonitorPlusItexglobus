@@ -21,6 +21,7 @@ typedef int bool;
 bool virtualConfigurationIsSet();
 int  resetVirtualConfiguration();
 void resetVirtualConfigurationAsync();
+int itexIsMerchant();
 int swithMerchantToVas(Eft* trxContext);
 
 #endif

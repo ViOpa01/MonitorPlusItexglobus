@@ -44,7 +44,7 @@ struct VasFlow_T {
             return -1;
         }
 
-        if (!virtualConfigurationIsSet()) {
+        if (!itexIsMerchant() && !virtualConfigurationIsSet()) {
             Demo_SplashScreen("Configuration...", "www.payvice.com");
             if (resetVirtualConfiguration() < 0) {
                 return -1;

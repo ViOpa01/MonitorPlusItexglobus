@@ -255,10 +255,16 @@ std::map<std::string, std::string> Electricity::storageMap(const VasStatus& comp
     record[VASDB_DATE] = paymentResponse.date;
     record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
 
-    if (cardPurchase.primaryIndex > 0) {
-        char primaryIndex[16] = { 0 };
-        sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
-        record[VASDB_CARD_ID] = primaryIndex;
+    if (payMethod == PAY_WITH_CARD) {
+        if(cardPurchase.primaryIndex > 0) {
+            char primaryIndex[16] = { 0 };
+            sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
+            record[VASDB_CARD_ID] = primaryIndex;
+        }
+        
+        if (!itexIsMerchant()) {
+            record[VASDB_VIRTUAL_TID] = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+        }
     }
 
     if (completionStatus.error == NO_ERRORS) {
@@ -401,6 +407,10 @@ int Electricity::getPaymentJson(iisys::JSObject& json, Service service)
     // json("pin") = encPin;
 	json("password") = password;
 
+    if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
+        json("virtualTid") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
+    }
+
     return 0;
 }
 
@@ -412,6 +422,8 @@ VasStatus Electricity::processPaymentResponse(iisys::JSObject& json, Service ser
 
     VasStatus response = vasErrorCheck(json);
     paymentResponse.message = response.message;
+
+    this->service = service;
 
     iisys::JSObject ref = json("ref");
     if (!ref.isNull()) {
@@ -460,7 +472,7 @@ std::string Electricity::getMeterNo(const char* title)
         prompt = "Account No";
     }
 
-    if (getNumeric(number, 6, sizeof(number) - 1, 0, 30000, title, prompt.c_str(), UI_DIALOG_TYPE_NONE) < 0) {
+    if (getNumeric(number, 6, sizeof(number) - 1, 0, 30000, prompt.c_str(), title, UI_DIALOG_TYPE_NONE) < 0) {
         return std::string("");
     }
 

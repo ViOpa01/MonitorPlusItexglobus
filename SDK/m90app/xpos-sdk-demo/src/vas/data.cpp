@@ -149,10 +149,16 @@ std::map<std::string, std::string> Data::storageMap(const VasStatus& completionS
         record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
     }
 
-    if (cardPurchase.primaryIndex > 0) {
-        char primaryIndex[16] = { 0 };
-        sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
-        record[VASDB_CARD_ID] = primaryIndex;
+    if (payMethod == PAY_WITH_CARD) {
+        if(cardPurchase.primaryIndex > 0) {
+            char primaryIndex[16] = { 0 };
+            sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
+            record[VASDB_CARD_ID] = primaryIndex;
+        }
+        
+        if (!itexIsMerchant()) {
+            record[VASDB_VIRTUAL_TID] = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+        }
     }
 
     if (completionStatus.error == NO_ERRORS) {
@@ -252,6 +258,10 @@ int Data::getPaymentJson(iisys::JSObject& json, Service service)
 
     json("phone") = phoneNumber;
 
+    if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
+        json("virtualTid") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
+    }
+
     return 0;
 }
 
@@ -259,6 +269,8 @@ VasStatus Data::processPaymentResponse(iisys::JSObject& json, Service service)
 {
     VasStatus response = vasErrorCheck(json);
     paymentResponse.message = response.message;
+
+    this->service = service;
 
     iisys::JSObject ref = json("ref");
     if (!ref.isNull()) {

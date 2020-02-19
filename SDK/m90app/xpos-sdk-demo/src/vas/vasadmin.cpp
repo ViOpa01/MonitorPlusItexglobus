@@ -348,8 +348,7 @@ int printRequery(iisys::JSObject& transaction)
         Data data(vasMenuString(DATA), postman);
         status = data.processPaymentResponse(response, ETISALATDATA);
         record = data.storageMap(status);
-    }
-    else if (productName == "glovot") {
+    } else if (productName == "glovot") {
         Airtime airtime(vasMenuString(AIRTIME), postman);
         status = airtime.processPaymentResponse(response, GLOVOT);
         record = airtime.storageMap(status);
@@ -409,6 +408,46 @@ int printRequery(iisys::JSObject& transaction)
 
     record[VASDB_AMOUNT] = transaction("amount").getString();
     record[VASDB_DATE] = transaction("date").getString();
+
+    iisys::JSObject& cardName = transaction("cardName");
+    if (!cardName.isNull()) {
+        record[DB_NAME] = cardName.getString();
+    }
+
+    iisys::JSObject& cardPan = transaction("cardPAN");
+    if (!cardPan.isNull()) {
+        record[DB_PAN] = cardPan.getString();
+    }
+
+    iisys::JSObject& cardExpiry = transaction("cardExpiry");
+    if (!cardExpiry.isNull()) {
+        record[DB_EXPDATE] = cardExpiry.getString();
+    }
+
+    iisys::JSObject& cardStan = transaction("transactionSTAN");
+    if (!cardStan.isNull()) {
+        record[DB_STAN] = cardStan.getString();
+    }
+
+    iisys::JSObject& cardAuthID = transaction("transactionAuthCode");
+    if (!cardAuthID.isNull()) {
+        record[DB_AUTHID] = cardAuthID.getString();
+    }
+
+    iisys::JSObject& cardRef = transaction("transactionRRN");
+    if (!cardRef.isNull()) {
+        record[DB_RRN] = cardRef.getString();
+    }
+
+    iisys::JSObject& cardRespCode = transaction("transactionResponseCode");
+    if (!cardRespCode.isNull()) {
+        record[DB_RESP] = cardRespCode.getString();
+    }
+
+    iisys::JSObject& cardTid = transaction("virtualTID");
+    if (!cardTid.isNull()) {
+        record[VASDB_VIRTUAL_TID] = cardTid.getString();
+    }
 
     record["walletId"] = wallet.getString();
     record["terminalId"] = tid.getString();

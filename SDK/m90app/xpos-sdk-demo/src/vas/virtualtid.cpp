@@ -88,6 +88,8 @@ int resetVirtualConfiguration()
     payvice.object.erase(Payvice::VIRTUAL);
     payvice.save();
 
+    if(itexIsMerchant()) return 0;
+
     urlPath += getDeviceTerminalId();
 
     setupBaseHugeNetwork(&netParam, urlPath.c_str());
@@ -120,6 +122,22 @@ void resetVirtualConfigurationAsync()
 {
     pthread_t configThread;
     pthread_create(&configThread, NULL, asynchResetVirtualConfig, NULL);
+}
+
+int itexIsMerchant()
+{
+    MerchantData mParam = {'\0'};
+    readMerchantData(&mParam);
+
+    std::string merchantName = mParam.name;
+
+    if (!strncmp(merchantName.c_str(), "ITEX INTEGRATED", 15)) {
+        return 1;
+    } else if (!strncmp(merchantName.c_str(), "ITEX INTERGRATED", 16)) {
+        return 1;
+    }
+
+    return 0;
 }
 
 int swithMerchantToVas(Eft* trxContext)

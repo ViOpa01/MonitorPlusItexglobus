@@ -43,7 +43,7 @@ VasStatus ViceBanking::beginVas()
         }
         Bank bank = bankCode(bankSelection);
         vendorBankCode = bank.code;
-        bankName = bank.name;
+        vendorBankName = bank.name;
     } 
 
     return VasStatus(NO_ERRORS);
@@ -204,10 +204,16 @@ std::map<std::string, std::string> ViceBanking::storageMap(const VasStatus& comp
     record[VASDB_DATE] = paymentResponse.date;
     record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
 
-    if (cardPurchase.primaryIndex > 0) {
-        char primaryIndex[16] = { 0 };
-        sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
-        record[VASDB_CARD_ID] = primaryIndex;
+    if (payMethod == PAY_WITH_CARD) {
+        if(cardPurchase.primaryIndex > 0) {
+            char primaryIndex[16] = { 0 };
+            sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
+            record[VASDB_CARD_ID] = primaryIndex;
+        }
+        
+        if (!itexIsMerchant()) {
+            record[VASDB_VIRTUAL_TID] = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+        }
     }
 
     if (completionStatus.error == NO_ERRORS) {
@@ -217,7 +223,7 @@ std::map<std::string, std::string> ViceBanking::storageMap(const VasStatus& comp
     }
     record[VASDB_STATUS_MESSAGE] = paymentResponse.message;
 
-    record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + bankName + "\"}";
+    record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + vendorBankName + "\"}";
 
     return record;
 }
@@ -323,6 +329,8 @@ VasStatus ViceBanking::processPaymentResponse(iisys::JSObject& json, Service ser
     VasStatus response = vasErrorCheck(json);
     paymentResponse.message = response.message;
 
+    this->service = service;
+
     iisys::JSObject ref = json("reference");
     if (!ref.isNull()) {
         paymentResponse.reference = ref.getString();
@@ -425,6 +433,10 @@ int ViceBanking::getPaymentJson(iisys::JSObject& json, Service service)
     }
 
     json("productCode") = lookupResponse.productCode;
+
+    if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
+        json("virtualTid") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
+    }
 
     return 0;
 }

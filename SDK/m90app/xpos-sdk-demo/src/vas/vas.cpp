@@ -481,6 +481,7 @@ static void printAsteric(size_t len)
 
 int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T type)
 {
+    MerchantData mParam = {'\0'};
     int ret = 0;
     char buff[32] = {'\0'};
     char logoFileName[64] = {'\0'};
@@ -491,6 +492,7 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
         printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
     }
 
+    readMerchantData(&mParam);
     ret = UPrint_Init();
 
     if (ret == UPRN_OUTOF_PAPER) {
@@ -537,6 +539,15 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
     if(!record[VASDB_TRANS_SEQ].empty())
     {
         printLine("TRANS SEQ", record[VASDB_TRANS_SEQ].c_str());
+    }
+
+    if(!record[VASDB_VIRTUAL_TID].empty())
+    {
+        printLine("VID", record[VASDB_VIRTUAL_TID].c_str());
+    }
+
+    if(mParam.tid[0]) {
+         printLine("TID", mParam.tid);
     }
 
     if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD)) {

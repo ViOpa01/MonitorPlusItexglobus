@@ -70,6 +70,8 @@ typedef enum {
     STATUS_ERROR,
     TXN_NOT_FOUND,
     CARD_APPROVED,
+    CARD_STATUS_UNKNOWN,
+    CARD_PAYMENT_DECLINED,
     NOT_LOGGED_IN
 } VasError;
 

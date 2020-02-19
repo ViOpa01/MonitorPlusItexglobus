@@ -8,6 +8,7 @@
 #include "merchant.h"
 #include "util.h"
 #include "Receipt.h"
+#include "virtualtid.h"
 
 #include "vasdb.h"
 
@@ -136,6 +137,7 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
 
 
     if (json) {
+        body = json->dump();
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", url);
     } else {
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "GET %s\r\n", url);
@@ -148,8 +150,6 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
 
         formattedDateTime(timestamp, sizeof(timestamp));
         timestamp[16] = '\0';
-
-        body = json->dump();
 
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Authorization: %s\r\n", generateRequestAuthorization(body, timestamp).c_str());
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Username: itex\r\n");
@@ -165,9 +165,6 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
     }
 
     if (json) {
-        if (!body.length()) {
-            body = json->dump();
-        }
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Type: application/json\r\n");
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Length: %zu\r\n", body.length());
     }
@@ -177,7 +174,7 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "\r\n%s", body.c_str());
     } 
 
-    // TODO: Do send and receive
+
     if(sendAndRecvPacket(&netParam) == SEND_RECEIVE_SUCCESSFUL){
         status.error = NO_ERRORS;
         status.message = bodyPointer((const char*)netParam.response);
@@ -225,7 +222,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
     std::string body;
 
     memset((void*)&trxContext, 0, sizeof(Eft));
-    trxContext.switchMerchant = 1;
+    trxContext.switchMerchant = itexIsMerchant() ? 0 : 1;
    
     strcpy(trxContext.dbName, VASDB_FILE);
     strcpy(trxContext.tableName, VASCARDTABLENAME);
@@ -285,14 +282,24 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
     }
     
     if (!trxContext.responseCode[0]) {
-        // requery middleware
-        // if (middleware reports declined) { return declined; }
-        return status;
+        std::string txnTid;
+
+        if (trxContext.switchMerchant) {
+            txnTid = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+        } else {
+            txnTid = getDeviceTerminalId();
+        }
+
+        if (requeryMiddleware(&trxContext, txnTid.c_str()) < 0) {
+            status.error = CARD_STATUS_UNKNOWN;
+            return status;
+        }
+        
     }
     
     if (strcmp(trxContext.responseCode, "00")) {
+        status.error = CARD_PAYMENT_DECLINED;
         status.message = responseCodeToStr(trxContext.responseCode);
-        
     } else if (trxContext.transType == EFT_PURCHASE) {
         // So card approved and we didn't get vas response
         iisys::JSObject transaction;
