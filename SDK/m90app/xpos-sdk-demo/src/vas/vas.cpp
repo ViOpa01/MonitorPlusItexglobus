@@ -616,6 +616,7 @@ int printVasEod(std::map<std::string, std::string> &records)
 
     sprintf(filename, "xxxx\\%s", BANKLOGO);
     printReceiptLogo(filename);
+
     printReceiptHeader(records[VASDB_DATE].c_str());
 
     UPrint_SetFont(8, 2, 2);

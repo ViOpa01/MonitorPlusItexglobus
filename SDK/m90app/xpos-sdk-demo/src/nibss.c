@@ -95,7 +95,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
 
     strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid));
     strncpy(tid, mParam.tid, 8);
-    formattedDateTime(dateAndTime, sizeof(dateAndTime));
+    getFormattedDateTime(dateAndTime, sizeof(dateAndTime));
     sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
@@ -144,7 +144,7 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     
     strncpy(networkMangement->appVersion, APP_VER, sizeof(networkMangement->appVersion));
     strncpy(networkMangement->deviceModel, APP_MODEL, sizeof(networkMangement->deviceModel));
-    strncpy(networkMangement->commsName, "MTN-NG", sizeof(networkMangement->commsName));
+    strncpy(networkMangement->commsName, netProfile.operatorName, sizeof(networkMangement->commsName));
 
 // strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Morefun\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
 

@@ -98,6 +98,10 @@ int requeryToContext(Eft* trxContext, const char* response)
 
     iisys::JSObject& data = json("data");
 
+    if(data.isNull()) {
+        return -1;
+    }
+
     strncpy(trxContext->responseCode, data("responseCode").getString().c_str(), 2);
     
     return 0;

@@ -21,7 +21,7 @@ extern "C" {
 #include "libapi_xpos/inc/libapi_file.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "libapi_xpos/inc/libapi_util.h"
-
+#include "upay/upay_print.h"
 }
 
 #ifdef WIN32
@@ -550,6 +550,13 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
     readMerchantData(&mParam);
 	short isApproved = isApprovedResponse(eft->responseCode);
 	displayPaymentStatus(eft->responseCode);
+
+    /*
+    if(osl_get_is_printer() == 0){
+		xgui_messagebox_show("Sale", "OK" , "" , "confirm" ,  15000);
+		return 0;
+	}
+    */
 
 	ret = UPrint_Init();
 

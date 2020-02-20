@@ -18,6 +18,7 @@ extern "C"
 #include "nibss.h"
 
 void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters);
+short autoReversalInPlace(Eft *eft, NetWorkParameters *netParam);
 int performEft(Eft *eft, NetWorkParameters *netParam, const char *title);
 
 void eftTrans(const enum TransType transType);

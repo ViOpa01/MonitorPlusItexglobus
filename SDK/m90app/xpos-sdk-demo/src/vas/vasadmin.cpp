@@ -62,8 +62,8 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
 
     iisys::JSObject jHelp;
 
-    // formattedDateTime(dateTime, sizeof(dateTime));
-    values["date"] = date;
+    // getFormattedDateTime(dateTime, sizeof(dateTime));
+    values[VASDB_DATE] = date;
 
     for (unsigned i = 0; i < transactions.size(); ++i) {
         std::map<std::string, std::string>& element = transactions[i];
@@ -221,7 +221,7 @@ bool vasReprintToday()
     char dateTime[32] = { 0 };
 
     Demo_SplashScreen("Loading Transactions...", "www.payvice.com");
-    formattedDateTime(dateTime, sizeof(dateTime));
+    getFormattedDateTime(dateTime, sizeof(dateTime));
     return listVasTransactions(db, dateTime, "", "Transactions Today");
 }
 

@@ -160,7 +160,7 @@ int extractPayViceKey(char* plainKey, const char* encryptedKey, const char* wall
     return 0;
 }
 
-TamsPayviceResponse getPayviceKeys(/*CURL* curl_handle, */ Payvice& payvice)
+TamsPayviceResponse getPayviceKeys(Payvice& payvice)
 {
     NetWorkParameters netParam = {'\0'};
     char  encodedUrl[128];
@@ -333,7 +333,7 @@ std::string getClientReference()
 	size_t i = 0;
 
 	generateRandomString(randomString, sizeof(randomString));
-	formattedDateTime(formattedTimestamp, sizeof(formattedTimestamp));
+	getFormattedDateTime(formattedTimestamp, sizeof(formattedTimestamp));
 
 
 	snprintf(tempRef, sizeof(tempRef), "{\"sessionKey\": \"%s\", \"timestamp\": \"%s\",\"randomString\":\"%s\"}"

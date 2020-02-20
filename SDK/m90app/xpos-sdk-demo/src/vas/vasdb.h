@@ -44,6 +44,8 @@ struct VasDB {
         STATUS_UNKNOWN,
         APPROVED,
         DECLINED,
+        PENDING,
+        CARDAPPROVED,
         ALL
     } TrxStatus;
 
@@ -70,6 +72,7 @@ struct VasDB {
     // long beginTransaction(const EMV_TRX_CONTEXT *transaction);
 
     static const char * trxStatusString(TrxStatus status);
+    static TrxStatus vasErrToTrxStatus(VasError error);
     static long saveVasTransaction(std::map<std::string, std::string>& record);
     static int init();    // Use only during startup
     static int countAllTransactions();

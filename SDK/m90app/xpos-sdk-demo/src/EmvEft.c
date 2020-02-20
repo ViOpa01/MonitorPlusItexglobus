@@ -351,7 +351,7 @@ void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters)
 	strncpy(eft->currencyCode, merchantParameters->currencyCode, sizeof(eft->currencyCode));
 }
 
-static short autoReversal(Eft *eft, NetWorkParameters *netParam)
+short autoReversalInPlace(Eft *eft, NetWorkParameters *netParam)
 {
 	int result = -1;
 	unsigned char response[2048];
@@ -361,10 +361,6 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	int i;
 	struct HostType hostType;
 
-	if(eft->isVasTrans)
-	{
-		return 0;
-	}
 
 	//copy original MTI first before setting transaction type to reversal.
 	strncpy(eft->originalMti, transTypeToMti(eft->transType), sizeof(eft->originalMti));
@@ -416,6 +412,15 @@ static short autoReversal(Eft *eft, NetWorkParameters *netParam)
 	//no need to handle hostType for reversal, not sure.
 
 	return 0;
+}
+
+static short autoReversal(Eft *eft, NetWorkParameters *netParam)
+{
+	if(eft->isVasTrans) {
+		return 0;
+	}
+	
+	return autoReversalInPlace(eft, netParam);
 }
 
 enum TransType cardPaymentHandler()
@@ -768,15 +773,18 @@ void eftTrans(const enum TransType transType)
 		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
 	}
 
-	if (orginalDataRequired(&eft))
-	{
-		if (isReversal(&eft) && getReversalReason(&eft))
-			return;
-		if (uiGetRrn(eft.rrn))
-			return;
-		if (getOriginalDataFromDb(&eft))
-			return;
+	if(!eft.isVasTrans || !eft.switchMerchant) {
+		if (orginalDataRequired(&eft))
+		{
+			if (isReversal(&eft) && getReversalReason(&eft))
+				return;
+			if (uiGetRrn(eft.rrn))
+				return;
+			if (getOriginalDataFromDb(&eft))
+				return;
+		}
 	}
+	
 
 	copyMerchantParams(&eft, &merchantParameters);
 	populateEchoData(eft.echoData);

@@ -91,7 +91,7 @@ struct VasFlow_T {
         std::map<std::string, std::string> record = delegate->storageMap(completeStatus);
         if (record.find(VASDB_DATE) == record.end() || record[VASDB_DATE].empty()) {
             char dateTime[32] = { 0 };
-            formattedDateTime(dateTime, sizeof(dateTime));
+            getFormattedDateTime(dateTime, sizeof(dateTime));
             record[VASDB_DATE] = std::string(dateTime).append(".000");
         }
         long index = VasDB::saveVasTransaction(record);

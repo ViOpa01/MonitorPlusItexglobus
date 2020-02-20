@@ -290,7 +290,7 @@ short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmms
     return 0; 
 }
 
-void formattedDateTime(char* dateTime, size_t len)
+void getFormattedDateTime(char* dateTime, size_t len)
 {
 
     char date[15] = {'\0'};

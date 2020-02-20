@@ -288,7 +288,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 		
 
 		sprintf(tmp , "Connect server %d times" , i + 1);
-		comm_page_set_page("SSL", tmp , 1);
+		comm_page_set_page("SSL", tmp , 0);
 		
 
 		//TODO: Check callback later.
@@ -363,14 +363,14 @@ static short connectToHost(NetWorkParameters *netParam)
 	
 	if (nret != 0)
 	{
-		gui_messagebox_show("NET LINK" , "Link Fail", "" , "Exit" , 0);
+		gui_messagebox_show("NET LINK" , "Link Fail", "" , "" , 1000);
 		return -1;
 	}
 
 	if(COMM_SOCK = comm_sock_create(0))
 	{
 		// Failed to create socket
-        gui_messagebox_show("SOCKET" , "Socket Failed", "" , "Exit" , 0);
+        gui_messagebox_show("SOCKET" , "Socket Failed", "" , "" , 1000);
         printf("Failed to create socket\n");
 		return -2;
 	}
@@ -384,7 +384,7 @@ static short connectToHost(NetWorkParameters *netParam)
 	}
 
 	if (i == nTime) {
-		gui_messagebox_show(netParam->isSsl ? "HTTPS" : "HTTP" , "Connection Fail", "" , "Exit" , 0);
+		gui_messagebox_show(netParam->isSsl ? "HTTPS" : "HTTP" , "Connection Fail", "" , "" , 1000);
 		return -3;
 	}
 
@@ -441,7 +441,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 			num = Sys_TimerCheck(tick1)/1000;
 			num = num < 0 ? 0 : num;
 
-			sprintf(msg , "%s(%d)" , "Receiving..." , num);
+			sprintf(msg , "%s...(%d)" , "Receiving" , num);
 
 			comm_page_set_page(netParam->title , msg , 0);
 			ret = comm_page_get_exit();

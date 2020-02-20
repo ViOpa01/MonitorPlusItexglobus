@@ -43,7 +43,7 @@ iisys::JSObject getState()
    
     strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid));
     strncpy(tid, mParam.tid, 8);
-    formattedDateTime(dateAndTime, sizeof(dateAndTime));
+    getFormattedDateTime(dateAndTime, sizeof(dateAndTime));
     sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
@@ -61,9 +61,11 @@ iisys::JSObject getState()
 
     state("ptad") = "Itex Integrated Services";
     state("sv") = "7.8.18";     // Register the Morefun version later
+    // state("sv") = softwareVersion;
+    /*  // Need to know why cash payment method is returning request not authorized with cash payment method
     state("serial") = terminalSn;
-    state("bl") = 100;
-    state("btemp") = 35;
+    state("bl") = "100";
+    state("btemp") = "35";
     state("ctime") = dateAndTime;
     state("cs") = "Charging";
     state("ps") = "PrinterAvailable";
@@ -74,13 +76,12 @@ iisys::JSObject getState()
     state("simID") = simID;
     state("imsi") = imsi;
     state("ss") = ss;
-    state("sv") = softwareVersion;
     state("tmanu") = "Morefun";
     state("tmn") = APP_MODEL;
     state("hb") = "true";
     state("pads") = "";
     // state("ssid") = "";
-    // state("lTxnAt") = "";
+    state("lTxnAt") = "";
 
     cloc("cid") = cellId;
     cloc("lac") = lac;
@@ -88,7 +89,8 @@ iisys::JSObject getState()
     cloc("mnc") = "60";
     cloc("ss") = "-87dbm";
 
-    state("cloc") = cloc;    
+    state("cloc") = cloc; 
+    */
 
     return state;
 }

@@ -20,7 +20,7 @@ extern "C" {
 
 
 extern "C" int bin2hex(unsigned char *pcInBuffer, char *pcOutBuffer, int iLen);
-extern void formattedDateTime(char* dateTime, size_t len);
+extern void getFormattedDateTime(char* dateTime, size_t len);
 
 // extern void prepareTransactionAmmounts(unsigned long long inAmount,
 //     unsigned long long inCashbackAmount,
@@ -56,6 +56,23 @@ VasStatus Postman::complete(const char* url, const iisys::JSObject* json, const 
 {
     return doRequest(url, json, headers, card);
 }
+
+VasStatus Postman::reverse(CardPurchase& cardPurchase)
+{
+    VasStatus status;
+    NetWorkParameters netParam = {'\0'};
+    memset(&netParam, 0x00, sizeof(NetWorkParameters));
+
+    getNetParams(&netParam, CURRENT_PLATFORM, 0);
+
+    if (autoReversalInPlace(&cardPurchase.trxContext, &netParam)) {
+            return status;
+    }
+
+   status.error = NO_ERRORS;
+   return status;
+}
+
 
 VasStatus Postman::doRequest(const char* url, const iisys::JSObject* json, const std::map<std::string, std::string>* headers, CardPurchase* card)
 {
@@ -148,7 +165,7 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
     if (!headers && json) {
         char timestamp[32] = { 0 };
 
-        formattedDateTime(timestamp, sizeof(timestamp));
+        getFormattedDateTime(timestamp, sizeof(timestamp));
         timestamp[16] = '\0';
 
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Authorization: %s\r\n", generateRequestAuthorization(body, timestamp).c_str());
@@ -214,18 +231,17 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
 VasStatus
 Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const std::map<std::string, std::string>* headers, CardPurchase* cardPurchase)
 {
-    Eft trxContext;
     VasStatus status;
     
     iisys::JSObject jsonReq;
 
     std::string body;
 
-    memset((void*)&trxContext, 0, sizeof(Eft));
-    trxContext.switchMerchant = itexIsMerchant() ? 0 : 1;
+    memset((void*)&cardPurchase->trxContext, 0, sizeof(Eft));
+    cardPurchase->trxContext.switchMerchant = itexIsMerchant() ? 0 : 1;
    
-    strcpy(trxContext.dbName, VASDB_FILE);
-    strcpy(trxContext.tableName, VASCARDTABLENAME);
+    strcpy(cardPurchase->trxContext.dbName, VASDB_FILE);
+    strcpy(cardPurchase->trxContext.tableName, VASCARDTABLENAME);
     
 
     if (json) {
@@ -242,7 +258,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
     if (!headers && json) {
         char timestamp[32] = { 0 };
 
-        formattedDateTime(timestamp, sizeof(timestamp));
+        getFormattedDateTime(timestamp, sizeof(timestamp));
         timestamp[16] = '\0';
 
         jsonReq("headers")("Authorization") = generateRequestAuthorization(body, timestamp);
@@ -261,46 +277,44 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
 
     jsonReq("terminalId") = getDeviceTerminalId();
 
-    trxContext.genAuxPayload = vasPayloadGenerator;
-    trxContext.callbackdata = (void*)&jsonReq;
+    cardPurchase->trxContext.genAuxPayload = vasPayloadGenerator;
+    cardPurchase->trxContext.callbackdata = (void*)&jsonReq;
     
-    strncpy(trxContext.echoData, cardPurchase->refcode.c_str(), sizeof(trxContext.echoData) - 1);
+    strncpy(cardPurchase->trxContext.echoData, cardPurchase->refcode.c_str(), sizeof(cardPurchase->trxContext.echoData) - 1);
 
-    if (doVasCardTransaction(&trxContext, cardPurchase->amount) < 0) {
+    if (doVasCardTransaction(&cardPurchase->trxContext, cardPurchase->amount) < 0) {
         return status;  // We weren't able to initiate transaction
     }
 
-    cardPurchase->primaryIndex = trxContext.atPrimaryIndex;
+    cardPurchase->primaryIndex = cardPurchase->trxContext.atPrimaryIndex;
+    if (cardPurchase->trxContext.switchMerchant) {
+        cardPurchase->purchaseTid = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+    } else {
+        cardPurchase->purchaseTid = getDeviceTerminalId();
+    }
 
-    if (trxContext.auxResponse[0]) {
+    if (cardPurchase->trxContext.auxResponse[0]) {
         // Extra check to assert that card tranaction was successful?
-        if (!strcmp(trxContext.responseCode, "00") && trxContext.transType == EFT_PURCHASE) {
+        if (!strcmp(cardPurchase->trxContext.responseCode, "00") && cardPurchase->trxContext.transType == EFT_PURCHASE) {
             status.error = NO_ERRORS;
         }
-        status.message = trxContext.auxResponse;
+        status.message = cardPurchase->trxContext.auxResponse;
         return status;
     }
     
-    if (!trxContext.responseCode[0]) {
-        std::string txnTid;
+    if (!cardPurchase->trxContext.responseCode[0]) {
 
-        if (trxContext.switchMerchant) {
-            txnTid = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
-        } else {
-            txnTid = getDeviceTerminalId();
-        }
-
-        if (requeryMiddleware(&trxContext, txnTid.c_str()) < 0) {
+        if (requeryMiddleware(&cardPurchase->trxContext, cardPurchase->purchaseTid.c_str()) < 0) {
             status.error = CARD_STATUS_UNKNOWN;
             return status;
         }
         
     }
     
-    if (strcmp(trxContext.responseCode, "00")) {
+    if (strcmp(cardPurchase->trxContext.responseCode, "00")) {
         status.error = CARD_PAYMENT_DECLINED;
-        status.message = responseCodeToStr(trxContext.responseCode);
-    } else if (trxContext.transType == EFT_PURCHASE) {
+        status.message = responseCodeToStr(cardPurchase->trxContext.responseCode);
+    } else if (cardPurchase->trxContext.transType == EFT_PURCHASE) {
         // So card approved and we didn't get vas response
         iisys::JSObject transaction;
 
@@ -336,7 +350,6 @@ int vasPayloadGenerator(char* auxPayload, const size_t auxPayloadSize, const str
 {
     iisys::JSObject* jsonReq = static_cast<iisys::JSObject*>(context->callbackdata);
     
-    // TODO: Add journal here
     (*jsonReq)("journal") = getJournal(context);
     strncpy(auxPayload, jsonReq->dump().c_str(), auxPayloadSize -1 );
 

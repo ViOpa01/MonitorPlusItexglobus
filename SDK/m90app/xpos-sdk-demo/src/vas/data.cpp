@@ -157,15 +157,12 @@ std::map<std::string, std::string> Data::storageMap(const VasStatus& completionS
         }
         
         if (!itexIsMerchant()) {
-            record[VASDB_VIRTUAL_TID] = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+            record[VASDB_VIRTUAL_TID] = cardPurchase.purchaseTid;;
         }
     }
 
-    if (completionStatus.error == NO_ERRORS) {
-        record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::APPROVED);
-    } else {
-        record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::DECLINED);
-    }
+    record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
+
     record[VASDB_STATUS_MESSAGE] = paymentResponse.message;
     // record[VASDB_SERVICE_DATA] = paymentResponse.serviceData;
 
@@ -259,7 +256,11 @@ int Data::getPaymentJson(iisys::JSObject& json, Service service)
     json("phone") = phoneNumber;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
+        json("virtualTid") = cardPurchase.purchaseTid;
+    }
+
+    if (payMethod == PAY_WITH_CARD && json("reversal").isBool() && json("reversal").getBool() == true) {
+        comProxy.reverse(cardPurchase);
     }
 
     return 0;

@@ -212,15 +212,12 @@ std::map<std::string, std::string> ViceBanking::storageMap(const VasStatus& comp
         }
         
         if (!itexIsMerchant()) {
-            record[VASDB_VIRTUAL_TID] = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
+            record[VASDB_VIRTUAL_TID] = cardPurchase.purchaseTid;;
         }
     }
 
-    if (completionStatus.error == NO_ERRORS) {
-        record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::APPROVED);
-    } else {
-        record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::DECLINED);
-    }
+    record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
+
     record[VASDB_STATUS_MESSAGE] = paymentResponse.message;
 
     record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + vendorBankName + "\"}";
@@ -346,6 +343,10 @@ VasStatus ViceBanking::processPaymentResponse(iisys::JSObject& json, Service ser
         paymentResponse.transactionSeq = seq.getString();
     }
 
+    if (payMethod == PAY_WITH_CARD && json("reversal").isBool() && json("reversal").getBool() == true) {
+        comProxy.reverse(cardPurchase);
+    }
+
     return response;
 }
 
@@ -435,7 +436,7 @@ int ViceBanking::getPaymentJson(iisys::JSObject& json, Service service)
     json("productCode") = lookupResponse.productCode;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
+        json("virtualTid") = cardPurchase.purchaseTid;
     }
 
     return 0;

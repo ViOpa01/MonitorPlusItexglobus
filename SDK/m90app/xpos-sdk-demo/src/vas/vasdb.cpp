@@ -68,8 +68,41 @@ const char * VasDB::trxStatusString(TrxStatus status)
         return "Approved";
     case DECLINED:
         return "Declined";
+    case PENDING:
+        return "Pending";
+    case CARDAPPROVED:
+        return "Card Approved";
+    case STATUS_UNKNOWN:
+        return "Status Unknown";
     default:
         return "";
+    }
+}
+
+VasDB::TrxStatus VasDB::vasErrToTrxStatus(VasError error)
+{
+    switch (error) {
+    case NO_ERRORS:
+        return VasDB::APPROVED;
+    case VAS_ERROR:
+    case USER_CANCELLATION:
+    case INVALID_JSON:
+    case TYPE_MISMATCH:
+    case KEY_NOT_FOUND:
+    case INPUT_ABORT:
+    case INPUT_TIMEOUT_ERROR:
+    case INPUT_ERROR:
+    case STATUS_ERROR:
+    case TXN_NOT_FOUND:
+    case CARD_PAYMENT_DECLINED:
+    case NOT_LOGGED_IN:
+        return VasDB::DECLINED;
+    case CARD_APPROVED:
+        return VasDB::CARDAPPROVED;
+    case TXN_PENDING:
+        return VasDB::PENDING;
+    case CARD_STATUS_UNKNOWN:
+        return VasDB::STATUS_UNKNOWN;
     }
 }
 

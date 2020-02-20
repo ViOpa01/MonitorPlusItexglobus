@@ -9,6 +9,7 @@ extern "C" {
 #include "network.h"
 #include "EmvEft.h"
 #include "merchant.h"
+#include "Nibss8583.h"
 
 int vasTransactionTypesBridge();
 int doVasCardTransaction(Eft* trxContext, unsigned long amount);
