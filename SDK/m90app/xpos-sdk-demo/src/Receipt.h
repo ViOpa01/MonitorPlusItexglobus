@@ -20,6 +20,7 @@ void printReceiptHeader(const char *transDate);
 void printFooter();
 void printLine(const char *head, const char *val);
 short printReceipts(Eft * eft, const short isReprint);
+short printPaycodeReceipts(Eft * eft, const short isReprint);
 void printHandshakeReceipt(MerchantData *mParam);
 void reprintByRrn(void);
 void reprintLastTrans(void);

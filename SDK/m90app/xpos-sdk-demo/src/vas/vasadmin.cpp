@@ -69,14 +69,28 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
     // getFormattedDateTime(dateTime, sizeof(dateTime));
     values[VASDB_DATE] = date;
 
-    for (unsigned i = 0; i < transactions.size(); ++i) {
+    for (size_t i = 0; i < transactions.size(); ++i) {
         std::map<std::string, std::string>& element = transactions[i];
-        int approved = !strcmp(element[VASDB_STATUS].c_str(), VasDB::trxStatusString(VasDB::APPROVED));
+
+        const std::string& status = element[VASDB_STATUS];
+
+        if (status == VasDB::trxStatusString(VasDB::APPROVED)) {
+            jHelp[i]("status") = " A ";
+        } else if (status == VasDB::trxStatusString(VasDB::DECLINED)) {
+            jHelp[i]("status") = " D ";
+        } else if (status == VasDB::trxStatusString(VasDB::CARDAPPROVED)) {
+            jHelp[i]("status") = " CA ";
+        } else if (status == VasDB::trxStatusString(VasDB::PENDING)) {
+            jHelp[i]("status") = " P ";
+        } else if (status == VasDB::trxStatusString(VasDB::STATUS_UNKNOWN)) {
+            jHelp[i]("status") = " U ";
+        } else {
+            jHelp[i]("status") = " UU ";
+        }
 
         amountStr = element[VASDB_AMOUNT];
         formatAmount(amountStr);
 
-        jHelp[i]("status") = (approved) ? " A " : " D ";
         if (service.empty()) {
             jHelp[i]("preferredField") = element[VASDB_SERVICE];
         } else {

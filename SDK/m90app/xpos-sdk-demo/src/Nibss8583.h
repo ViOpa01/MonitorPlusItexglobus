@@ -189,9 +189,13 @@ typedef struct Eft
     long atPrimaryIndex;
 
     char balance[256];
+    char posDataCode[16];
+    char entryMode[5];
+    int otherTrans; //Used for other transaction type like paycode cashin and cashout
+    char otherData[256]; //Used for saving other data like paycode.
 
     char dateAndTime[32];
-
+    
     // Vas specific additions
     int (*genAuxPayload)(char auxPayload[], const size_t auxPayloadSize, const struct Eft*);
     void* callbackdata;
