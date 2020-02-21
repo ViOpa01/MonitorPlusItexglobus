@@ -35,12 +35,12 @@
 	#include "LiveCapk.h"
 #endif
 
-static void injectCapks(void)
+static short injectCapks(void)
 {
 #ifdef DEV_MODE 
-	injectTestCapks();
+	return injectTestCapks();
 #else 
-	injectLiveCapks();
+	return injectLiveCapks();
 #endif
 }
 
@@ -1469,7 +1469,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		TestDownloadAID(&TerminalApps);
 		EMV_PrmClearAIDPrmFile();
 		EMV_PrmSetAIDPrm(&TerminalApps); //Set AID
-		injectCapks();
+		if (injectCapks()) { //error
+
+		}
 	}
 
 	APP_TRACE("emv_read_card");

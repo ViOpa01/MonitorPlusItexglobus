@@ -15,6 +15,6 @@
  * Inject live capks.
  */
 
-void injectLiveCapks(void);
+short injectLiveCapks(void);
 
 #endif 

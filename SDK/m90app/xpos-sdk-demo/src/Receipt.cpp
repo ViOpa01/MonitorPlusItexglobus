@@ -566,6 +566,12 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	}
     */
 
+   // Prompt is printing
+	gui_begin_batch_paint();			
+	gui_clear_dc();
+	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
+	gui_end_batch_paint();
+
 	ret = UPrint_Init();
 
 	if (ret == UPRN_OUTOF_PAPER)
