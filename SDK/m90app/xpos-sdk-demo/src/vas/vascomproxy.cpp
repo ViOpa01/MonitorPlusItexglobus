@@ -9,12 +9,15 @@
 #include "util.h"
 #include "Receipt.h"
 #include "virtualtid.h"
+#include "EmvDBUtil.h"
+#include "EftDbImpl.h"
+#include "EmvDB.h"
 
 #include "vasdb.h"
 
 extern "C" {
-// #include "EmvEft.h"
-// #include "Nibss8583.h"
+#include "EmvEft.h"
+#include "Nibss8583.h"
 #include "network.h"
 }
 
@@ -61,14 +64,20 @@ VasStatus Postman::reverse(CardPurchase& cardPurchase)
 {
     VasStatus status;
     NetWorkParameters netParam = {'\0'};
-    memset(&netParam, 0x00, sizeof(NetWorkParameters));
 
+    EmvDB db(cardPurchase.trxContext.tableName, cardPurchase.trxContext.dbName);
+    
+    memset(&netParam, 0x00, sizeof(NetWorkParameters));
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
     if (autoReversalInPlace(&cardPurchase.trxContext, &netParam)) {
-            return status;
+        db.updateTransaction(cardPurchase.primaryIndex, ctxToUpdateMap(&cardPurchase.trxContext));
+        return status;
     }
 
+    
+    db.updateTransaction(cardPurchase.primaryIndex, ctxToUpdateMap(&cardPurchase.trxContext));
+    
    status.error = NO_ERRORS;
    return status;
 }

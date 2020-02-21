@@ -363,14 +363,14 @@ static short connectToHost(NetWorkParameters *netParam)
 	
 	if (nret != 0)
 	{
-		gui_messagebox_show("NET LINK" , "Link Fail", "" , "" , 1000);
+		gui_messagebox_show("NET LINK" , "Link Fail", "" , "" , 10);
 		return -1;
 	}
 
 	if(COMM_SOCK = comm_sock_create(0))
 	{
 		// Failed to create socket
-        gui_messagebox_show("SOCKET" , "Socket Failed", "" , "" , 1000);
+        gui_messagebox_show("SOCKET" , "Socket Failed", "" , "" , 10);
         printf("Failed to create socket\n");
 		return -2;
 	}

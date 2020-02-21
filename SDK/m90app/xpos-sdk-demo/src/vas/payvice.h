@@ -64,8 +64,7 @@ struct Payvice : public FileJson {
         object(KEY) = "";
         object(SESSION) = "";
 
-        save();
-        return 0;
+        return save();
     }
 
 private:

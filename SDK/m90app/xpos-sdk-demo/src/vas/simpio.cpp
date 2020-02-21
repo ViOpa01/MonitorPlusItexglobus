@@ -151,7 +151,7 @@ int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_
     int result = 0;
 
     gui_clear_dc();
-	result = gui_messagebox_show((char *)title, (char *)text, "Cancel", "Ok", timeout);
+	result = gui_messagebox_show((char *)title, (char *)text, "Cancel", "Ok", 0);
 
     switch (result) {
     case 1:

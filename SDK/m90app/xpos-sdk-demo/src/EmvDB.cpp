@@ -21,7 +21,10 @@
 
 static std::map<std::string, int> initializationMap;
 
-EmvDB::EmvDB(const std::string& tableName, const std::string& file) : table(tableName), dbFile(file)//, log(EMVDBLOG)
+EmvDB::EmvDB(const std::string& tableName, const std::string& file) 
+    : 
+        table(tableName), 
+        dbFile(file)
 {
 
     if (initializationMap[tableName] == 0 && init(tableName) == 0) {

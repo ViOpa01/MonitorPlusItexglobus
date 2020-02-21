@@ -26,6 +26,10 @@
 #include "vasdb.h"
 #include "wallet.h"
 
+extern "C" {
+#include "itexFile.h"
+}
+
 extern int formatAmount(std::string& ulAmount);
 
 #define VASADMIN "VASADMIN"
@@ -106,7 +110,7 @@ int requestDateAndService(VasDB& database, std::string& date, std::string& servi
 
     database.selectUniqueDates(dates);
     if (dates.empty()) {
-        UI_ShowButtonMessage(2000, "No Records", "", "OK", UI_DIALOG_TYPE_CAUTION);
+        UI_ShowButtonMessage(3000, "Message", "No Records", "OK", UI_DIALOG_TYPE_CAUTION);
         return -1;
     }
 
@@ -194,7 +198,7 @@ bool listVasTransactions(VasDB& db, const std::string& dateTime, const std::stri
     }
 
     if (!transactions.size()) {
-        UI_ShowButtonMessage(2000, "No Transactions For Specified Date", dateTime.c_str(), "OK", UI_DIALOG_TYPE_CAUTION);
+        UI_ShowButtonMessage(2000,  dateTime.c_str(), "No Transactions For Specified Date","OK", UI_DIALOG_TYPE_CAUTION);
         return false;
     }
 
@@ -459,9 +463,14 @@ int printRequery(iisys::JSObject& transaction)
 
 void vasAdmin()
 {
-    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Balance Enquiry", "Commission Transfer"  };
-    std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
+    Payvice payvice;
+    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Balance Enquiry", "Commission Transfer", "Log Out" };
 
+    if(!loggedIn(payvice) && logIn(payvice) < 0) {
+        return;
+    }
+
+    std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
     switch (UI_ShowSelection(30000, "Vas Admin", optionMenu, 0)) {
     case 0: {
         iisys::JSObject transaction;
@@ -499,6 +508,20 @@ void vasAdmin()
     case 5:
         walletRequest(2);
         break;
+
+    case 6:
+        if(UI_ShowOkCancelMessage(2000, "Notification", "Do you wish to log out?", UI_DIALOG_TYPE_CAUTION) == CONFIRM) {
+            // log out 
+            if (logOut(payvice) == 0) {
+                // VASDB_FILE, but it contains the directory as well, itex/vas.db
+                removeFile("vas.db");
+                VasDB::init();
+            }
+  
+        }
+
+        break;
+
     default:
         break;
     }

@@ -353,6 +353,11 @@ int printVas(std::map<std::string, std::string>& record)
         record["receipt_copy"] = copies[0];
     }
 
+    if (record.find(DB_MTI) != record.end() && !strncmp(record[DB_MTI].c_str(), "04", 2)) {
+        std::string resp = record[DB_RESP];
+        record[DB_RESP] = "Reversal(" + resp + ")";
+    }
+
     for (int i = 0; i < count; ++i) {
         if (count > 1) {
             record["receipt_copy"] = copies[i];
