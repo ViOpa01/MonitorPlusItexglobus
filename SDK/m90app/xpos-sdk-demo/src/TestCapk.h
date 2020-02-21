@@ -16,6 +16,6 @@
  * Inject test capks.
  */
 
-void injectTestCapks(void);
+short injectTestCapks(void);
 
 #endif 
