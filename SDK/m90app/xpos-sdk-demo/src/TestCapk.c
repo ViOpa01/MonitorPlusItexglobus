@@ -266,7 +266,7 @@ short injectTestCapks(void)
 		fprintf(stdout, "Intalling Test Capk %d of %d -> %s\n\n", i, size, AllTestEmvKey[i].label);
 
 		if (addCapk(AllTestEmvKey[i].keyValue, AllTestEmvKey[i].label))  {
-			//return -1;
+			return -1;
 		}
 	}
     
