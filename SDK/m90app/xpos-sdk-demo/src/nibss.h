@@ -39,7 +39,7 @@ extern "C"
 */
 
 // Set CURRENT_PLATFORM only for DevMode
-#define CURRENT_PLATFORM NET_EPMS_SSL_TEST
+#define CURRENT_PLATFORM NET_POSVAS_SSL
 
 
 short uiHandshake(void);

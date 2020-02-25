@@ -172,6 +172,11 @@ std::map<std::string, std::string> Data::storageMap(const VasStatus& completionS
 VasStatus Data::lookupCheck(const VasStatus& lookupStatus)
 {
     iisys::JSObject lookupData;
+
+    if (lookupStatus.error) {
+        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
+    }
+
     if (!lookupData.load(lookupStatus.message)) {
         return VasStatus(INVALID_JSON, "Invalid Response");
     }
@@ -256,7 +261,7 @@ int Data::getPaymentJson(iisys::JSObject& json, Service service)
     json("phone") = phoneNumber;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = cardPurchase.purchaseTid;
+        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
     }
 
     if (payMethod == PAY_WITH_CARD && json("reversal").isBool() && json("reversal").getBool() == true) {

@@ -201,6 +201,11 @@ VasStatus PayTV::startimesLookupCheck(const VasStatus& lookupStatus)
     std::ostringstream confirmationMessage;
 
     iisys::JSObject lookupData;
+
+    if (lookupStatus.error) {
+        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
+    }
+
     if (!lookupData.load(lookupStatus.message)) {
         return VasStatus(INVALID_JSON, "Invalid Response");
     }
@@ -251,6 +256,11 @@ VasStatus PayTV::startimesLookupCheck(const VasStatus& lookupStatus)
 VasStatus PayTV::multichoiceLookupCheck(const VasStatus& lookupStatus)
 {
     iisys::JSObject lookupData;
+
+    if (lookupStatus.error) {
+        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
+    }
+    
     if (!lookupData.load(lookupStatus.message)) {
         return VasStatus(INVALID_JSON, "Invalid Response");
     }
@@ -351,7 +361,7 @@ int PayTV::getPaymentJson(iisys::JSObject& json, Service service)
     json("phone") = phoneNumber;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = cardPurchase.purchaseTid;
+        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
     }
     
     return 0;

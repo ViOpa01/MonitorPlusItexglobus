@@ -201,11 +201,21 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
     } 
 
 
-    if(sendAndRecvPacket(&netParam) == SEND_RECEIVE_SUCCESSFUL){
+    enum CommsStatus commStatus = sendAndRecvPacket(&netParam);
+    if(commStatus == SEND_RECEIVE_SUCCESSFUL){
         status.error = NO_ERRORS;
         status.message = bodyPointer((const char*)netParam.response);
         return status;
-    } else if (!json) {
+    } else if (!json || (*json)("clientReference").isNull()) {
+        if (commStatus == CONNECTION_FAILED) {
+            status.message = "Connection Error";
+        } else if (commStatus == SENDING_FAILED) {
+            status.message = "Send Error";
+        } else if (commStatus == RECEIVING_FAILED) {
+            status.message = "Receive error";
+        } else {
+            status.message = "Unknown Network Error";
+        }
         return status;
     }
 

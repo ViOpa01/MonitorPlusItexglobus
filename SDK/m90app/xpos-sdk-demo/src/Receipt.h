@@ -24,7 +24,7 @@ short printPaycodeReceipts(Eft * eft, const short isReprint);
 void printHandshakeReceipt(MerchantData *mParam);
 void reprintByRrn(void);
 void reprintLastTrans(void);
-void getPrinterStatus(const int status);
+int getPrinterStatus(const int status);
 
 const char *responseCodeToStr(const char responseCode[3]);
 

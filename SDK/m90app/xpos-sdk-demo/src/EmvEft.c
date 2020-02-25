@@ -430,7 +430,7 @@ void paycodeHandler(void)
 
 	char *payment_list[] = {
 		"PURCHASE(PAYCODE)",
-		"WITHDRAWAL(PAYCODE)",
+		"WITHDRAWAL(PAYCODE)"
 	};
 
 	/*

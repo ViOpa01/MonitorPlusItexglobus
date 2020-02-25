@@ -52,7 +52,7 @@ Electricity::EnergyType Electricity::getEnergyType(Service service, const char* 
     const char* energyTypes[] = { "Token", "Postpaid" };
     std::vector<std::string> menu(energyTypes, energyTypes + sizeof(energyTypes) / sizeof(char*));
 
-    if (service == EKEDC || service == KEDCO) {
+    if (service == EKEDC) {
         return GENERIC_ENERGY;
     }
 
@@ -71,6 +71,10 @@ VasStatus Electricity::lookupCheck(const VasStatus& lookupStatus)
 {
     iisys::JSObject data;
     std::ostringstream confirmationMessage;
+
+    if (lookupStatus.error) {
+        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
+    }
 
     if (!data.load(lookupStatus.message)) {
         return VasStatus(INVALID_JSON, "Invalid Response");
@@ -405,7 +409,7 @@ int Electricity::getPaymentJson(iisys::JSObject& json, Service service)
 	json("password") = password;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = cardPurchase.purchaseTid;
+        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID); 
     }
 
     return 0;

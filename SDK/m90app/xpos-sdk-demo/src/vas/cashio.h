@@ -54,6 +54,7 @@ struct ViceBanking : FlowDelegate {
     VasStatus beginVas();
     VasStatus lookup(const VasStatus&);
     VasStatus initiate(const VasStatus&);
+    VasStatus prepareCashIORequest(iisys::JSObject& json, std::map<std::string, std::string>& customHeaders);
     VasStatus complete(const VasStatus&);
 
     Service vasServiceType();

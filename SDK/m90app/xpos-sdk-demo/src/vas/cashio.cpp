@@ -54,6 +54,10 @@ VasStatus ViceBanking::lookupCheck(const VasStatus& lookupStatus)
     iisys::JSObject data;
     iisys::JSObject status;
 
+    if (lookupStatus.error) {
+        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
+    }
+
     if (!data.load(lookupStatus.message)) {
         return VasStatus(INVALID_JSON, "Invalid Response");
     }
@@ -105,27 +109,57 @@ VasStatus ViceBanking::lookup(const VasStatus& beginStatus)
 
 VasStatus ViceBanking::initiate(const VasStatus& lookupStatus)
 {
+    VasStatus response;
+    
     phoneNumber = getPhoneNumber("Phone Number", "");
     if (phoneNumber.empty()) {
-        return VasStatus(USER_CANCELLATION);
+        response = USER_CANCELLATION;
+        return response;
+    } else if (payMethod != PAY_WITH_MCASH) {
+        response = NO_ERRORS;
+        return response;
     }
 
-    return VasStatus(NO_ERRORS);
-}
-
-Service ViceBanking::vasServiceType()
-{
-    return service;
-}
-
-VasStatus ViceBanking::complete(const VasStatus& initiateStatus)
-{
-    std::string pin;
     iisys::JSObject json;
-    VasStatus response;
-
-    KeyChain keys;
     std::map<std::string, std::string> customHeaders;
+
+    response = prepareCashIORequest(json, customHeaders);
+    if (response.error) {
+        return response;
+    }
+
+    Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
+    response = comProxy.initiate("/vas/mcash-banking/withdrawal/payment", &json, &customHeaders);
+
+    if (response.error) {
+        return response;
+    }
+
+    if (!json.load(response.message)) {
+        response.error = INVALID_JSON;
+        response.message = "Invalid Response";
+        return response;
+    }
+
+    response = vasErrorCheck(json);
+
+    if (response.error == NO_ERRORS) {
+        const iisys::JSObject& productCode = json("productCode");
+        if (productCode.isNull()) {
+            return response;
+        }
+        lookupResponse.productCode = productCode.getString();
+        UI_ShowButtonMessage(10 * 60 * 1000, "Check Your Phone", "Complete Transaction and Press Enter to Continue", "Check Status", UI_DIALOG_TYPE_CONFIRMATION);
+    }
+
+    return response;
+}
+
+VasStatus ViceBanking::prepareCashIORequest(iisys::JSObject& json, std::map<std::string, std::string>& customHeaders)
+{
+    KeyChain keys;
+    std::string pin;
+    VasStatus response;
 
     switch (getPin(pin, "Payvice Pin")) {
     case EMV_CT_PIN_INPUT_ABORT:
@@ -149,14 +183,42 @@ VasStatus ViceBanking::complete(const VasStatus& initiateStatus)
 
     json("pin") = encryptedPin(Payvice(), pin.c_str());
     json("pfm")("state") = getState();
-    
     json("clientReference") = getClientReference();
     
     cashIOVasToken(json.dump().c_str(), NULL, &keys);
     customHeaders["ITEX-Nonce"] = keys.nonce;
     customHeaders["ITEX-Signature"] = keys.signature;
 
+    response.error = NO_ERRORS;
+    return response;
+}
 
+Service ViceBanking::vasServiceType()
+{
+    return service;
+}
+
+VasStatus ViceBanking::complete(const VasStatus& initiateStatus)
+{
+    VasStatus response;
+    iisys::JSObject json;
+    std::map<std::string, std::string> customHeaders;
+
+    if (payMethod != PAY_WITH_MCASH) {
+        response = prepareCashIORequest(json, customHeaders);
+        if (response.error) {
+            return response;
+        }
+    } else {
+        KeyChain keys;
+        json("wallet") = Payvice().object(Payvice::WALLETID);
+        json("productCode") = lookupResponse.productCode;
+
+        cashIOVasToken(json.dump().c_str(), NULL, &keys);
+        customHeaders["ITEX-Nonce"] = keys.nonce;
+        customHeaders["ITEX-Signature"] = keys.signature;
+    }
+    
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");
 
     if (payMethod == PAY_WITH_CARD) {
@@ -436,7 +498,7 @@ int ViceBanking::getPaymentJson(iisys::JSObject& json, Service service)
     json("productCode") = lookupResponse.productCode;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = cardPurchase.purchaseTid;
+        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
     }
 
     return 0;

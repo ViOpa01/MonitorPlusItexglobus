@@ -498,98 +498,106 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
     }
 
     readMerchantData(&mParam);
-    ret = UPrint_Init();
 
-    if (ret == UPRN_OUTOF_PAPER) {
-        UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION);
-	}
+    while(1) {
+        ret = UPrint_Init();
 
-    // Print Bank Logo
-    strcpy(logoFileName, record["vaslogo"].c_str());
-    printReceiptLogo(logoFileName);
-    printReceiptHeader(record[VASDB_DATE].c_str());
+        if (ret == UPRN_OUTOF_PAPER) {
+            if (UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION)) {
+                break;
+            }
+        }
 
-    strcpy(buff, record[VASDB_SERVICE].c_str());
-    UPrint_StrBold(buff, 1, 4, 1);
+        // Print Bank Logo
+        strcpy(logoFileName, record["vaslogo"].c_str());
+        printReceiptLogo(logoFileName);
+        printReceiptHeader(record[VASDB_DATE].c_str());
 
-    memset(buff, '\0', sizeof(buff));
-    strcpy(buff, record["receipt_copy"].c_str());
-	UPrint_StrBold(buff, 1, 4, 1);
+        strcpy(buff, record[VASDB_SERVICE].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
 
-    UPrint_SetDensity(3); //Set print density to 3 normal
-	UPrint_SetFont(7, 2, 2);
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record["receipt_copy"].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
 
-    memset(buff, '\0', sizeof(buff));
-    strcpy(buff, record[VASDB_STATUS].c_str());
-    UPrint_StrBold(buff, 1, 4, 1);
-    UPrint_Feed(12);
+        UPrint_SetDensity(3); //Set print density to 3 normal
+        UPrint_SetFont(7, 2, 2);
 
-    if (type == ENERGY) {
-        printElectricity(record);
-    } else if(type == AIRTIME || type == DATA || type == SMILE) {
-        printAirtime(record);
-    } else if(type == TV_SUBSCRIPTIONS) {
-        printTv(record);
-    } else if(type == CASHIO) {
-        printCashio(record);
-    }
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record[VASDB_STATUS].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+        UPrint_Feed(12);
 
-    printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
+        if (type == ENERGY) {
+            printElectricity(record);
+        } else if(type == AIRTIME || type == DATA || type == SMILE) {
+            printAirtime(record);
+        } else if(type == TV_SUBSCRIPTIONS) {
+            printTv(record);
+        } else if(type == CASHIO) {
+            printCashio(record);
+        }
 
-    if(!record[VASDB_REF].empty())
-    {
-        printLine("REF ", record[VASDB_REF].c_str());
+        printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
+
+        if(!record[VASDB_REF].empty())
+        {
+            printLine("REF ", record[VASDB_REF].c_str());
+        }
+        
+        if(!record[VASDB_TRANS_SEQ].empty())
+        {
+            printLine("TRANS SEQ", record[VASDB_TRANS_SEQ].c_str());
+        }
+
+        if(!record[VASDB_VIRTUAL_TID].empty())
+        {
+            printLine("VID", record[VASDB_VIRTUAL_TID].c_str());
+        }
+
+        if(mParam.tid[0]) {
+            printLine("TID", mParam.tid);
+        }
+
+        if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD)) {
+
+            printLine("CARD NAME ", record[DB_NAME].c_str());
+            printLine("PAN", record[DB_PAN].c_str());
+            printLine("AID", record[DB_AID].c_str());
+            printLine("LABEL", record[DB_LABEL].c_str());
+            printLine("EXPIRY", record[DB_EXPDATE].c_str());
+            printLine("CREF", record[DB_RRN].c_str());
+
+            if(!record[DB_AUTHID].empty()) {
+                printLine("AUTH CODE", record[DB_AUTHID].c_str()); 
+            }
+            printLine("RESP CODE", record[DB_RESP].c_str());
+        }
+    
+    
+
+        memset(buff, '\0', sizeof(buff));
+        sprintf(buff, "NGN %s", record[VASDB_AMOUNT].c_str());
+
+        printAsteric(strlen(buff));
+        UPrint_StrBold(buff, 1, 4, 1);
+        printAsteric(strlen(buff));
+
+        UPrint_Feed(12);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record[VASDB_STATUS_MESSAGE].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+
+        printDottedLine();
+        printFooter();
+
+        ret = UPrint_Start();
+        if(getPrinterStatus(ret) < 0 ) {
+            break;
+        }
     }
     
-    if(!record[VASDB_TRANS_SEQ].empty())
-    {
-        printLine("TRANS SEQ", record[VASDB_TRANS_SEQ].c_str());
-    }
-
-    if(!record[VASDB_VIRTUAL_TID].empty())
-    {
-        printLine("VID", record[VASDB_VIRTUAL_TID].c_str());
-    }
-
-    if(mParam.tid[0]) {
-         printLine("TID", mParam.tid);
-    }
-
-    if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD)) {
-
-        printLine("CARD NAME ", record[DB_NAME].c_str());
-        printLine("PAN", record[DB_PAN].c_str());
-        printLine("AID", record[DB_AID].c_str());
-        printLine("LABEL", record[DB_LABEL].c_str());
-        printLine("EXPIRY", record[DB_EXPDATE].c_str());
-        printLine("CREF", record[DB_RRN].c_str());
-
-        if(!record[DB_AUTHID].empty()) {
-            printLine("AUTH CODE", record[DB_AUTHID].c_str()); 
-        }
-        printLine("RESP CODE", record[DB_RESP].c_str());
-    }
-  
-   
-
-    memset(buff, '\0', sizeof(buff));
-    sprintf(buff, "NGN %s", record[VASDB_AMOUNT].c_str());
-
-    printAsteric(strlen(buff));
-	UPrint_StrBold(buff, 1, 4, 1);
-    printAsteric(strlen(buff));
-
-    UPrint_Feed(12);
-
-    memset(buff, '\0', sizeof(buff));
-    strcpy(buff, record[VASDB_STATUS_MESSAGE].c_str());
-    UPrint_StrBold(buff, 1, 4, 1);
-
-    printDottedLine();
-	printFooter();
-
-	ret = UPrint_Start();
-	getPrinterStatus(ret);
 
     return ret;
 }
@@ -614,66 +622,74 @@ int printVasEod(std::map<std::string, std::string> &records)
         return -1;
     }
 
-    ret = UPrint_Init();
-    if (ret == UPRN_OUTOF_PAPER) {
-        UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION);
-	}
+    while(1) {
 
-    sprintf(filename, "xxxx\\%s", BANKLOGO);
-    printReceiptLogo(filename);
+        ret = UPrint_Init();
+        if (ret == UPRN_OUTOF_PAPER) {
+            if(UI_ShowButtonMessage(0, "Print", "No paper \nDo you wish to reload Paper?r", "confirm", UI_DIALOG_TYPE_CONFIRMATION)) {
+                break;
+            }
+        }
 
-    printReceiptHeader(records[VASDB_DATE].c_str());
+        sprintf(filename, "xxxx\\%s", BANKLOGO);
+        printReceiptLogo(filename);
 
-    UPrint_SetFont(8, 2, 2);
-    UPrint_StrBold("SUMMARY", 1, 4, 1);
-    printDottedLine();
+        printReceiptHeader(records[VASDB_DATE].c_str());
 
-    UPrint_Feed(12);
-
-    printLine("Approved Amnt", records["approvedAmount"].c_str());
-    printLine("Approved Count", records["approvedCount"].c_str());
-    printLine("Declined Amnt", records["declinedAmount"].c_str());
-    printLine("Declined Count", records["declinedCount"].c_str());
-    printLine("Total Count", records["totalCount"].c_str());
-
-    UPrint_Feed(12);
-
-    memset(buff, '\0', sizeof(buff));
-    strcpy(buff, records["trxType"].c_str());
-    UPrint_StrBold(buff, 1, 4, 1);
-    printDottedLine();
-
-    UPrint_Feed(10);
-
-    for(int i = 0; i < json.size(); i++) {
-
-        char leftAlign[32] = {'\0'};
-        char rightAlign[32] = {'\0'};
-        char amount[14] = {'\0'};
-        char time[8] = {'\0'};
-        char status[3] = {'\0'};
-        char preferredField[24] = {'\0'};
-        
-        iisys::JSObject& itex = json[i];
-
-        strcpy(amount, itex("amount").getString().c_str());
-        strcpy(time, itex("tstamp").getString().c_str());
-        strcpy(preferredField, itex("preferredField").getString().c_str());
-        strcpy(status, itex("status").getString().c_str());
-
-        sprintf(leftAlign, "%s %s", time, preferredField);
-        sprintf(rightAlign, "%s %s", amount, status);
-        printLine(leftAlign, rightAlign);
-
+        UPrint_SetFont(8, 2, 2);
+        UPrint_StrBold("SUMMARY", 1, 4, 1);
         printDottedLine();
 
+        UPrint_Feed(12);
+
+        printLine("Approved Amnt", records["approvedAmount"].c_str());
+        printLine("Approved Count", records["approvedCount"].c_str());
+        printLine("Declined Amnt", records["declinedAmount"].c_str());
+        printLine("Declined Count", records["declinedCount"].c_str());
+        printLine("Total Count", records["totalCount"].c_str());
+
+        UPrint_Feed(12);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, records["trxType"].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+        printDottedLine();
+
+        UPrint_Feed(10);
+
+        for(int i = 0; i < json.size(); i++) {
+
+            char leftAlign[32] = {'\0'};
+            char rightAlign[32] = {'\0'};
+            char amount[14] = {'\0'};
+            char time[8] = {'\0'};
+            char status[3] = {'\0'};
+            char preferredField[24] = {'\0'};
+            
+            iisys::JSObject& itex = json[i];
+
+            strcpy(amount, itex("amount").getString().c_str());
+            strcpy(time, itex("tstamp").getString().c_str());
+            strcpy(preferredField, itex("preferredField").getString().c_str());
+            strcpy(status, itex("status").getString().c_str());
+
+            sprintf(leftAlign, "%s %s", time, preferredField);
+            sprintf(rightAlign, "%s %s", amount, status);
+            printLine(leftAlign, rightAlign);
+
+            printDottedLine();
+
+        }
+
+        printFooter();
+
+        ret = UPrint_Start();
+        if(getPrinterStatus(ret) < 0) {
+            break;
+        }
+
     }
-
-	printFooter();
-
-	ret = UPrint_Start();
-	getPrinterStatus(ret);
-
+    
     return ret;
 
 }

@@ -46,7 +46,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
-	{MAIN_MENU_PAGE, UI_PAYCODE,          ""},
+	// {MAIN_MENU_PAGE, UI_PAYCODE,          ""},
 	/*
 	{MAIN_MENU_PAGE, UI_PURCHASE,   ""},
 	{MAIN_MENU_PAGE, UI_PREAUTH,    ""},
@@ -308,57 +308,6 @@ static int enableAndDisableOtherTrans()
 	return option;
 }
 
-/*
-static short eftHandler(const char *pid)
-{
-	if (strcmp(pid, UI_PURCHASE) == 0)
-	{
-		eftTrans(EFT_PURCHASE, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_CASHBACK) == 0)
-	{
-		eftTrans(EFT_CASHBACK, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_PREAUTH) == 0)
-	{
-		eftTrans(EFT_PREAUTH, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_COMPLETION) == 0)
-	{
-		eftTrans(EFT_COMPLETION, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_REVERSAL) == 0)
-	{
-		eftTrans(EFT_REVERSAL, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_REFUND) == 0)
-	{
-		eftTrans(EFT_REFUND, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_CASHADVANCE) == 0)
-	{
-		eftTrans(EFT_CASHADVANCE, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_BALANCE) == 0)
-	{
-		eftTrans(EFT_BALANCE, SUB_NONE);
-	}
-	else if (strcmp(pid, UI_PAYCODE_CASHOUT) == 0)
-	{
-		eftTrans(EFT_CASHADVANCE, SUB_PAYCODE_CASHOUT);
-	}
-	else if (strcmp(pid, UI_PAYCODE_CASHIN) == 0)
-	{
-		eftTrans(EFT_PURCHASE, SUB_PAYCODE_CASHIN);
-	}
-	else
-	{
-		return -1;
-	}
-
-	return 0;
-}
-*/
 
 #include "sdk_security.h"
 

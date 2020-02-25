@@ -95,27 +95,35 @@ static char * getReceiptCopyLabel(enum receiptCopy copy)
 	}
 }
 
-void getPrinterStatus(const int status)
+int getPrinterStatus(const int status)
 {
     if (status == UPRN_SUCCESS)
 	{
 		gui_messagebox_show("Print", "Print Success", "", "confirm", 0);
+		return -1;
 	}
 	else if (status == UPRN_OUTOF_PAPER)
 	{
-		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
+		if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
+			return -1;
+		} else {
+			return 0;
+		}
 	}
 	else if (status == UPRN_FILE_FAIL)
 	{
 		gui_messagebox_show("Print", "Open File Fail", "", "confirm", 0);
+		return -1;
 	}
 	else if (status == UPRN_DEV_FAIL)
 	{
 		gui_messagebox_show("Print", "Printer device failure", "", "confirm", 0);
+		return -1;
 	}
 	else
 	{
 		gui_messagebox_show("Print", "Printer unknown fault", "", "confirm", 0);
+		return -1;
 	}
 }
 
@@ -559,12 +567,6 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	short isApproved = isApprovedResponse(eft->responseCode);
 	displayPaymentStatus(eft->responseCode);
 
-    /*
-    if(osl_get_is_printer() == 0){
-		xgui_messagebox_show("Sale", "OK" , "" , "confirm" ,  15000);
-		return 0;
-	}
-    */
 
    // Prompt is printing
 	gui_begin_batch_paint();			
@@ -572,94 +574,102 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
 	gui_end_batch_paint();
 
-	ret = UPrint_Init();
+	while(1) {
 
-	if (ret == UPRN_OUTOF_PAPER)
-	{
-		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
+		ret = UPrint_Init();
+
+		if (ret == UPRN_OUTOF_PAPER)
+		{
+			if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
+				break;
+			}
+		}
+
+		UPrint_SetDensity(3); //Set print density to 3 normal
+
+		sprintf(filename, "xxxx\\%s", BANKLOGO);
+		printReceiptLogo(filename);	// Print Logo
+		printReceiptHeader(eft->dateAndTime);      // Print Receipt header
+
+		UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
+		UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
+
+		UPrint_SetFont(7, 2, 2);
+
+		
+		if (isApprovedResponse(eft->responseCode))
+		{
+			UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
+		}
+		else{
+			UPrint_StrBold("DECLINED", 1, 4, 1); 
+		}
+
+		UPrint_Feed(12);
+		
+		if (*eft->aid) {
+			printLine("AID", eft->aid);
+		}
+		
+		MaskPan(eft->pan, maskedPan);
+		printLine("PAN", maskedPan);
+		printLine("EXPIRY", eft->expiryDate);
+		printLine("LABEL", eft->cardLabel);
+		printLine("ACCOUNT", accountTypeToString(eft->fromAccount));
+
+		if (isApproved) {
+			printLine("AUTH CODE", eft->authorizationCode);
+		}
+		
+		printLine("RRN", eft->rrn);
+		printf("Pius Stan : %s\n", eft->stan);
+		printLine("STAN", eft->stan);
+		printLine("TID", mParam.tid);
+
+		if (*eft->cardHolderName) {
+			printLine("CARD NAME", eft->cardHolderName);
+		}
+
+		if(eft->transType == EFT_BALANCE && isApproved)
+		{
+			processBalance(eft->balance);
+		} else {
+			printReceiptAmount(atoll(eft->amount), isApproved);
+		}
+
+		UPrint_Str("\n\n", 2, 1);
+
+		if (*eft->tvr) {
+			printLine("TVR", eft->tvr);
+		}
+
+		if (*eft->tsi) {
+			printLine("TSI", eft->tsi);
+		}
+
+		UPrint_Feed(12);
+
+		if (*eft->message) {
+			printLine("", eft->message);
+		}
+
+		if (!isApproved) { 
+			char declinedMessage[65];
+
+			sprintf(declinedMessage, "%s: %s", eft->responseCode, responseCodeToStr(eft->responseCode));
+			printLine(declinedMessage, eft->message);
+		}
+
+		printDottedLine();
+		
+		printFooter();
+
+		ret = UPrint_Start(); // Output to printer
+		if(getPrinterStatus(ret) < 0) {
+			break;
+		}
 	}
-
-    sprintf(filename, "xxxx\\%s", BANKLOGO);
-	printReceiptLogo(filename);	// Print Logo
-    printReceiptHeader(eft->dateAndTime);      // Print Receipt header
-
-	UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
-	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
-
-	UPrint_SetDensity(3); //Set print density to 3 normal
-	UPrint_SetFont(7, 2, 2);
-
 	
-	if (isApprovedResponse(eft->responseCode))
-	{
-		UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
-	}
-	else{
-		UPrint_StrBold("DECLINED", 1, 4, 1); 
-	}
-
-	UPrint_Feed(12);
-	
-
-    if (*eft->aid) {
-        printLine("AID", eft->aid);
-    }
-	
-	MaskPan(eft->pan, maskedPan);
-	printLine("PAN", maskedPan);
-	printLine("EXPIRY", eft->expiryDate);
-	printLine("LABEL", eft->cardLabel);
-    printLine("ACCOUNT", accountTypeToString(eft->fromAccount));
-
-	if (isApproved) {
-		printLine("AUTH CODE", eft->authorizationCode);
-	}
-	
-	printLine("RRN", eft->rrn);
-    printf("Pius Stan : %s\n", eft->stan);
-	printLine("STAN", eft->stan);
-	printLine("TID", mParam.tid);
-
-    if (*eft->cardHolderName) {
-        printLine("CARD NAME", eft->cardHolderName);
-    }
-
-	if(eft->transType == EFT_BALANCE && isApproved)
-	{
-		processBalance(eft->balance);
-	} else {
-		printReceiptAmount(atoll(eft->amount), isApproved);
-	}
-
-	UPrint_Str("\n\n", 2, 1);
-
-    if (*eft->tvr) {
-        printLine("TVR", eft->tvr);
-    }
-
-    if (*eft->tsi) {
-        printLine("TSI", eft->tsi);
-    }
-
-	UPrint_Feed(12);
-
-	if (*eft->message) {
-		printLine("", eft->message);
-	}
-
-	if (!isApproved) { 
-		char declinedMessage[65];
-
-		sprintf(declinedMessage, "%s: %s", eft->responseCode, responseCodeToStr(eft->responseCode));
-		printLine(declinedMessage, eft->message);
-	}
-
-	printDottedLine();
-	
-	printFooter();
-
-	ret = UPrint_Start(); // Output to printer
-	getPrinterStatus(ret);
 
 	return 0;
 }
@@ -685,79 +695,88 @@ static int printPaycodeReceipt(enum receiptCopy copy, Eft *eft)
 
 	displayPaymentStatus(eft->responseCode);
 
-	ret = UPrint_Init();
+	gui_begin_batch_paint();			
+	gui_clear_dc();
+	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
+	gui_end_batch_paint();
 
-	if (ret == UPRN_OUTOF_PAPER)
-	{
-		gui_messagebox_show("Print", "No paper", "", "confirm", 0);
+	while(1) {
+		
+		ret = UPrint_Init();
+
+		if (ret == UPRN_OUTOF_PAPER) {
+			if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
+				break;
+			}
+		}
+
+		//printBankLogo();	// Prints Logo
+		UPrint_SetDensity(3); //Set print density to 3 normal
+		
+		UPrint_SetFont(8, 2, 2);
+		UPrint_StrBold(mParam.name, 1, 0, 1);
+		UPrint_StrBold(mParam.address, 1, 0, 1);
+		printLine("MID", parameter.cardAcceptiorIdentificationCode);
+		printLine("DATE TIME", buff);
+		printDottedLine();
+
+		UPrint_StrBold(payCodeTypeToStr(subTransType), 1, 4, 1);
+		UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
+
+		UPrint_SetFont(7, 2, 2);
+
+		if (isApprovedResponse(eft->responseCode))
+		{
+			UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
+		}
+		else{
+			UPrint_StrBold("DECLINED", 1, 4, 1); 
+		}
+
+		UPrint_Feed(12);
+
+		printExpiry(eft->expiryDate);
+
+		if (isApproved) {
+			printLine("AUTH CODE", eft->authorizationCode);
+		}
+		
+		printLine("PAYCODE", eft->otherData);
+		printLine("RRN", eft->rrn);
+		printLine("STAN", eft->stan);
+		printLine("TID", mParam.tid);
+
+		if (*eft->cardHolderName) {
+			printLine("CARD NAME", eft->cardHolderName);
+		}
+
+		printReceiptAmount(atoll(eft->amount), isApproved);
+
+		UPrint_Str("\n\n", 2, 1);
+
+		UPrint_Feed(12);
+
+		if (*eft->message) {
+			printLine("", eft->message);
+		}
+
+		if (!isApproved) { 
+			char declinedMessage[65];
+
+			sprintf(declinedMessage, "%s: %s", eft->responseCode, responseCodeToStr(eft->responseCode));
+			printLine(declinedMessage, eft->message);
+		}
+
+		printDottedLine();
+		
+		printFooter();
+
+		ret = UPrint_Start(); // Output to printer
+		if(getPrinterStatus(ret) < 0) {
+			break;
+		}
 	}
-
-	//printBankLogo();	// Prints Logo
 	
-	UPrint_SetFont(8, 2, 2);
-	UPrint_StrBold(mParam.name, 1, 0, 1);
-    UPrint_StrBold(mParam.address, 1, 0, 1);
-    printLine("MID", parameter.cardAcceptiorIdentificationCode);
-    printLine("DATE TIME", buff);
-    printDottedLine();
-
-	UPrint_StrBold(payCodeTypeToStr(subTransType), 1, 4, 1);
-	UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
-
-	UPrint_SetDensity(3); //Set print density to 3 normal
-	UPrint_SetFont(7, 2, 2);
-
-	
-	if (isApprovedResponse(eft->responseCode))
-	{
-		UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
-	}
-	else{
-		UPrint_StrBold("DECLINED", 1, 4, 1); 
-	}
-
-	UPrint_Feed(12);
-
-    printExpiry(eft->expiryDate);
-
-	if (isApproved) {
-		printLine("AUTH CODE", eft->authorizationCode);
-	}
-	
-    printLine("PAYCODE", eft->otherData);
-	printLine("RRN", eft->rrn);
-	printLine("STAN", eft->stan);
-	printLine("TID", mParam.tid);
-
-    if (*eft->cardHolderName) {
-        printLine("CARD NAME", eft->cardHolderName);
-    }
-
-    printReceiptAmount(atoll(eft->amount), isApproved);
-
-	UPrint_Str("\n\n", 2, 1);
-
-
-	UPrint_Feed(12);
-
-	if (*eft->message) {
-		printLine("", eft->message);
-	}
-
-	if (!isApproved) { 
-		char declinedMessage[65];
-
-		sprintf(declinedMessage, "%s: %s", eft->responseCode, responseCodeToStr(eft->responseCode));
-		printLine(declinedMessage, eft->message);
-	}
-
-	printDottedLine();
-	
-	printFooter();
-
-	ret = UPrint_Start(); // Output to printer
-	getPrinterStatus(ret);
-
 	return 0;
 }
 
@@ -821,38 +840,44 @@ void printHandshakeReceipt(MerchantData *mParam)
 	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
 	gui_end_batch_paint();
 
-    ret = UPrint_Init();
+	while(1) {
+		ret = UPrint_Init();
 
-	if (ret == UPRN_OUTOF_PAPER)
-	{
-		gui_messagebox_show( "Print" , "No paper" , "" , "confirm" , 0);
+		if (ret == UPRN_OUTOF_PAPER)
+		{
+			if(gui_messagebox_show( "Print" , "No paper \nDo you wish to reload Paper?" , "cancel" , "confirm" , 0) != 1) {
+				break;
+			}
+		}
+
+		UPrint_SetFont(8, 2, 2);
+		UPrint_StrBold(mParam->name, 1, 0, 1);
+		UPrint_StrBold(mParam->address, 1, 0, 1);
+
+		printLine("TID", mParam->tid);
+		printLine("MID", parameter.cardAcceptiorIdentificationCode);
+		printLine("DATE TIME: ", buff);
+		printDottedLine();
+
+
+		sprintf(filename, "xxxx\\%s", BANKLOGO);
+		UPrint_BitMap(filename, 1);//print image
+		// UPrint_Feed(20);
+
+		UPrint_SetFont(4, 2, 2);
+		UPrint_StrBold("************", 1, 4, 1);
+		UPrint_StrBold("SUCCESSFUL", 1, 4, 1);//Centered large font print title,empty 4 lines
+		UPrint_StrBold("************", 1, 4, 1);
+		printDottedLine();
+
+		printFooter();
+
+		ret = UPrint_Start();
+		if(getPrinterStatus(ret) < 0) {
+			break;
+		}
+
 	}
-
-	UPrint_SetFont(8, 2, 2);
-	UPrint_StrBold(mParam->name, 1, 0, 1);
-    UPrint_StrBold(mParam->address, 1, 0, 1);
-
-    printLine("TID", mParam->tid);
-    printLine("MID", parameter.cardAcceptiorIdentificationCode);
-    printLine("DATE TIME: ", buff);
-    printDottedLine();
-
-
-    sprintf(filename, "xxxx\\%s", BANKLOGO);
-	UPrint_BitMap(filename, 1);//print image
-	// UPrint_Feed(20);
-
-    UPrint_SetFont(4, 2, 2);
-    UPrint_StrBold("************", 1, 4, 1);
-	UPrint_StrBold("SUCCESSFUL", 1, 4, 1);//Centered large font print title,empty 4 lines
-    UPrint_StrBold("************", 1, 4, 1);
-    printDottedLine();
-
-    printFooter();
-
-	ret = UPrint_Start();
-	getPrinterStatus(ret);
-
 
 }
 

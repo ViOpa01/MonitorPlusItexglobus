@@ -234,7 +234,7 @@ int Airtime::getPaymentJson(iisys::JSObject& json, Service service)
     json("phone") = phoneNumber;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = cardPurchase.purchaseTid;
+        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID); 
     }
 
     return 0;

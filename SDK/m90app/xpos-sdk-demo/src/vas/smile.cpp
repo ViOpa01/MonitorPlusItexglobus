@@ -74,6 +74,10 @@ VasStatus Smile::lookup(const VasStatus&)
         return VasStatus(USER_CANCELLATION);
     }
 
+    if (response.error) {
+        return VasStatus(LOOKUP_ERROR, response.message.c_str());
+    }
+
     if (!obj.load(response.message)) {
         return VasStatus(INVALID_JSON, "Invalid Response");
     }
@@ -329,7 +333,7 @@ int Smile::getPaymentJson(iisys::JSObject& json, Service service)
     json("phone") = phoneNumber;
 
     if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTid") = cardPurchase.purchaseTid;
+        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID); 
     }
 
     return 0;

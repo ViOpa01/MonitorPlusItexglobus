@@ -73,14 +73,14 @@ private:
 
 public:
     EodStruct(std::vector<std::map<std::string, std::string> > data_)
-    :
-    totalNumberOfApproved(0),
-    totalNumberOfDeclined(0),
-    totalNumberOfTransactions(0),
-    totalSumOfApprovedInNaira(0),
-    totalSumOfDeclinedInNaira(0), 
-    data(data_),
-    labelList(std::vector<EodLabelStruct>())
+        :
+            totalNumberOfApproved(0),
+            totalNumberOfDeclined(0),
+            totalNumberOfTransactions(0),
+            totalSumOfApprovedInNaira(0),
+            totalSumOfDeclinedInNaira(0), 
+            data(data_),
+            labelList(std::vector<EodLabelStruct>())
     {
 
     }
@@ -88,6 +88,7 @@ public:
     void convertData(bool isRRN){
         EmvDB db(EFT_DEFAULT_TABLE, DBNAME);
         std::string filename = "xxxx\\bank.bmp"; // + BANKLOGO;
+        int ret = 0;
 
         if(data.empty()) return;
        
@@ -125,14 +126,11 @@ public:
             printf("\n%s\n", label.time);
             totalNumberOfTransactions = totalNumberOfTransactions + 1;
 
-            if(data[index][DB_RESP] == "00")
-            {
+            if(data[index][DB_RESP] == "00") {
     
                 totalNumberOfApproved += 1;
                 totalSumOfApprovedInNaira = totalSumOfApprovedInNaira + atol(label.price) / 100.0;
-            }
-            else
-            {
+            } else {
 
                 totalNumberOfDeclined += 1;
                 totalSumOfDeclinedInNaira = totalSumOfDeclinedInNaira + atol(label.price) / 100.0;
@@ -147,52 +145,73 @@ public:
         printf("Starting to print\n");
         printf("Size of label list is %zu", labelList.size());
         
-        printReceiptLogo(filename.c_str());
-        printHeader();
-        UPrint_SetFont(7, 2, 2);
-        UPrint_StrBold("EOD SUMMARY", 1, 0,1 );
-        UPrint_SetFont(8, 2, 2);
-        UPrint_Str(DOUBLELINE, 2, 1);
-        char printData[64] = {0};
-        sprintf(printData,"APPROVED    NGN %.2f\n",  totalSumOfApprovedInNaira);
-        UPrint_SetFont(8, 2, 2);
-        UPrint_Str(printData, 1, 0);
-        sprintf(printData,"DECLINED    NGN %.2f\n",  totalSumOfDeclinedInNaira);
-        
+        gui_begin_batch_paint();			
+        gui_clear_dc();
+        gui_text_out(0, GUI_LINE_TOP(0), "printing...");
+        gui_end_batch_paint();
 
-        UPrint_Str(printData, 1, 0);
-        sprintf(printData, "APPROVED TX    %d\n", totalNumberOfApproved);
-        UPrint_Str(printData, 1, 0);
-        sprintf(printData, "DECLINED TX    %d\n", totalNumberOfDeclined);
-        UPrint_Str(printData, 1, 0);
-        sprintf(printData, "TOTAL          %d\n", totalNumberOfTransactions);
-        UPrint_Str(printData, 1, 0);
-        UPrint_Feed(12);
-        UPrint_SetFont(8, 2, 2);
+        while(1) {
 
-        for(int index = 0; index < labelList.size(); index++){
+            ret = UPrint_Init();
 
-            printf("Printing\n");
-            printf("\nIs the Label %s\n", labelList[index].rrnOrPanStr.c_str());
-            char buff[100] = { 0 };
-
-            if(labelList[index].rrnOrPanStr.length() > 16){
-
-                sprintf(buff, "%s %s %.2f %s\n", labelList[index].time, labelList[index].rrnOrPanStr.c_str(), strtoul(labelList[index].price, NULL, 10)/100.0,labelList[index].flag );
-            
-            } else {
-                sprintf(buff, "%s %s %.2f %s\n", labelList[index].time, labelList[index].rrnOrPanStr.c_str(), strtoul(labelList[index].price, NULL,10)/100.0, labelList[index].flag );
+            if (ret == UPRN_OUTOF_PAPER) {
+                if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
+                    break;
+                }
             }
+
+            printReceiptLogo(filename.c_str());
+            printHeader();
+            UPrint_SetFont(7, 2, 2);
+            UPrint_StrBold("EOD SUMMARY", 1, 0,1 );
+            UPrint_SetFont(8, 2, 2);
+            UPrint_Str(DOUBLELINE, 2, 1);
+            char printData[64] = {0};
+            sprintf(printData,"APPROVED    NGN %.2f\n",  totalSumOfApprovedInNaira);
+            UPrint_SetFont(8, 2, 2);
+            UPrint_Str(printData, 1, 0);
+            sprintf(printData,"DECLINED    NGN %.2f\n",  totalSumOfDeclinedInNaira);
             
-            UPrint_Str(buff, 1, 0);
-            UPrint_Str(DOTTEDLINE, 2, 1);
-            
+
+            UPrint_Str(printData, 1, 0);
+            sprintf(printData, "APPROVED TX    %d\n", totalNumberOfApproved);
+            UPrint_Str(printData, 1, 0);
+            sprintf(printData, "DECLINED TX    %d\n", totalNumberOfDeclined);
+            UPrint_Str(printData, 1, 0);
+            sprintf(printData, "TOTAL          %d\n", totalNumberOfTransactions);
+            UPrint_Str(printData, 1, 0);
+            UPrint_Feed(12);
+            UPrint_SetFont(8, 2, 2);
+
+            for(int index = 0; index < labelList.size(); index++) {
+
+                printf("Printing\n");
+                printf("\nIs the Label %s\n", labelList[index].rrnOrPanStr.c_str());
+                char buff[100] = { 0 };
+
+                if(labelList[index].rrnOrPanStr.length() > 16) {
+
+                    sprintf(buff, "%s %s %.2f %s\n", labelList[index].time, labelList[index].rrnOrPanStr.c_str(), strtoul(labelList[index].price, NULL, 10)/100.0,labelList[index].flag );
+                
+                } else {
+                    sprintf(buff, "%s %s %.2f %s\n", labelList[index].time, labelList[index].rrnOrPanStr.c_str(), strtoul(labelList[index].price, NULL,10)/100.0, labelList[index].flag );
+                }
+                
+                UPrint_Str(buff, 1, 0);
+                UPrint_Str(DOTTEDLINE, 2, 1);
+                
+            }
+
+            printFooter();
+            ret = UPrint_Start();
+            if(getPrinterStatus(ret) < 0) {
+                break;
+            }
+            data.clear();
+
+
         }
 
-        printFooter();
-        int  ret = UPrint_Start();
-        getPrinterStatus(ret);
-        data.clear();
         return;
     }
   
