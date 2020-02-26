@@ -834,7 +834,7 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 		strncpy(eft.terminalId, mParam.tid, strlen(mParam.tid));
 	}
 
-	if(!eft.isVasTrans || !eft.switchMerchant) {
+	if(!eft.isVasTrans) {
 		if (orginalDataRequired(&eft))
 		{
 			if (isReversal(&eft) && getReversalReason(&eft))
@@ -1647,7 +1647,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 
 	if (card_out->pin_len) {
-		if (eft->isVasTrans && eft->switchMerchant) {
+		if (eft->switchMerchant) {
 			copyVirtualPinBlock(eft, card_out->pin_block);
 			
 		} else {
@@ -1736,7 +1736,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		printf("Balance detail : %s\n", eft->balance);
 	}
 	
-	if(!eft->isVasTrans || !eft->switchMerchant)
+	if(!eft->isVasTrans)
 	{
 		// Print card payment receipt alone here
 		printReceipts(eft, 0);
