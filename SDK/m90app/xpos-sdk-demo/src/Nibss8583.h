@@ -199,7 +199,7 @@ typedef struct Eft
     // Vas specific additions
     int (*genAuxPayload)(char auxPayload[], const size_t auxPayloadSize, const struct Eft*);
     void* callbackdata;
-    char auxResponse[4096];
+    char auxResponse[0x1000 * 2];
     char customRefCode[1024];
     int  switchMerchant;
     short isVasTrans;

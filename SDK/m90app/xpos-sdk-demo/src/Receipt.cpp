@@ -385,7 +385,15 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
 {
     int len = 0;
     int requiredSpaces = 0;
-    char tempBuffer[64] = {0};
+    char tempBuffer[128] = {0};
+
+	/*
+	expectedLen = 32 - strlen(head) e.g 32 - strlen(NAME) = 28
+	if val(input) = "ADEWOLE JEREMIAH OLATUNDE SUCCESS"
+
+	hence len = 33
+		  requireSpace = 28
+	*/
 
 
     if(output == NULL || input == NULL){
@@ -454,7 +462,7 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
 
 void printLine(const char *head, const char *val)
 {
-	char rightAligned[64] = {'\0'};
+	char rightAligned[128] = {'\0'};
 	int printerWidth = 32;
     char buff[32] = {'\0'};
 

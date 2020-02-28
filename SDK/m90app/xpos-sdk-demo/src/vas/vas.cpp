@@ -436,12 +436,7 @@ void printElectricity(std::map<std::string, std::string> &record)
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {
 
-            if(!strcmp("ADDRESS ", labels[i])) {
-                char buff[25] = {'\0'};
-                strncpy(buff, record[keys[i]].c_str(), sizeof(buff) - 1);
-                printLine(labels[i], buff);
-
-            } else if(!strcmp("TOKEN", labels[i])) {
+            if(!strcmp("TOKEN", labels[i])) {
                 char buff[80] = {'\0'};
 
 
@@ -457,7 +452,9 @@ void printElectricity(std::map<std::string, std::string> &record)
                 printDottedLine();
 
             } else {
-                printLine(labels[i], record[keys[i]].c_str());
+                char buff[25] = {'\0'};
+                strncpy(buff, record[keys[i]].c_str(), sizeof(buff) - 1);
+                printLine(labels[i], buff);
             }
             
         }

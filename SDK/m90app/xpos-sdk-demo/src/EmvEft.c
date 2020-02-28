@@ -367,7 +367,7 @@ short autoReversalInPlace(Eft *eft, NetWorkParameters *netParam)
 
 	//copy original date time first before setting the current date time.
 	strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, sizeof(eft->originalYyyymmddhhmmss)); //Date time when original mti trans was done
-	Sys_GetDateTime(eft->yyyymmddhhmmss);
+	// Sys_GetDateTime(eft->yyyymmddhhmmss);
 
 	/*
     strncpy(eft.forwardingInstitutionIdCode, "557694", sizeof(eft.forwardingInstitutionIdCode));
@@ -953,16 +953,16 @@ int separatePayload(NetWorkParameters *netParam, Eft *eft)
         return -1;
     }
 
+    memmove(netParam->response, netParam->response + 2, primaryLength);
+	netParam->responseSize = primaryLength + 2;
+	netParam->response[netParam->responseSize] = '\0';
+
     if (auxLength < sizeof(eft->auxResponse)) {
         memcpy(eft->auxResponse, response + 4 + primaryLength, auxLength);
     } else {
         printf("Aux buffer size (%zu) not enough for received data (%d)", sizeof(eft->auxResponse), auxLength);
         return -3;
     }
-
-    memmove(netParam->response, netParam->response + 2, primaryLength);
-	netParam->responseSize = primaryLength + 2;
-	netParam->response[netParam->responseSize] = '\0';
 
 
     return 0;
@@ -1016,6 +1016,7 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 		if (separatePayload(netParam, eft) < 0) {
 			// E don happen again o
 			// what do we do?
+			return -99;
 		}
 	}
 

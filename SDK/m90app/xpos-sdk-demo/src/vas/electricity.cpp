@@ -429,7 +429,13 @@ VasStatus Electricity::processPaymentResponse(iisys::JSObject& json, Service ser
     iisys::JSObject ref = json("ref");
     if (!ref.isNull()) {
         paymentResponse.reference = ref.getString();
+    } else {
+        ref = json("reference");
+        if(!ref.isNull()) {
+            paymentResponse.reference = ref.getString();
+        }
     }
+
 
     iisys::JSObject date = json("date");
     if (!date.isNull()) {

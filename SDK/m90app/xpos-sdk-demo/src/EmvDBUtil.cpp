@@ -149,7 +149,7 @@ int ctxToUpdateMap(std::map<std::string, std::string> &trx, const Eft *eft)
     }
 
     strcpy(amount, eft->amount);
-    trx[DB_AMOUNT] = amount;
+    trx[DB_AMOUNT] = amount;    // This need to be trim of extra 0
     trx[DB_PS] = ps;
 
     trx[DB_MTI] = mti;
