@@ -46,7 +46,6 @@ static const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
-	{MAIN_MENU_PAGE, "Sales", ""},
 
 	// {MAIN_MENU_PAGE, UI_PAYCODE,          ""},
 	/*
