@@ -27,6 +27,8 @@ iisys::JSObject getState()
     char dateAndTime[24] = {'\0'};
     char simID[32] = {0};
     char imsi[32] = {0};
+    char mcc[4] = {'\0'};
+    char mnc[3] = {'\0'};
     char softwareVersion[64] = {'\0'};
     char mid[20] = {'\0'};
     char tid[10] = {'\0'};
@@ -49,6 +51,8 @@ iisys::JSObject getState()
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simID, "%s", getSimId());
     getImsi(imsi);
+    getMcc(mcc);
+    getMnc(mnc);
     imsiToNetProfile(&netProfile, imsi);
     
     signalLevel = getSignalLevel();
@@ -85,8 +89,8 @@ iisys::JSObject getState()
 
     cloc("cid") = cellId;
     cloc("lac") = lac;
-    cloc("mcc") = "621";
-    cloc("mnc") = "60";
+    cloc("mcc") = mcc;
+    cloc("mnc") = mnc;
     cloc("ss") = "-87dbm";
 
     state("cloc") = cloc; 

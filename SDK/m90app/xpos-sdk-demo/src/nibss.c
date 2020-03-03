@@ -74,6 +74,8 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     char terminalSn[24] = {'\0'};
     char dateAndTime[24] = {'\0'};
     char imsi[20] = {'\0'};
+    char mcc[4] = {'\0'};
+    char mnc[3] = {'\0'};
     char cellId[12] = {'\0'};
     char simId[24] = {'\0'};
     int signalLevel = 0;
@@ -101,6 +103,8 @@ static void addCallHomeData(NetworkManagement *networkMangement)
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simId, "%s", getSimId());
     getImsi(imsi);
+    getMcc(mcc);
+    getMnc(mnc);
     imsiToNetProfile(&netProfile, imsi);
     
     signalLevel = getSignalLevel();
@@ -113,8 +117,8 @@ static void addCallHomeData(NetworkManagement *networkMangement)
 
     cJSON_AddItemToObject(cloc, "cid", cJSON_CreateString(cellId));
     cJSON_AddItemToObject(cloc, "lac", cJSON_CreateString(lac));
-    cJSON_AddItemToObject(cloc, "mcc", cJSON_CreateString("621"));
-    cJSON_AddItemToObject(cloc, "mnc", cJSON_CreateString("60"));
+    cJSON_AddItemToObject(cloc, "mcc", cJSON_CreateString(mcc));
+    cJSON_AddItemToObject(cloc, "mnc", cJSON_CreateString(mnc));
     cJSON_AddItemToObject(cloc, "ss", cJSON_CreateString("-87dbm"));
 
     cJSON_AddItemToObject(callHomeJson, "bl", cJSON_CreateNumber(100));
@@ -168,6 +172,8 @@ static const char * platformToKey(enum NetType netType)
 {
 
     platformAutoSwitch(&netType);
+
+    printf("Current Platform id : %d\n", netType);
 
     switch (netType) {
         case NET_POSVAS_SSL: case NET_POSVAS_PLAIN:

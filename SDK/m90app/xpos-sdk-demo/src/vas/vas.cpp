@@ -141,6 +141,8 @@ const char* serviceStringToLogoFile(const std::string& serviceString)
         return "vaslogos/dstv.bmp";
     } else if (serviceString == serviceToString(GOTV)) {
         return "vaslogos/gotv.bmp";
+    } else if (serviceString == serviceToString(STARTIMES)) {
+        return "vaslogos/startimes.bmp";
     } else if (serviceString == serviceToString(SMILETOPUP)
                 || serviceString == serviceToString(SMILEBUNDLE)) {
         return "vaslogos/smile.bmp";
@@ -165,6 +167,9 @@ const char* serviceStringToLogoFile(const std::string& serviceString)
                 ||  serviceString == serviceToString(MTNVOT) ) {
         return "vaslogos/mtn.bmp";
 
+    } else if(serviceString == serviceToString(WITHDRAWAL)
+                || serviceString == serviceToString(TRANSFER)) {
+        return "itex/bank.bmp";
     }
     return "";
 }

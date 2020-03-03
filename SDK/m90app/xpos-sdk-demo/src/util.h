@@ -36,6 +36,8 @@ int bodyIndex(const char* response);
 short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmmss);
 void getFormattedDateTime(char* dateTime, size_t len);
 void getImsi(char buff[20]);
+void getMcc(char buff[4]);
+void getMnc(char buff[3]);
 int getSignalLevel();
 int getCellId();
 int getLocationAreaCode();

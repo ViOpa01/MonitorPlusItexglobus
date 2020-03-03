@@ -306,6 +306,22 @@ void getImsi(char buff[20])
     ap_get_imsi(buff, 20);
 }
 
+void getMcc(char buff[4])
+{
+    char imsi[20] = {'\0'};
+    ap_get_imsi(imsi, 20);
+
+    strncpy(buff, imsi, 3);
+}
+
+void getMnc(char buff[3])
+{
+    char imsi[20] = {'\0'};
+    ap_get_imsi(imsi, 20);
+
+    strncpy(buff, &imsi[3], 2);
+}
+
 const char* getSimId()
 {
     return atc_iccid();

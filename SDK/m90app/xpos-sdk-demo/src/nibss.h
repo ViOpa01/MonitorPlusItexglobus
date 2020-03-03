@@ -41,7 +41,6 @@ extern "C"
 // Set CURRENT_PLATFORM only for DevMode
 #define CURRENT_PLATFORM NET_POSVAS_SSL
 
-
 short uiHandshake(void);
 short autoHandshake(void);
 short uiGetParameters(void);

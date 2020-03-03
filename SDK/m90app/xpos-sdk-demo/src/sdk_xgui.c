@@ -46,6 +46,8 @@ static const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
+	{MAIN_MENU_PAGE, "Sales", ""},
+
 	// {MAIN_MENU_PAGE, UI_PAYCODE,          ""},
 	/*
 	{MAIN_MENU_PAGE, UI_PURCHASE,   ""},
@@ -570,7 +572,12 @@ static int _menu_proc(char *pid)
 		MerchantData mParam = {'\0'};
 		readMerchantData(&mParam);
 
-		gui_messagebox_show("Notification ID", mParam.notificationIdentifier, "", "", 3000);
+		if(mParam.notificationIdentifier[0]) {
+			gui_messagebox_show("Notification ID", mParam.notificationIdentifier, "", "", 3000);
+		} else {
+			gui_messagebox_show("Notification ID", "Empty notification identifier", "", "", 3000);
+		}
+
 	}
 	else if(!strcmp(pid, UI_REBOOT))
 	{
