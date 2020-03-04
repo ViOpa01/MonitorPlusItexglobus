@@ -95,7 +95,7 @@ private:
     const std::string table;
     const std::string dbFile;
     std::map<std::string, std::string> record;
-    //LogManager log;
+    
     int prepareMap(std::string &columns, std::string &params, const std::map<std::string, std::string> &record);
     std::string updateQuery(const std::map<std::string, std::string> &record);
     int init(const std::string &tableName);

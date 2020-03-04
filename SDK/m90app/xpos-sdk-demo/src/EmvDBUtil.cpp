@@ -135,7 +135,6 @@ int ctxToUpdateMap(std::map<std::string, std::string> &trx, const Eft *eft)
     const char * mti = NULL;
     char ps[8] = {0};
     char amount[13] = {0};
-    // LogManager log(EMVDBUTILLOG);
 
     if (!eft)
         return -1;

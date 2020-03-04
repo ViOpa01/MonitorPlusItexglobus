@@ -618,7 +618,6 @@ int EmvDB::getStan(char *stanString, size_t size)
     int stan = -1;
     int rc = -1;
     sqlite3_stmt *stmt;
-    //LogManager log(EMVDBLOG);
 
 
     rc = sqlite3_prepare_v2(db, std::string("SELECT SEQ from sqlite_sequence WHERE name='" + table + "'").c_str(), -1, &stmt, NULL);
@@ -646,7 +645,7 @@ int EmvDB::countAllTransactions()
     sqlite3_stmt *stmt;
  
     int rc = -1;
-    //LogManager log(EMVDBLOG);
+    
     rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));   
@@ -774,7 +773,7 @@ int EmvDB::init(const std::string& tableName)
     sqlite3* db;
     char* errMsg;
     std::string sql;
-    //LogManager log(EMVDBLOG);
+    
     int version, configuredVersion;
 
     rc = sqlite3_open_v2(dbFile.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
