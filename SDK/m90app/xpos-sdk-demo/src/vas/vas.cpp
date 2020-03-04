@@ -124,48 +124,48 @@ const char* serviceToString(Service service)
 const char* serviceStringToLogoFile(const std::string& serviceString)
 {
     if (serviceString == serviceToString(IKEJA)) {
-        return "vaslogos/ikeja.bmp";
+        return "vaslogos\\ikeja.bmp";
     } else if (serviceString == serviceToString(EKEDC)) {
-        return "vaslogos/ekedc.bmp";
+        return "vaslogos\\ekedc.bmp";
     } else if (serviceString == serviceToString(EEDC)) {
-        return "vaslogos/eedc.bmp";
+        return "vaslogos\\eedc.bmp";
     } else if (serviceString == serviceToString(IBEDC)) {
-        return "vaslogos/ibedc.bmp";
+        return "vaslogos\\ibedc.bmp";
     } else if (serviceString == serviceToString(PHED)) {
-        return "vaslogos/phed.bmp";
+        return "vaslogos\\phed.bmp";
     } else if (serviceString == serviceToString(AEDC)) {
-        return "vaslogos/aedc.bmp";
+        return "vaslogos\\aedc.bmp";
     } else if (serviceString == serviceToString(KEDCO)) {
-        return "vaslogos/kano.bmp";
+        return "vaslogos\\kano.bmp";
     } else if (serviceString == serviceToString(DSTV)) {
-        return "vaslogos/dstv.bmp";
+        return "vaslogos\\dstv.bmp";
     } else if (serviceString == serviceToString(GOTV)) {
-        return "vaslogos/gotv.bmp";
+        return "vaslogos\\gotv.bmp";
     } else if (serviceString == serviceToString(STARTIMES)) {
-        return "vaslogos/startimes.bmp";
+        return "vaslogos\\startimes.bmp";
     } else if (serviceString == serviceToString(SMILETOPUP)
                 || serviceString == serviceToString(SMILEBUNDLE)) {
-        return "vaslogos/smile.bmp";
+        return "vaslogos\\smile.bmp";
     } else if (serviceString == serviceToString(ETISALATVTU)
                 || serviceString == serviceToString(ETISALATDATA)
                 ||  serviceString == serviceToString(ETISALATVOS)
                 ||  serviceString == serviceToString(ETISALATVOT) ) {
-        return "vaslogos/etisalat.bmp";
+        return "vaslogos\\etisalat.bmp";
     } else if (serviceString == serviceToString(AIRTELVTU)
                 || serviceString == serviceToString(AIRTELDATA)
                 ||  serviceString == serviceToString(AIRTELVOS)
                 ||  serviceString == serviceToString(AIRTELVOT) ) {
-        return "vaslogos/airtel.bmp";
+        return "vaslogos\\airtel.bmp";
     } else if (serviceString == serviceToString(GLOVTU)
                 || serviceString == serviceToString(GLODATA)
                 ||  serviceString == serviceToString(GLOVOS)
                 ||  serviceString == serviceToString(GLOVOT) ) {
-        return "vaslogos/glo.bmp";
+        return "vaslogos\\glo.bmp";
     } else if (serviceString == serviceToString(MTNVTU)
                 || serviceString == serviceToString(MTNDATA)
                 ||  serviceString == serviceToString(MTNVOS)
                 ||  serviceString == serviceToString(MTNVOT) ) {
-        return "vaslogos/mtn.bmp";
+        return "vaslogos\\mtn.bmp";
 
     } else if(serviceString == serviceToString(WITHDRAWAL)
                 || serviceString == serviceToString(TRANSFER)) {

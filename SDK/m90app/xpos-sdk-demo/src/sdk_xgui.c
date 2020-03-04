@@ -637,7 +637,7 @@ void get_hhmmss_str(char *buff)
 
 
 
-static short validateUsersPin()
+static short validateUsersPin(const char* validPin)
 {
 	char pin[5] = {'\0'};
 	int result = 0;
@@ -646,7 +646,7 @@ static short validateUsersPin()
 	if((result = Util_InputText(GUI_LINE_TOP(0), "ENTER PIN", GUI_LINE_TOP(2), pin, 4, 4, 0, 2, 10000)) == 4)
 	{
 		printf("Password : %s, ret : %d\n", pin, result);
-		if(!strncmp(pin, "4839", 4)) 
+		if(!strncmp(pin, validPin, 4)) 
 		{
 			return 0;
 		}
@@ -775,14 +775,14 @@ BEGIN :
 				else if (pmsg.wparam == GUI_KEY_F1)
 				{
 				
-					if(validateUsersPin()) goto BEGIN;
+					if(validateUsersPin("4839")) goto BEGIN;
 
 					gui_main_menu_show(SUPERVISION, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 				else if (pmsg.wparam == GUI_KEY_F2)
 				{
-					if(validateUsersPin()) goto BEGIN;
+					if(validateUsersPin("4839")) goto BEGIN;
 
 					gui_main_menu_show(MAINTENANCE, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
