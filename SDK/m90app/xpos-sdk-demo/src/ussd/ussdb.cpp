@@ -14,14 +14,14 @@
 #define USSD_TABLE                 "ussd"
 #define USSD_TABLE_ROW_LIMIT       "14400"  
 
-USSDB::USSDB() : db(NULL), log(USSDBLOG)
+USSDB::USSDB() : db(NULL)
 {
     int rc;
 
     rc = sqlite3_open_v2(USSD_FILE, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         db = 0;
         return;
@@ -130,12 +130,12 @@ long USSDB::saveUssdTransaction(std::map<std::string, std::string>& record)
 
     rc = sqlite3_open_v2(USSD_FILE, &db, SQLITE_OPEN_READWRITE, NULL);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "Can't open database: %s\n", sqlite3_errmsg(db));
+        printf("Can't open database: %s\n", sqlite3_errmsg(db));
         return ret;
     }
 
     if (prepareMapInsert(query, record)) {
-        LOGF_CRIT(log.handle, "Failed To Create Query String");
+        printf("Failed To Create Query String");
         return ret;
     }
 
@@ -144,7 +144,7 @@ long USSDB::saveUssdTransaction(std::map<std::string, std::string>& record)
     rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &res, 0);
 
     if (rc != SQLITE_OK) {
-        LOGF_CRIT(log.handle, "Can't prepare statement: %s\n", sqlite3_errmsg(db));
+        printf("Can't prepare statement: %s\n", sqlite3_errmsg(db));
         return ret;
     }
 
@@ -156,7 +156,7 @@ long USSDB::saveUssdTransaction(std::map<std::string, std::string>& record)
 
     step = sqlite3_step(res);
     if (step != SQLITE_DONE) {
-        LOGF_CRIT(log.handle, "Step statement failed: %s\n", sqlite3_errmsg(db));
+        printf("Step statement failed: %s\n", sqlite3_errmsg(db));
         sqlite3_finalize(res);
         sqlite3_close_v2(db);
         return ret;
@@ -199,19 +199,19 @@ int USSDB::updateUssdTransaction(std::map<std::string, std::string>& record, lon
 
 
     if (atPrimaryIndex == 0) {
-        LOGF_INFO(log.handle, "%s: Invalid primary index -> %ld\n", __FUNCTION__, atPrimaryIndex);
+        printf("%s: Invalid primary index -> %ld\n", __FUNCTION__, atPrimaryIndex);
         return -1;
     }
     
     record.erase(USSD_ID);
     
     sql = updateQuery(record);
-    LOGF_INFO(log.handle, "%s", sql.c_str());
+    printf("%s", sql.c_str());
 
     rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &res, 0);
 
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s: Can't prepare statement: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s: Can't prepare statement: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return ret;
     }
 
@@ -226,7 +226,7 @@ int USSDB::updateUssdTransaction(std::map<std::string, std::string>& record, lon
 
     step = sqlite3_step(res);
     if (step != SQLITE_DONE) {
-        LOGF_INFO(log.handle, "Step statement failed: %s\n", sqlite3_errmsg(db));
+        printf("Step statement failed: %s\n", sqlite3_errmsg(db));
     } else {
         ret = 0;
     }
@@ -249,11 +249,10 @@ int USSDB::selectUniqueServices(std::vector<std::string>& services, std::string 
         selectQuery = "SELECT DISTINCT " USSD_SERVICE " FROM " USSD_TABLE " WHERE strftime('%Y-%m-%d', " USSD_DATE ") = '" + date.substr(0, 10) + "' ORDER BY " USSD_DATE " DESC";
     }
 
-    // LOGF_INFO(log.handle, "%s -> %s\n", __FUNCTION__, selectQuery.c_str());
 
     rc = sqlite3_prepare_v2(db, selectQuery.c_str(), -1, &stmt, NULL); 
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s prepare statement failed (%s): %s\n", __FUNCTION__, selectQuery.c_str(), sqlite3_errmsg(db));
+        printf("%s prepare statement failed (%s): %s\n", __FUNCTION__, selectQuery.c_str(), sqlite3_errmsg(db));
         return -1;
     }
 
@@ -283,7 +282,7 @@ int USSDB::selectUniqueDates(std::vector<std::string>& dates, std::string servic
 
     rc = sqlite3_prepare_v2(db, selectQuery.c_str(), -1, &stmt, NULL); 
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s prepare statement failed (%s): %s\n", __FUNCTION__, selectQuery.c_str(), sqlite3_errmsg(db));
+        printf("%s prepare statement failed (%s): %s\n", __FUNCTION__, selectQuery.c_str(), sqlite3_errmsg(db));
         return -1;
     }
 
@@ -319,11 +318,11 @@ int USSDB::selectTransactionsOnDate(std::vector<std::map<std::string, std::strin
         , strncpy(dateTrim, date, 10), service.c_str());
     }
 
-    LOGF_INFO(log.handle, "%s\n", sql);
+    printf("%s\n", sql);
 
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return -1;
     }
 
@@ -356,11 +355,11 @@ int USSDB::selectTransactionsByRef(std::vector<std::map<std::string, std::string
         sql = "SELECT * FROM " USSD_TABLE " WHERE " USSD_REF " = '" + std::string(ref) +"' and " USSD_SERVICE " = \"" + service + "\"; ";// , ref, static_cast<int>(trxType));
     }
 
-    LOGF_INFO(log.handle, "%s -> %s\n", __FUNCTION__, sql.c_str());
+    printf("%s -> %s\n", __FUNCTION__, sql.c_str());
 
     rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return -1;
     }
 
@@ -408,10 +407,9 @@ int USSDB::sumTransactionsInDateRange(std::string& amount, const char *minDate, 
 
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return -1;
     }
-    // LOGF_INFO(log.handle, "%s - Prepared: %s\n", __FUNCTION__, sql);
 
     rc = -1;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -455,10 +453,9 @@ int USSDB::countTransactionsInDateRange(std::string& count, const char *minDate,
 
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return -1;
     }
-    // LOGF_INFO(log.handle, "%s - Prepared: %s\n", __FUNCTION__, sql);
 
     rc = -1;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -530,14 +527,14 @@ int  USSDB::countAllTransactions()
 
     rc = sqlite3_open_v2(USSD_FILE, &db, SQLITE_OPEN_READONLY, NULL);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "Can't open database: %s\n", sqlite3_errmsg(db));
+        printf("Can't open database: %s\n", sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         return -1;
     }
 
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         return -1;
     } else if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -564,7 +561,7 @@ int  USSDB::init()
     rc = sqlite3_open_v2(USSD_FILE, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
+        printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         return -1;
     }
@@ -594,13 +591,13 @@ int  USSDB::init()
 
     rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
-        LOGF_INFO(log.handle, "%s -> exec failed: %s\n", __FUNCTION__, errMsg);
+        printf("%s -> exec failed: %s\n", __FUNCTION__, errMsg);
         sqlite3_free(errMsg);
         sqlite3_close_v2(db);
         return -1;
     }
 
-    LOGF_INFO(log.handle, "%s -> Ok\n", __FUNCTION__);
+    printf("%s -> Ok\n", __FUNCTION__);
     sqlite3_close_v2(db);
     return 0;
 }

@@ -136,6 +136,15 @@ void logHex(unsigned char * data, const int size, const char * title)
     free(asc);
 }
 
+void getRrn(char rrn[13])
+{
+	char yyyymmddhhmmss[15] = {'\0'};
+
+	Sys_GetDateTime(yyyymmddhhmmss);
+	strncpy(rrn, &yyyymmddhhmmss[2], 12);
+	rrn[12] = 0;
+}
+
 void getDate(char *buff)
 {
 	char d[32] = {0};
@@ -609,4 +618,22 @@ void hmac_sha256(
     memcpy(bufferOut + 64, tk2, SHA256_DIGEST_LENGTH);
 
     SHA256(bufferOut, 64 + SHA256_DIGEST_LENGTH, digest);
+}
+
+int stringToHex(char* output, const size_t outputSize, const char* input, const int length)
+{
+    int i = 0;
+
+    if (!input || length * 2 >= outputSize) {
+        return -1;
+    }
+
+    while (i < length) {
+        sprintf(output + i * 2, "%02X", *(input + i));
+        i++;
+    }
+
+    *(output + i * 2) = 0;
+
+    return 0;
 }

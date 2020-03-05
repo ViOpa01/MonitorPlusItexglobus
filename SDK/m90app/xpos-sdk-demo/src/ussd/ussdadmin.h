@@ -5,7 +5,7 @@
 
 
 int ussdAdmin();
-int printUSSDReceipt(std::map<std::string, std::string>& record, const char* printfile);
+int printUSSDReceipt(std::map<std::string, std::string>& record);
 int showUssdTransactions(int timeout, const char* title, std::vector<std::map<std::string, std::string> >& elements, int preselect);
 
 #endif

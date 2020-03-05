@@ -14,6 +14,7 @@
 #include "merchant.h"
 #include "remoteLogo.h"
 #include "vas/vasbridge.h"
+#include "ussd/ussdmenu.h"
 
 #define LOGOIMG "xxxx\\logo.bmp"
 
@@ -45,6 +46,7 @@
 static const st_gui_menu_item_def _menu_def[] = {
 
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
+	{MAIN_MENU_PAGE, UI_CARDLESS_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
 
 	// {MAIN_MENU_PAGE, UI_PAYCODE,          ""},
@@ -372,8 +374,8 @@ static int _menu_proc(char *pid)
 		eftTrans(cardPaymentHandler(), SUB_NONE);
 		return 0;
 	}
-	else if(!strcmp(pid, UI_PAYCODE)) {
-		paycodeHandler();
+	else if(!strcmp(pid, UI_CARDLESS_PAYMENT)) {
+		ussdTransactionsMenu();
 		return 0;
 	}
 	if(!strcmp(pid, UI_VAS)) {

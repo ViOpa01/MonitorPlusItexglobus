@@ -15,6 +15,7 @@ typedef struct Userdata {
    int chunked;
 } Userdata;
 
+void getRrn(char rrn[13]);
 void getTerminalSn(char *sn);
 char *parseHttpHeadValue( char *heads ,const char *head );
 // int getContentLength(char *heads);
@@ -58,6 +59,8 @@ void hmac_sha256(
     const unsigned char* key, /* pointer to authentication key */
     int key_len, /* length of authentication key  */
     void* digest /* caller digest to be filled in */ );
+
+int stringToHex(char* output, const size_t outputSize, const char* input, const int length);
 
 #ifdef __cplusplus
 }

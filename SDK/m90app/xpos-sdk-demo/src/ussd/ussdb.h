@@ -8,7 +8,7 @@
 #include <vector>
 #include <map>
 
-#define USSD_FILE                 "flash/ussd.db"
+#define USSD_FILE                 "itex/ussd.db"
 
 #define USSD_ID                   "id"
 #define USSD_SERVICE              "service"

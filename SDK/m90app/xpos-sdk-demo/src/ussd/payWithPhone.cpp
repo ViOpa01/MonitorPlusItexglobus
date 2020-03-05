@@ -28,6 +28,9 @@ extern "C" {
 #include "util.h"
 #include "network.h"
 #include "nibss.h"
+
+#include "libapi_xpos/inc/libapi_util.h"
+#include "libapi_xpos/inc/libapi_gui.h"
 }
 
 typedef struct PayWithPhone {
@@ -51,8 +54,23 @@ static char PAY_WITH_PHONE_IP[] = "https://merchant.payattitude.com/pay/phone";
 static char PAY_WITH_PHONE_PTSPID[] = "ITEX";
 static unsigned long PAY_WITH_PHONE_FEE = 5000L;
 
-extern void formattedDateTime(char* dateTime, size_t len);
 
+static short getRRN(char rrn[13])
+{
+	int result;
+
+	gui_clear_dc();
+	if ((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
+	{
+		printf("rrn input failed ret : %d\n", result);
+		printf("rrn %s\n", rrn);
+		return result;
+	}
+
+	printf("rrn : %s\n", rrn);
+
+	return 0;
+}
 
 int getShaWithSalt(char* hash, const char* data, const char* key)
 {
@@ -71,13 +89,13 @@ int getShaWithSalt(char* hash, const char* data, const char* key)
 
     length = strlen(hashString);
 
-    ASCII2BCD(hashString, (unsigned char *)hashBcd, 0);
+    Util_Asc2Bcd(hashString, hashBcd, length);
 
     sha256_starts(&Context);
     sha256_update(&Context, (unsigned char *)hashBcd, length /= 2);
     sha256_finish(&Context, digest);
 
-    bcdToAsc((char*)hash, digest, sizeof(digest));
+    Util_Bcd2Asc((char*)digest, hash, sizeof(digest) * 2);
 
     return 0;
 }
@@ -141,12 +159,9 @@ static short getPhoneNumber(char* phoneNumber)
 
 static unsigned long getPayWithPhoneAmount(void)
 {
-    char currencySymbol[5] = { '\0' };
     int amount;
 
-    setCurrencySymbol(currencySymbol);
-    amount = UI_ShowEnterAmount(0, currencySymbol, "Pay with Phone");
-
+    amount = getAmount("Pay with Phone");
     return amount < 0 ? 0 : amount;
 }
 
@@ -182,7 +197,7 @@ short confirmPayWithPhone(const PayWithPhone* payPhone)
     // sprintf(message, "Mobile: %s\nAmount: %.2f, Fee: %.2f\nTotal: %.2f", payPhone->phoneNumber, payPhone->amount / 100.0f, payPhone->fee / 100.0f, (payPhone->amount + payPhone->fee) / 100.0f);
     sprintf(message, "Mobile: %s\nAmount: %.2f", payPhone->phoneNumber, payPhone->amount / 100.0f);
 
-    if (UI_Show2ButtonMessage(30000, message, UI_DIALOG_TYPE_QUESTION, "Correct?", "Yes", "No"))
+    if (UI_ShowOkCancelMessage(30000, "Correct?", message, UI_DIALOG_TYPE_QUESTION))
         return -1;
 
     return 0;
@@ -192,7 +207,6 @@ short getPayWithPhoneData(PayWithPhone* payPhone)
 {
     MerchantData mParam;
     MerchantParameters parameter;
-    Merchant merchant;
     char errorMessage[512] = "Missing Data: ";
     bool noError = true;
 
@@ -209,10 +223,10 @@ short getPayWithPhoneData(PayWithPhone* payPhone)
     getParameters(&parameter);
 
 
-    if (merchant.error()) {
-        UI_ShowCancelMessage(5000, "MERCHANT DATA", UI_DIALOG_TYPE_CAUTION, "Merchant Not Configured", NULL, NULL);
-        return false;
-    }
+    // if (merchant.error()) {
+    //     UI_ShowButtonMessage(5000, "MERCHANT DATA", "Merchant Not Configured", "Exit", UI_DIALOG_TYPE_CAUTION);
+    //     return false;
+    // }
 
     std::string tid = mParam.tid;
     if (tid.empty()) {
@@ -228,7 +242,7 @@ short getPayWithPhoneData(PayWithPhone* payPhone)
 
     std::string mcc = parameter.merchantCategoryCode;
     if (!noError) {
-        UI_ShowCancelMessage(3000, "Config Error", UI_DIALOG_TYPE_CAUTION, errorMessage, NULL, NULL);
+        UI_ShowButtonMessage(3000, "Config Error", errorMessage, "Exit", UI_DIALOG_TYPE_CAUTION);
         return -1;
     }
 
@@ -247,16 +261,16 @@ short getPayWithPhoneData(PayWithPhone* payPhone)
     strncpy(payPhone->terminalId, tid.c_str(), sizeof(payPhone->terminalId) - 1);
     strncpy(payPhone->merchantType, mcc.c_str(), sizeof(payPhone->merchantType) - 1);
 
-    getRRN(payPhone->rrn);
+    getRrn(payPhone->rrn);
     strncpy(payPhone->requestId, payPhone->rrn + 6, 5); 
 
     time(&now);
     now_tm = localtime(&now);
-    formattedDateTime(payPhone->formattedTimestamp, sizeof(payPhone->formattedTimestamp));
+    getFormattedDateTime(payPhone->formattedTimestamp, sizeof(payPhone->formattedTimestamp));
     sprintf(payPhone->date, "%02d/%02d/20%02d", now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_year - 100);
     payPhone->fee = PAY_WITH_PHONE_FEE;
 
-    LOGF_INFO(log.handle, "Pay phone confirmed -> %s", payPhone->rrn);
+    printf("Pay phone confirmed -> %s", payPhone->rrn);
 
     return 0; //Return 0 for success
 }
@@ -285,21 +299,35 @@ static short payWithPhoneBody(cJSON** cJSONBody, const PayWithPhone* payPhone)
     return 0;
 }
 
+//  if (!(*parsed)) {
+//     PubBeepErr();
+//     toast(1000, "Unexpected Response");
+//     return ret;
+//   }
+
 static short processPayWithPhoneResponse(PayWithPhone* payPhone, const char* response)
 {
-    cJSON* json = cJSON_Parse(response); //{"Success": true "Status": "1122333444"}
+    const char *resp = strchr(response, '{');
+    cJSON* json = cJSON_Parse(resp); //{"Success": true "Status": "1122333444"}
     const cJSON* nextTag = NULL;
     const char *message = 0;
     int ret = -1;
 
     if (json == NULL) {
         const char* errPtr = cJSON_GetErrorPtr();
-        UI_ShowButtonMessage(2000, "Declined"
-        , errPtr != NULL ? errPtr : "Error With Response", "OK", UI_DIALOG_TYPE_WARNING);
+        UI_ShowButtonMessage(2000, "Declined", errPtr != NULL ? errPtr : "Error With Response", "OK", UI_DIALOG_TYPE_WARNING);
         return -1;
     }
 
+    printf("json response :\n%s\n", resp);
+
     nextTag = cJSON_GetObjectItemCaseSensitive(json, "statusCode");
+
+    if (!cJSON_IsString(nextTag) || nextTag->valuestring == NULL) {
+        printf("Error with the NextTag\n");
+        return ret;
+    }
+   
     message = payWithPhoneError(nextTag->valuestring);
 
     if (strncmp(nextTag->valuestring, "00", 2) == 0) {
@@ -335,7 +363,7 @@ static short payWithPhonePost(NetWorkParameters *netParam, const PayWithPhone* p
     }
 
     strncpy((char *)netParam->host, "merchant.payattitude.com", sizeof(netParam->host) - 1);
-    netParam->receiveTimeout = 60000;
+    netParam->receiveTimeout = 60000 * 3;
 	strncpy(netParam->title, "Request", 10);
     netParam->isHttp = 1;
     netParam->isSsl = 1;
@@ -343,8 +371,8 @@ static short payWithPhonePost(NetWorkParameters *netParam, const PayWithPhone* p
     netParam->endTag = "";
 
     netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "POST /pay/phone HTTP/1.1\r\n");
-    netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "Host: %s:%d\r\n", netParam.host, netParam.port);
-    netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "User-Agent: Itex Engage\r\n");
+    netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "Host: %s:%d\r\n", netParam->host, netParam->port);
+    netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "User-Agent: Itex Morefun\r\n");
     netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "Accept: application/json\r\n");
     netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "Content-Type: application/json\r\n");
     netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "%s\r\n", hash);
@@ -353,7 +381,7 @@ static short payWithPhonePost(NetWorkParameters *netParam, const PayWithPhone* p
     netParam->packetSize += sprintf((char *)(&netParam->packet[netParam->packetSize]), "\r\n%s", data);
 
     if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
-        UI_ShowButtonMessage(2000, "Request Error", response->errorMsg[0] ? response->errorMsg : curl_easy_strerror(response->returnCode), "OK", UI_DIALOG_TYPE_WARNING);
+        // UI_ShowButtonMessage(2000, "Request Error", response->errorMsg[0] ? response->errorMsg : curl_easy_strerror(response->returnCode), "OK", UI_DIALOG_TYPE_WARNING);
         return -2;
     }
 
@@ -382,7 +410,7 @@ void payWithPhone()
 
     std::map<std::string, std::string> record = payWithPhoneToRecord(PAYATTITUDE_PURCHASE, &payPhone);
     USSDB::saveUssdTransaction(record);
-    printUSSDReceipt(record, "payWithPhoneReceipt.html");
+    printUSSDReceipt(record);
 
     // printPayWithPhoneReceipt(&payPhone);
 

@@ -429,8 +429,8 @@ void paycodeHandler(void)
 	//MerchantData mParam = {'\0'};
 
 	char *payment_list[] = {
-		"PURCHASE(PAYCODE)",
-		"WITHDRAWAL(PAYCODE)"
+		"Purchase (Paycode)",
+		"Withdrawal (Paycode)"
 	};
 
 	/*
@@ -621,15 +621,6 @@ static short uiGetRrn(char rrn[13])
 	printf("rrn : %s\n", rrn);
 
 	return 0;
-}
-
-void getRrn(char rrn[13])
-{
-	char yyyymmddhhmmss[15] = {'\0'};
-
-	Sys_GetDateTime(yyyymmddhhmmss);
-	strncpy(rrn, &yyyymmddhhmmss[2], 12);
-	rrn[12] = 0;
 }
 
 static short confirmEft(const Eft * eft)

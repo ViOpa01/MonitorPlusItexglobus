@@ -5,8 +5,8 @@
 #define MAINTENANCE	        "Maintenance"
 
 #define UI_CARD_PAYMENT     "Card Payment"
+#define UI_CARDLESS_PAYMENT "Cardless Payment"
 #define UI_VAS              "Value Added Service"
-#define UI_PAYCODE          "Paycode"
 /*
 #define UI_PURCHASE         "Purchase"          // Menu for Purchase
 #define UI_CASHBACK         "Cashback"

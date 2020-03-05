@@ -16,6 +16,10 @@
 
 #include "ussdmenu.h"
 
+extern "C" {
+#include "EmvEft.h"
+}
+
 const char* ussdTypeToString(USSD_T provider)
 {
     switch (provider) {
@@ -25,6 +29,8 @@ const char* ussdTypeToString(USSD_T provider)
         return "mCash";
     case PAYATTITUDE:
         return "PayAttitude";
+    case PAYCODE:
+        return "PayCode";
     default:
         return "USSD Type Unknown";
     }
@@ -34,7 +40,7 @@ int ussdTransactionsMenu()
 {
     static int once_flag = USSDB::init();
     std::vector<std::string> menu;
-    USSD_T menuOptions[] = { CGATE, MCASH, PAYATTITUDE };
+    USSD_T menuOptions[] = { CGATE, MCASH, PAYATTITUDE, PAYCODE };
 
     (void)once_flag;
 
@@ -44,7 +50,7 @@ int ussdTransactionsMenu()
     menu.push_back("Admin");
 
     while (1) {
-        int selection = UI_ShowSelection(30000, "USSD Payments", menu, 0);
+        int selection = UI_ShowSelection(30000, "Cardless Payment", menu, 0);
 
         if (selection < 0) {
             return -1;
@@ -61,6 +67,9 @@ int ussdTransactionsMenu()
             break;
         case PAYATTITUDE:
             payWithPhone();
+            break;
+        case PAYCODE:
+            paycodeHandler();
             break;
         default:
             break;

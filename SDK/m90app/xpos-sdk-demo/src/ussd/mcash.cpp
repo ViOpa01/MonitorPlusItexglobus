@@ -23,9 +23,6 @@ extern "C" {
 }
 
 
-extern void formattedDateTime(char* dateTime, size_t len);
-
-
 std::string dateTimeRef()
 {
     char dateTime[32] = {0};
@@ -98,7 +95,7 @@ int updateReceiptDetails(std::map<std::string, std::string>& record, const std::
     char amountStr[16] = {0};
     
     snprintf(amountStr, sizeof(amountStr), "%lu", amount);
-    formattedDateTime(formattedTimestamp, sizeof(formattedTimestamp));
+    getFormattedDateTime(formattedTimestamp, sizeof(formattedTimestamp));
     
     record[USSD_DATE] = formattedTimestamp;
     record[USSD_REF] = dateTimeRef();
@@ -192,7 +189,7 @@ void mCashPurchase(const std::string& phone, const unsigned long amount)
         std::map<std::string, std::string> record = updateReceiptDetails(phone, amount, operationId, MCASH_PURCHASE);
         record[USSD_STATUS_MESSAGE] = "Payment Canceled";
         USSDB::saveUssdTransaction(record);
-        printUSSDReceipt(record, "mcash.html");
+        printUSSDReceipt(record);
         return;
     }
 
@@ -213,7 +210,7 @@ void mCashPurchase(const std::string& phone, const unsigned long amount)
     std::map<std::string, std::string> record = statusCheckToRecord(respObj);
     updateReceiptDetails(record, phone, amount, operationId, MCASH_PURCHASE);
     USSDB::saveUssdTransaction(record);
-    printUSSDReceipt(record, "mcash.html");
+    printUSSDReceipt(record);
 }
 
 void mCashTransaction(USSDService service)
@@ -288,7 +285,7 @@ void paymentStatus()
         transaction[USSD_STATUS_MESSAGE] = record[USSD_STATUS_MESSAGE];
         
         database.updateUssdTransaction(record, primaryIndex);
-        printUSSDReceipt(transaction, "mcash.html");
+        printUSSDReceipt(transaction);
     }
 	
 	return;

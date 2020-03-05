@@ -14,6 +14,7 @@ enum receiptCopy{
 	REPRINT_COPY
 };
 
+
 void printDottedLine();
 void printReceiptLogo(const char filename[32]);
 void printReceiptHeader(const char *transDate);

@@ -22,7 +22,6 @@ extern "C" {
 #include "nibss.h"
 }
 
-extern void formattedDateTime(char* dateTime, size_t len);
 
 std::string fetchCoralCode(USSDService service, float amount, const char* ref = NULL)
 {
@@ -84,7 +83,7 @@ std::map<std::string, std::string> cGateToRecord(const USSDService service, cons
         // assert(confirmation("CoralPAY_amount") == amount)
     }
     snprintf(amountStr, sizeof(amountStr), "%lu", amount);
-    formattedDateTime(formattedTimestamp, sizeof(formattedTimestamp));
+    getFormattedDateTime(formattedTimestamp, sizeof(formattedTimestamp));
 
     const iisys::JSObject& phone = confirmation("CoralPAY_customer_mobile");
     const iisys::JSObject& merchantName = confirmation("CoralPAY_merchantname");
@@ -162,7 +161,7 @@ int coralTransaction(const USSDService service)
         }
 
         Demo_SplashScreen("Checking Status", "Please wait...");
-        body = fetchCoralCode(service, amount / 100.0f, reference.c_str());
+        body = fetchCoralCode(service, amount / 100.0f, cgateRef.getString().c_str());
         if (!confirmation.load(body)) {
             return -1;
         }
@@ -183,7 +182,7 @@ int coralTransaction(const USSDService service)
     if (responseCode == "00") {
         std::map<std::string, std::string> record = cGateToRecord(service, amount, confirmation);
         USSDB::saveUssdTransaction(record);
-        printUSSDReceipt(record, "cgate.html");
+        printUSSDReceipt(record);
     }
     return 0;
 }

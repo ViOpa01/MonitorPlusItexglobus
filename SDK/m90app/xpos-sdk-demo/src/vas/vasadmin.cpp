@@ -66,7 +66,6 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
 
     iisys::JSObject jHelp;
 
-    // getFormattedDateTime(dateTime, sizeof(dateTime));
     values[VASDB_DATE] = date;
 
     for (size_t i = 0; i < transactions.size(); ++i) {

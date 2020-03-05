@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include "vas/simpio.h"
 #include "vas/jsobject.h"
 #include "EmvDBUtil.h"
@@ -8,12 +12,255 @@
 
 #include "ussdadmin.h"
 
-int printUSSDReceipt(std::map<std::string, std::string>& record, const char* printfile)
+extern "C"{
+#include "remoteLogo.h"
+#include "libapi_xpos/inc/libapi_print.h"
+}
+
+static int formatAmount(std::string& ulAmount)
+{
+    int position;
+
+    if (ulAmount.empty()) return -1;
+
+    position = ulAmount.length();
+    if ((position -= 2) > 0) {
+        ulAmount.insert(position, ".");
+    } else if (position == 0) {
+        ulAmount.insert(0, "0.");
+    } else {
+        ulAmount.insert(0, "0.0");
+    }
+
+    while ((position -= 3) > 0) {
+        ulAmount.insert(position, ",");
+    }
+
+    return 0;
+}
+
+void printPayAttitude(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {USSD_REF, USSD_PHONE};
+    const char* labels[] = {"TRANS. REF", "MOBILE"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
+void printMcash(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {USSD_DATE, USSD_REF, USSD_OP_ID, USSD_CHARGE_REQ_ID, USSD_PHONE};
+    const char* labels[] = {"DATE","RECEIPT ID", "OPRN ID","CHARGE RQST ID", "PHONE"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
+void printCGate(std::map<std::string, std::string> &record)
+{
+    //phone, institution code, ref, audit ref,
+    const char* keys[] = {USSD_PHONE, USSD_INSTITUTION_CODE, USSD_REF, USSD_AUDIT_REF};
+    const char* labels[] = {"MOBILE", "INSTITUTION CODE", "TRANS. REF","AUDIT REF"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+static void printAsteric(size_t len)
+{
+    char line[32] = {'\0'};
+
+    memset(line, '*', len + 4);
+    UPrint_StrBold(line, 1, 4, 1);
+}
+
+int generateReceipt(std::map<std::string, std::string> &record, const USSDService service)
+{
+    MerchantData mParam = {'\0'};
+    int ret = 0;
+    char buff[32] = {'\0'};
+    char logoFileName[64] = {'\0'};
+    
+    std::map<std::string, std::string>::iterator itr;
+
+    for(itr = record.begin(); itr != record.end(); ++itr) {
+        printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
+    }
+
+    readMerchantData(&mParam);
+
+    while(1) {
+        ret = UPrint_Init();
+
+        if (ret == UPRN_OUTOF_PAPER) {
+            if (UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION)) {
+                break;
+            }
+        }
+
+      
+        sprintf(logoFileName, "xxxx\\%s", BANKLOGO);
+
+        printReceiptLogo(logoFileName);
+        printReceiptHeader(record[USSD_DATE].c_str());
+
+        strcpy(buff, record[USSD_SERVICE].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record["receipt_copy"].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+
+        UPrint_SetDensity(3); //Set print density to 3 normal
+        UPrint_SetFont(7, 2, 2);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record[USSD_STATUS].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+        UPrint_Feed(12);
+
+        if(mParam.tid[0]) {
+            printLine("TID", mParam.tid);
+        }
+
+        if (service == CGATE_PURCHASE || service == CGATE_CASHOUT) {
+            printCGate(record);
+            printLine("PAYMENT METHOD", "CGATE");
+
+        } else if(service == PAYATTITUDE_PURCHASE) {
+            printPayAttitude(record);
+            printLine("PAYMENT METHOD", "PAYATTITUDE");
+        } else if(service == MCASH_PURCHASE) {
+            printMcash(record);
+            printLine("PAYMENT METHOD", "MCASH");
+        }
+
+        memset(buff, '\0', sizeof(buff));
+        sprintf(buff, "NGN %s", record[USSD_AMOUNT].c_str());
+
+        printAsteric(strlen(buff));
+        UPrint_StrBold(buff, 1, 4, 1);
+        printAsteric(strlen(buff));
+
+        UPrint_Feed(12);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record[USSD_STATUS_MESSAGE].c_str());
+        if(buff[0]) {
+            UPrint_StrBold(buff, 1, 4, 1);
+        }
+        
+        printDottedLine();
+        printFooter();
+
+        ret = UPrint_Start();
+        if(getPrinterStatus(ret) < 0 ) {
+            break;
+        }
+    }
+    
+
+    return ret;
+}
+
+int printUSSDEod(std::map<std::string, std::string> &records)
+{
+    int ret = 0;
+    char buff[64] = {'\0'};
+    char filename[32] = {'\0'};
+
+  
+    iisys::JSObject json;
+
+    if(!json.load(records["menu"]) || !json.isArray()) {
+        return -1;
+    }
+
+    while(1) {
+
+        ret = UPrint_Init();
+        if (ret == UPRN_OUTOF_PAPER) {
+            if(UI_ShowButtonMessage(0, "Print", "No paper \nDo you wish to reload Paper?r", "confirm", UI_DIALOG_TYPE_CONFIRMATION)) {
+                break;
+            }
+        }
+
+        sprintf(filename, "xxxx\\%s", BANKLOGO);
+        printReceiptLogo(filename);
+
+        printReceiptHeader(records[USSD_DATE].c_str());
+
+        UPrint_SetFont(8, 2, 2);
+        UPrint_StrBold("SUMMARY", 1, 4, 1);
+        printDottedLine();
+
+        UPrint_Feed(12);
+
+        printLine("Approved Amnt", records["approvedAmount"].c_str());
+        printLine("Approved Count", records["approvedCount"].c_str());
+        printLine("Declined Amnt", records["declinedAmount"].c_str());
+        printLine("Declined Count", records["declinedCount"].c_str());
+        printLine("Total Count", records["totalCount"].c_str());
+
+        UPrint_Feed(12);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, records["trxType"].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+        printDottedLine();
+
+        UPrint_Feed(10);
+
+        for(int i = 0; i < json.size(); i++) {
+
+            char leftAlign[32] = {'\0'};
+            char rightAlign[32] = {'\0'};
+            char amount[14] = {'\0'};
+            char time[8] = {'\0'};
+            char status[3] = {'\0'};
+            char preferredField[24] = {'\0'};
+            
+            iisys::JSObject& itex = json[i];
+
+            strcpy(amount, itex("amount").getString().c_str());
+            strcpy(time, itex("tstamp").getString().c_str());
+            strcpy(preferredField, itex("preferredField").getString().c_str());
+            strcpy(status, itex("status").getString().c_str());
+
+            sprintf(leftAlign, "%s %s", time, preferredField);
+            sprintf(rightAlign, "%s %s", amount, status);
+            printLine(leftAlign, rightAlign);
+
+            printDottedLine();
+
+        }
+
+        printFooter();
+
+        ret = UPrint_Start();
+        if(getPrinterStatus(ret) < 0) {
+            break;
+        }
+
+    }
+    
+    return ret;
+
+}
+
+int printUSSDReceipt(std::map<std::string, std::string>& record)
 {
     int printStatus = -1;
 
-    fillReceiptHeader(record);
-    fillReceiptFooter(record);
 
     formatAmount(record[USSD_AMOUNT]);
     record["currencySymbol"] = "NGN";
@@ -37,7 +284,21 @@ int printUSSDReceipt(std::map<std::string, std::string>& record, const char* pri
             }
             record["receipt_copy"] = copies[i];
         }
-        // printStatus = checkedPrint(record, printfile);       // Just Print here
+        
+        if (record[USSD_SERVICE] == ussdServiceToString(CGATE_PURCHASE)) {
+            printStatus = generateReceipt(record, CGATE_PURCHASE);
+        } else if (record[USSD_SERVICE] == ussdServiceToString(CGATE_CASHOUT)) {
+            printStatus = generateReceipt(record, CGATE_CASHOUT);
+        }else if (record[USSD_SERVICE] == ussdServiceToString(MCASH_PURCHASE)) {
+            printStatus = generateReceipt(record, MCASH_PURCHASE);
+        } else if (record[USSD_SERVICE] == ussdServiceToString(PAYATTITUDE_PURCHASE)) {
+            printStatus = generateReceipt(record, PAYATTITUDE_PURCHASE);
+        } 
+    }
+
+    std::map<std::string, std::string>::iterator itr;
+    for(itr = record.begin(); itr != record.end(); ++itr) {
+        printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
     }
 
 
@@ -85,23 +346,9 @@ bool listUssdTransactions(USSDB& db, const std::string& dateTime, const std::str
 
     std::map<std::string, std::string>& record = transactions[selection];
     
-    std::string receiptfile;
-    const std::string& actualService = record[USSD_SERVICE] ;
-    if (actualService == ussdServiceToString(CGATE_PURCHASE) || actualService == ussdServiceToString(CGATE_CASHOUT)) {
-        receiptfile = "cgate.html";
-    } else if (actualService == ussdServiceToString(MCASH_PURCHASE)) {
-        receiptfile = "mcash.html";
-    } else if (actualService == ussdServiceToString(PAYATTITUDE_PURCHASE)) {
-        receiptfile = "payWithPhoneReceipt.html";
-    }
-
     record["receipt_copy"] += "- Reprint -";
 
-    /*
-    if (printUSSDReceipt(record, receiptfile.c_str()) != vfiprt::PRT_OK) {
-        return false;
-    }
-    */
+    printUSSDReceipt(record);
 
     return true;
 }
@@ -182,10 +429,10 @@ int ussdEodMap(USSDB& db, const char* date, const std::string& service, std::map
     }
 
     iisys::JSObject jHelp;
-    using namespace vfigui;
+    // using namespace vfigui;
 
-    fillReceiptHeader(values);
-    fillReceiptFooter(values);
+    // fillReceiptHeader(values);
+    // fillReceiptFooter(values);
     values["date"] = date;
 
     for (size_t i = 0; i < transactions.size(); ++i) {
@@ -259,9 +506,9 @@ void ussdEndofDay()
         }
 
         values["trxType"] = service.empty() ? "Services" : service;
-        if (previewReceiptMap(values, 0, "../print/eodReceipt.html") == 0) {
-            checkedPrint(values, "eodReceipt.html");
-        }
+
+        printUSSDEod(values);
+
     }
 }
 
