@@ -67,7 +67,7 @@ protected:
     Service service;
     VasComProxy& comProxy;
 
-    long long amount;
+    unsigned long amount;
     std::string beneficiary;
     std::string phoneNumber;
     std::string vendorBankCode;

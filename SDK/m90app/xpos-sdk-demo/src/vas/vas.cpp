@@ -404,7 +404,7 @@ int printVas(std::map<std::string, std::string>& record)
 void printAirtime(std::map<std::string, std::string> &record)
 {
     const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, "pin", "pin_ref", "serial", "expiry", "dial"};
-    const char* labels[] = {"WALLET", "TXN TID", "PHONE", "PIN", "PIN REF", "SERIAL", "EXPIRY", "TO LOAD"};
+    const char* labels[] = {"WALLET", "TXN TID", "BENEFICIARY", "PIN", "PIN REF", "SERIAL", "EXPIRY", "TO LOAD"};
 
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {

@@ -319,7 +319,11 @@ int Smile::getPaymentJson(iisys::JSObject& json, Service service)
         json("price") = lookupResponse.selectedPackage("price").getString();
     } else if (service == SMILETOPUP) {
         char amountStr[16] = { 0 };
+
         snprintf(amountStr, sizeof(amountStr), "%lu", amount);
+        
+        printf("amountStr : %s ===== amount : %lu\n", amountStr, amount);
+
         json("amount") = amountStr;
     }
 
@@ -347,12 +351,14 @@ VasStatus Smile::processPaymentResponse(iisys::JSObject& json, Service service)
 
     this->service = service;
 
+
     if (status.isNull() || status.getInt() != 1) {
         response = VasStatus(STATUS_ERROR, msg.isNull() ? "Status Error" : msg.getString().c_str());
         // return response;
+    } else {
+        response.error = NO_ERRORS;
     }
 
-    response.error = NO_ERRORS;
     if (!msg.isNull()) {
         paymentResponse.message = msg.getString();
         response.message = msg.getString();

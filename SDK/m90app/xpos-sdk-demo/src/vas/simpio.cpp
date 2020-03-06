@@ -173,7 +173,7 @@ int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const
     int result = 0;
 
     gui_clear_dc();
-	result = gui_messagebox_show((char *)title, (char *)text, "", (char *)button, timeout);
+	result = gui_messagebox_show((char *)title, (char *)((text && *text) ? text : " "), "", (char *)button, timeout);
 
     switch (result)
     {
@@ -246,14 +246,14 @@ int UI_ShowSelection(int timeout, const char* title, const std::vector<std::stri
     return option;
 }
 
-long long getAmount(const char* title)
+unsigned long getAmount(const char* title)
 {
-    long long amount = 0L;
+    unsigned long amount = 0L;
     char buff[24] = {'\0'};
 
     strncpy(buff, title, sizeof(buff) - 1);
 
-    amount = inputamount_page(buff, 12, 30000);
+    amount = (unsigned long)inputamount_page(buff, 12, 30000);
 
     if(amount <= 0) return -1;
      

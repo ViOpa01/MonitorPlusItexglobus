@@ -132,12 +132,7 @@ void printReceiptLogo(const char filename[32])
     char path[32] = {'\0'};
     strcpy(path, filename);
 
-	if(strlen(path) < 12) {
-		UPrint_BitMap(path, 1);
-		return;
-	} 
-
-	gui_messagebox_show("Error", "Filename is too long.\nKindly reduce the lenght", "", "confirm", 0);
+	UPrint_BitMap(path, 1);
 }
 
 static char* accountTypeToString(enum AccountType type)

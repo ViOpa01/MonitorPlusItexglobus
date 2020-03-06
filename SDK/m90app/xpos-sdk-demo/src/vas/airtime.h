@@ -36,7 +36,7 @@ protected:
 
     std::string phoneNumber;
     PaymentMethod payMethod;
-    long long amount;
+    unsigned long amount;
 
     CardPurchase cardPurchase;
 

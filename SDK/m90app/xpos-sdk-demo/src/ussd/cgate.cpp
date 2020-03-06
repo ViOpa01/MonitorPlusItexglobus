@@ -123,13 +123,13 @@ int coralTransaction(const USSDService service)
     Demo_SplashScreen("Initiating Transaction", "Please wait...");
     std::string body = fetchCoralCode(service, amount / 100.0f);
     if (body.empty()) {
-        UI_ShowButtonMessage(5000, "No Response", "", "Ok", UI_DIALOG_TYPE_WARNING);
+        UI_ShowButtonMessage(5000, "No Response", " ", "Ok", UI_DIALOG_TYPE_WARNING);
         return -1;
     }
 
     iisys::JSObject cgate;
     if (!cgate.load(body)) {
-        UI_ShowButtonMessage(5000, "Error", "", "Ok", UI_DIALOG_TYPE_WARNING);
+        UI_ShowButtonMessage(5000, "Error", " ", "Ok", UI_DIALOG_TYPE_WARNING);
         return -1;
     }
 

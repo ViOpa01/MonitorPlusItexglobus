@@ -1270,17 +1270,26 @@ short addIccTagsToEft(Eft *eft)
 
 static short persistEft(const Eft * eft)
 {
-	if (eft->atPrimaryIndex == 0) { 
-		if (saveEft(eft)) {
-			fprintf(stderr, "Error saving transaction...\n");
-			return -1;
-		} 
-	} else {
+	if(eft->isVasTrans) {
 		if (updateEft(eft))  {
 			fprintf(stderr, "Error updating transaction transaction...\n");
 			return -2;
 		}
+
+	} else {
+		if (eft->atPrimaryIndex == 0) { 
+			if (saveEft(eft)) {
+				fprintf(stderr, "Error saving transaction...\n");
+				return -1;
+			} 
+		} else {
+			if (updateEft(eft))  {
+				fprintf(stderr, "Error updating transaction transaction...\n");
+				return -2;
+			}
+		}
 	}
+	
 
 	return 0;
 }
@@ -1685,7 +1694,13 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	netParam->packetSize = result;
 	memcpy(netParam->packet, packet, netParam->packetSize);
 	
-
+	if(eft->isVasTrans) {
+		if (saveEft(eft)) {
+			fprintf(stderr, "Error saving transaction...\n");
+			return -1;
+		} 
+	}
+	
 	result = processPacketOnline(eft, &hostType, netParam);
 
 	printf("\nResult Before IccUpdate -> %d, Icc data len -> %d\n", result, hostType.iccDataBcdLen);
@@ -1721,7 +1736,9 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 #endif
 	}
 
+	
 	persistEft(eft);
+	
 
 	if (!result && isApprovedResponse(eft->responseCode) && isBalance(eft)) {
 		displayBalance(eft->balance);
