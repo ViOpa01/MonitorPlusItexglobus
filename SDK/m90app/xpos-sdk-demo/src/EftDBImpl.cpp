@@ -576,7 +576,7 @@ void getListofEftToday(){
 int clearDb() {
     EmvDB db(EFT_DEFAULT_TABLE, DBNAME);
 
-    if (gui_messagebox_show("Notification", "Do you wish to print transaction record?" , "No", "Yes", 0) == 1)
+    if (gui_messagebox_show("Notification", "Do you wish to print trans record?\nPlease go to Operator's Menu" , "No", "Yes", 0) == 1)
     {
        return 1; 
         

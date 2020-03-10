@@ -97,7 +97,7 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		// netParam->port = mParam.nibss_ssl_port;
 
 		strncpy(netParam->host, "197.253.19.78", strlen(mParam.nibss_ip));
-		netParam->port = 6001;
+		netParam->port = 6003;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
