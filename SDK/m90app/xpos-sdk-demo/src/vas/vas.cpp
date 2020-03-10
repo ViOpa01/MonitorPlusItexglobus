@@ -408,7 +408,8 @@ void printAirtime(std::map<std::string, std::string> &record)
 
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {
-            printLine(labels[i], record[keys[i]].c_str());
+            if(*(record[keys[i]].c_str()))
+                printLine(labels[i], record[keys[i]].c_str());
         }
     } 
 }
@@ -417,11 +418,12 @@ void printAirtime(std::map<std::string, std::string> &record)
 void printCashio(std::map<std::string, std::string> &record)
 {
     const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, "recBank"};
-    const char* labels[] = {"WALLET", "TID","RECIPIENT", "ACC NAME", "BANK "};
+    const char* labels[] = {"WALLET", "TID","RECIPIENT", "ACC NAME ", "BANK "};
 
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {
-            printLine(labels[i], record[keys[i]].c_str());
+            if(*(record[keys[i]].c_str()))
+                printLine(labels[i], record[keys[i]].c_str());
         }
     } 
 }
@@ -473,7 +475,8 @@ void printTv(std::map<std::string, std::string> &record)
 
      for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {
-            printLine(labels[i], record[keys[i]].c_str());
+            if(*(record[keys[i]].c_str()))
+                printLine(labels[i], record[keys[i]].c_str());
         }
     } 
 }

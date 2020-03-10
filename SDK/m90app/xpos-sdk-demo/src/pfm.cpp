@@ -66,7 +66,7 @@ iisys::JSObject getState()
     state("ptad") = "Itex Integrated Services";
     state("sv") = "7.8.18";     // Register the Morefun version later
     // state("sv") = softwareVersion;
-    /*  // Need to know why cash payment method is returning request not authorized with cash payment method
+    // Need to know why cash payment method is returning request not authorized with cash payment method
     state("serial") = terminalSn;
     state("bl") = "100";
     state("btemp") = "35";
@@ -94,7 +94,6 @@ iisys::JSObject getState()
     cloc("ss") = "-87dbm";
 
     state("cloc") = cloc; 
-    */
 
     return state;
 }

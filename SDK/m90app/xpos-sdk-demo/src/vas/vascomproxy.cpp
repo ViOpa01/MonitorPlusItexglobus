@@ -36,7 +36,7 @@ std::string vasApiKey();
 
 int vasPayloadGenerator(char* auxPayload, const size_t auxPayloadSize, const Eft* context);
 
-Postman::Postman() : vas("vas.itexapp.com")
+Postman::Postman() : vas("staging.itexapp.com")     // live is vas.itexapp.com
 {
 
 }
@@ -158,7 +158,7 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
 	strncpy(netParam.title, "vas", 10);
     netParam.isHttp = 1;
     netParam.isSsl = 0;
-    netParam.port = 80;
+    netParam.port = 8028;   // staging 8028, live 80
     netParam.endTag = "";  // I might need to comment it out later
 
 
@@ -272,7 +272,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
         jsonReq("method") = "GET";
     }
     
-    jsonReq("host") = std::string("http://") +  vas + url;
+    jsonReq("host") = std::string("http://") +  vas + ":8028" + url;
 
     if (!headers && json) {
         char timestamp[32] = { 0 };

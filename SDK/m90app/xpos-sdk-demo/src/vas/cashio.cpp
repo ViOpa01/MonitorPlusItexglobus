@@ -223,7 +223,7 @@ VasStatus ViceBanking::complete(const VasStatus& initiateStatus)
 
     if (payMethod == PAY_WITH_CARD) {
         cardPurchase.amount = amount;
-        response = comProxy.complete(paymentPath(service), &json, &customHeaders, &cardPurchase);
+        response = comProxy.complete(paymentPath(service), &json, NULL, &cardPurchase);
     } else {
         response = comProxy.complete(paymentPath(service), &json, &customHeaders);
     }
@@ -374,7 +374,7 @@ const char* ViceBanking::paymentPath(Service service)
         return "/vas/vice-banking/transfer/payment";
     } else if (service == WITHDRAWAL) {
         if (payMethod == PAY_WITH_CARD) {
-            return "/vas/vice-banking/withdrawal/payment";
+            return "/vas/mw/vice-banking/withdrawal/payment";
         } else if (payMethod == PAY_WITH_MCASH) {
             return "/vas/mcash-banking/withdrawal/payment";
         }

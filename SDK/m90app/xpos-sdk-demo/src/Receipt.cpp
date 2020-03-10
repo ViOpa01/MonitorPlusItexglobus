@@ -631,7 +631,6 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 		}
 		
 		printLine("RRN", eft->rrn);
-		printf("Pius Stan : %s\n", eft->stan);
 		printLine("STAN", eft->stan);
 		printLine("TID", mParam.tid);
 
