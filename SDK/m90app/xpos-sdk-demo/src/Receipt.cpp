@@ -32,9 +32,6 @@ extern "C" {
 #define ATOLL atoll
 #endif
 
-#define DOTTEDLINE		"--------------------------------"
-#define DOUBLELINE		"================================"
-
 enum AlignType{
 	ALIGN_CENTER,
 	ALIGN_LEFT,

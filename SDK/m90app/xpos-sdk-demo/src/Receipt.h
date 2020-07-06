@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+#define DOTTEDLINE		"--------------------------------"
+#define DOUBLELINE		"================================"
+
 enum receiptCopy{
 	CUSTOMER_COPY,
 	MERCHANT_COPY,

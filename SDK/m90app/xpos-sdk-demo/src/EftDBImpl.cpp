@@ -21,202 +21,10 @@ extern "C"{
 }
 #include "Receipt.h"
 #include "merchant.h"
+#include "processEod.h"
 
-#define DOTTEDLINE		"--------------------------------"
-#define DOUBLELINE		"================================"
-
-const  std::string DBNAME = "itex/emvdb.db";    // To be in sync with system init private directory
+const  std::string DBNAME = "itex/emvdb.db"; 
 #define EFT_DEFAULT_TABLE "Transactions"
-#define EMVDBUTILLOG "EMVDBUTILLOG"
-
-
-void printHeader(){
-    MerchantData merchantdata = { 0 };
-    readMerchantData(&merchantdata);
-    
-    char tid[100] = {0};
-    char date[50] = {0};
-    char tidWithDate[100] = {0};
-    getDate(date);
-    
-    sprintf(tid,"%s", merchantdata.tid);
-    UPrint_Feed(8);
-    sprintf(tidWithDate, "%s              %s\n", tid, date);
-    UPrint_SetFont(8, 2, 2);
-    UPrint_StrBold(merchantdata.name, 1, 0, 1);
-    UPrint_StrBold(merchantdata.address, 1, 0, 1);
-
-    UPrint_Str(tidWithDate, 1, 0);
-    UPrint_Feed(8);
-    
-}
-
-struct EodLabelStruct {
-
-    char time[6];
-    std::string rrnOrPanStr;
-    char flag[2];
-    char price[13];
-};
-
-
-struct EodStruct {
-    
-private:
-    int totalNumberOfApproved;
-    int totalNumberOfTransactions;
-    int totalNumberOfDeclined;
-    float totalSumOfDeclinedInNaira;
-    float totalSumOfApprovedInNaira;
-    std::vector<std::map<std::string, std::string> > data;
-    std::vector<EodLabelStruct> labelList;
-
-public:
-    EodStruct(std::vector<std::map<std::string, std::string> > data_)
-        :
-            totalNumberOfApproved(0),
-            totalNumberOfDeclined(0),
-            totalNumberOfTransactions(0),
-            totalSumOfApprovedInNaira(0),
-            totalSumOfDeclinedInNaira(0), 
-            data(data_),
-            labelList(std::vector<EodLabelStruct>())
-    {
-
-    }
-
-    void convertData(bool isRRN){
-        EmvDB db(EFT_DEFAULT_TABLE, DBNAME);
-        std::string filename = "xxxx\\bank.bmp"; // + BANKLOGO;
-        int ret = 0;
-
-        if(data.empty()) return;
-       
-     
-        for(int index = 0; index < data.size(); index++){
-
-            EodLabelStruct label;
-            label.rrnOrPanStr.clear();
-
-            if(isRRN == true){
-                label.rrnOrPanStr.assign(data[index][DB_RRN]);
-            } else {
-                label.rrnOrPanStr.assign(data[index][DB_PAN]);
-            }   
-
-            if(data[index][DB_RESP] != "00"){
-                sprintf(label.flag, "%s", "D"); 
-            }
-            else{
-                sprintf(label.flag, "%s", "A"); 
-            }
-
-            strcpy(label.price,  data[index][DB_AMOUNT].c_str());
-            printf("\n%s\n", label.price);
-
-            char dateInDB[30] = {0};
-            strcpy(dateInDB, data[index][DB_DATE].c_str());
-            printf("\n%s\n", dateInDB);
-
-            char  timeExtract[20] = { 0 };
-            strncpy(timeExtract, &dateInDB[11], 5);
-            printf("\n%s\n",timeExtract);
-
-            strcpy(label.time, timeExtract);
-            printf("\n%s\n", label.time);
-            totalNumberOfTransactions = totalNumberOfTransactions + 1;
-
-            if(data[index][DB_RESP] == "00") {
-    
-                totalNumberOfApproved += 1;
-                totalSumOfApprovedInNaira = totalSumOfApprovedInNaira + atol(label.price) / 100.0;
-            } else {
-
-                totalNumberOfDeclined += 1;
-                totalSumOfDeclinedInNaira = totalSumOfDeclinedInNaira + atol(label.price) / 100.0;
-            }
-            
-            labelList.push_back(label);
-        }
-
-        printf("\nTotal num of transactions is %d\n", totalNumberOfTransactions );
-        printf("\nSum of approved transactions in Naira %.2f\n", totalSumOfApprovedInNaira);
-        printf("\nSum of declined transactions in Naira %.2f\n", totalSumOfDeclinedInNaira);
-        printf("Starting to print\n");
-        printf("Size of label list is %zu", labelList.size());
-        
-        gui_begin_batch_paint();			
-        gui_clear_dc();
-        gui_text_out(0, GUI_LINE_TOP(0), "printing...");
-        gui_end_batch_paint();
-
-        while(1) {
-
-            ret = UPrint_Init();
-
-            if (ret == UPRN_OUTOF_PAPER) {
-                if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
-                    break;
-                }
-            }
-
-            printReceiptLogo(filename.c_str());
-            printHeader();
-            UPrint_SetFont(7, 2, 2);
-            UPrint_StrBold("EOD SUMMARY", 1, 0,1 );
-            UPrint_SetFont(8, 2, 2);
-            UPrint_Str(DOUBLELINE, 2, 1);
-            char printData[64] = {0};
-            sprintf(printData,"APPROVED    NGN %.2f\n",  totalSumOfApprovedInNaira);
-            UPrint_SetFont(8, 2, 2);
-            UPrint_Str(printData, 1, 0);
-            sprintf(printData,"DECLINED    NGN %.2f\n",  totalSumOfDeclinedInNaira);
-            
-
-            UPrint_Str(printData, 1, 0);
-            sprintf(printData, "APPROVED TX    %d\n", totalNumberOfApproved);
-            UPrint_Str(printData, 1, 0);
-            sprintf(printData, "DECLINED TX    %d\n", totalNumberOfDeclined);
-            UPrint_Str(printData, 1, 0);
-            sprintf(printData, "TOTAL          %d\n", totalNumberOfTransactions);
-            UPrint_Str(printData, 1, 0);
-            UPrint_Feed(12);
-            UPrint_SetFont(8, 2, 2);
-
-            for(int index = 0; index < labelList.size(); index++) {
-
-                printf("Printing\n");
-                printf("\nIs the Label %s\n", labelList[index].rrnOrPanStr.c_str());
-                char buff[100] = { 0 };
-
-                if(labelList[index].rrnOrPanStr.length() > 16) {
-
-                    sprintf(buff, "%s %s %.2f %s\n", labelList[index].time, labelList[index].rrnOrPanStr.c_str(), strtoul(labelList[index].price, NULL, 10)/100.0,labelList[index].flag );
-                
-                } else {
-                    sprintf(buff, "%s %s %.2f %s\n", labelList[index].time, labelList[index].rrnOrPanStr.c_str(), strtoul(labelList[index].price, NULL,10)/100.0, labelList[index].flag );
-                }
-                
-                UPrint_Str(buff, 1, 0);
-                UPrint_Str(DOTTEDLINE, 2, 1);
-                
-            }
-
-            printFooter();
-            ret = UPrint_Start();
-            if(getPrinterStatus(ret) < 0) {
-                break;
-            }
-            data.clear();
-
-
-        }
-
-        return;
-    }
-  
-};
-
 
 static short updateEftRequired(const Eft * eft) 
 {
@@ -286,10 +94,12 @@ short getEft(Eft * eft)
     std::map<std::string, std::string> dbmap;
 
     if (db.selectTransactionsByRef(vec_map, eft->rrn, ALL_TRX_TYPES)) {
+        gui_messagebox_show("ERROR", "error querying daatbase!", "", "Ok", 0);
         return -1;
     }
 
     if(vec_map.empty()) {
+        gui_messagebox_show("ERROR", "invalid ref no. !", "", "Ok", 0);
         printf("Ref doesnt exist\n");
         return -1;
     }
@@ -341,6 +151,7 @@ short getLastTransaction(Eft * eft)
     eft->atPrimaryIndex = db.lastTransactionId();
 
     if(eft->atPrimaryIndex <= 0) {
+        gui_messagebox_show("ERROR", "No record found!", "", "Ok", 0);
         return -1;
     }
 
@@ -376,6 +187,7 @@ short getLastTransaction(Eft * eft)
     strncpy(eft->originalYyyymmddhhmmss, eft->yyyymmddhhmmss, strlen(eft->yyyymmddhhmmss));
 
     if (decodeProcessingCode(&eft->transType, &eft->fromAccount, &eft->toAccount, dbmap[DB_PS].c_str(), dbmap[DB_MTI].c_str())) {
+        gui_messagebox_show("ERROR", "error processing code!", "", "Ok", 0);
         fprintf(stderr, "Error decoding processing code...\n");
         return -2;
     }
@@ -402,20 +214,21 @@ void eodSubMenuHandler(int selected, const char** dateList, TrxType txtype)
     db.selectTransactionsOnDate(transactions, dateList[selected],  txtype );
     
     if(transactions.empty()){
+        gui_messagebox_show("ERROR", "No record found!", "", "Ok", 0);
         return;
     }
 
     printf("Size of the data is %zu", transactions.size());
-    EodStruct eods(transactions);
+    ProcessEod eods(transactions, DBNAME, EFT_DEFAULT_TABLE);
 
     printf("starting operation\n");
     int selectedOption = gui_select_page_ex("Print By?", menu, 2, 10000, 0);
 
     if(selectedOption == 0){
-        eods.convertData(true);
+        eods.generateEodReceipt(true);
     }
     else if(selectedOption == 1 ){
-        eods.convertData(false);
+        eods.generateEodReceipt(false);
         return;
     }
     else
@@ -447,23 +260,23 @@ void getListOfEod(Eft * eft, TrxType txtype)
 
     if (dateListLenght == 0)
     {
-        gui_messagebox_show("MESSAGE", "No record for this transaction type", "", "Ok", 0);
+        gui_messagebox_show("ERROR", "No record for this transaction type", "", "Ok", 0);
         return;
     }
 
-    const char * C_dateList[dateListLenght] = { 0 };
+    const char * dateListPtr[dateListLenght] = { 0 };
 
     for(index = 0; index < dateList.size(); index++){
         printf("\n%s\n", dateList[index].c_str());
-        C_dateList[index] = dateList[index].c_str();
+        dateListPtr[index] = dateList[index].c_str();
     }
 
-    selectedOption = gui_select_page_ex("EOD",(char **)C_dateList, dateListLenght , 10000, 0);
+    selectedOption = gui_select_page_ex("EOD",(char **)dateListPtr, dateListLenght , 10000, 0);
     if(selectedOption > index || selectedOption < 0){
         return;
     }
 
-    eodSubMenuHandler(selectedOption, C_dateList, txtype);
+    eodSubMenuHandler(selectedOption, dateListPtr, txtype);
     printf("size of vector is %zu\n", dateListLenght);
 
     return;
@@ -473,6 +286,7 @@ void getListOfEod(Eft * eft, TrxType txtype)
 void contextMapToEft(std::map<std::string, std::string> dbmap ,  Eft * eft){
     
     if(dbmap.empty()){
+        gui_messagebox_show("ERROR", "Invalid Record!", "", "Ok", 0);
         return;
     }
 
@@ -531,8 +345,10 @@ void getListofEftToday(){
     db.selectTransactionsOnDate(transactions, todayDate, ALL_TRX_TYPES);
     
     if(transactions.empty()){
+        gui_messagebox_show("ERROR", "No record found!", "", "Ok", 0);
         return;
     }
+
     numberOfTrans = transactions.size();
     menulist = (char**) malloc(numberOfTrans * sizeof(char*));
 
