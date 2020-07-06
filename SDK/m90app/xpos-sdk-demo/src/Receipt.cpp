@@ -1,4 +1,4 @@
-
+#include <sstream>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
@@ -474,14 +474,17 @@ void printLine(const char *head, const char *val)
 
 static void printReceiptAmount(const long long amount, short center)
 {
-    char buffer[21];
+        char buffer[21];
     char line[32] = { '\0' };
     int len;
 	const int printerWidth = 32; //Not sure
-
+	std::stringstream ss;
+	ss << amount;
+	std::string amountStr = ss.str();
 
     memset(buffer, '\0', sizeof(buffer));
-    sprintf(buffer, "NGN %.2f", amount / 100.0);
+	formatAmount(amountStr);
+    sprintf(buffer, "NGN %s", amountStr.c_str());
 
 
     len = strlen(buffer);
