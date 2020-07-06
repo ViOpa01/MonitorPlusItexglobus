@@ -58,7 +58,7 @@ static void addGenericNetworkFields(NetworkManagement *networkMangement)
     strncpy(networkMangement->stan, &networkMangement->yyyymmddhhmmss[8], sizeof(networkMangement->stan));
 }
 
-static void addCallHomeData(NetworkManagement *networkMangement)
+void addCallHomeData(NetworkManagement *networkMangement)
 {
     //TODO: get the values at runtime, the hardcoded data will still work
     MerchantParameters parameter = {'\0'};
@@ -412,6 +412,46 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
     }
 
     return result;
+}
+
+int sCallHomeAsync(NetworkManagement *networkMangement, NetWorkParameters *netParam)
+{
+    int result = -1;
+    unsigned char packet[1024];
+    unsigned char response[512];
+
+    networkMangement->type = CALL_HOME;
+    addGenericNetworkFields(networkMangement);
+    result = createIsoNetworkPacket(packet, sizeof(packet), networkMangement);
+
+    if (result <= 0) {
+        fprintf(stderr, "Callhome -> Error creating packet....\n");
+        return -1;
+    }
+
+    netParam->packetSize = result;
+    memcpy(netParam->packet, packet, result);
+    
+    strcpy(netParam->title, "CALLHOME");
+    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        fprintf(stderr, "Callhome -> Error send and receive failed....\n");
+        return -2;
+    }
+
+
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
+
+    if (result) {
+        fprintf(stderr, "Callhome -> Error extracting response....\n");
+        return -2;
+    }
+
+    if (!isApprovedResponse(networkMangement->responseCode)) {
+        printf("Call response message : %s\n", networkMangement->responseDesc);
+        return -3;
+    }
+
+    return 0;
 }
 
 static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *netParam)

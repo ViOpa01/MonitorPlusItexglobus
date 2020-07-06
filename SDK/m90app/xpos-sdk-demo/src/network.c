@@ -640,6 +640,8 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 
 	if (connectToHost(netParam))
 	{
+		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+		comm_net_unlink(); // Unlink network connection
 		return CONNECTION_FAILED;
 	}
 
@@ -647,6 +649,8 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 
 	if (sendPacket(netParam))
 	{
+		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+		comm_net_unlink(); // Unlink network connection
 		return SENDING_FAILED;
 	}
 
@@ -657,13 +661,14 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	if (receivePacket(netParam))
 	{
 		networkErrorLogger(netParam->async, "Response", "No response received!", 3000, gui_messagebox_show);	
+		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+		comm_net_unlink(); // Unlink network connection
 		return RECEIVING_FAILED;
 	}
 
 	puts("Receive Successful!\n");
 
 	netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
-	//Sys_Delay(500);
 	comm_net_unlink(); // Unlink network connection
 	return SEND_RECEIVE_SUCCESSFUL;
 }

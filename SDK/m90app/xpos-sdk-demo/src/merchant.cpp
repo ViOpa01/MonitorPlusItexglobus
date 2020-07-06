@@ -41,7 +41,7 @@ static void initTamsParameters(NetWorkParameters * netParam)
     netParam->isSsl = 0;
 }
 
-static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
+static short getMerchantDetails(NetWorkParameters * netParam, char *buffer, const int size)
 {
 
     char terminalSn[22] = {0};
@@ -64,7 +64,7 @@ static short getMerchantDetails(NetWorkParameters * netParam, char *buffer)
         return -1;
     }
 
-    memcpy(buffer, netParam->response, strlen((char *)netParam->response));
+    memcpy(buffer, netParam->response, size);
     return 0;
 }
 
@@ -101,11 +101,8 @@ static short parseJsonFile(char *buff, cJSON **parsed)
    
 }
 
-int saveMerchantDataXml(const char* merchantXml)
+static int saveMerchantDataXml(const char* merchantXml, const int size)
 {
-    // takes xml
-    // Parse it
-    // Save it
 
     ezxml_t root;
     ezxml_t tran;
@@ -122,7 +119,7 @@ int saveMerchantDataXml(const char* merchantXml)
 
     merchant.status = 0;
 
-    memcpy(rawResponse, merchantXml, strlen(merchantXml));
+    memcpy(rawResponse, merchantXml, size);
     root = ezxml_parse_str(rawResponse, strlen(rawResponse));
 
     printf("Raw response is >>>> %s\n", rawResponse);
@@ -135,7 +132,7 @@ int saveMerchantDataXml(const char* merchantXml)
     tran = ezxml_child(root, "tran");
 
     merchant.status = atoi(ezxml_child(tran, "status")->txt);
-    printf("Status : %d\n", merchant.status);
+    // printf("Status : %d\n", merchant.status);
 
     if(ezxml_child(tran, "message") != NULL)
        strncpy(itexPosMessage, ezxml_child(tran, "message")->txt, sizeof(itexPosMessage) - 1);
@@ -147,6 +144,7 @@ int saveMerchantDataXml(const char* merchantXml)
         printf("Old tid : %s\nNew tid : %s\n", merchant.old_tid, itexPosMessage);
         if(strncmp(merchant.old_tid, itexPosMessage, 8)) {
             if(clearDb()) {
+                ezxml_free(root);
                 return ret;
             }
         }
@@ -157,18 +155,19 @@ int saveMerchantDataXml(const char* merchantXml)
     } else {
         ret = saveMerchantData(&merchant);
         gui_messagebox_show("VIOLATION", "Terminal is not mapped", "", "", 0);
+        ezxml_free(root);
         return -1;
     }    
     
     printf("tid : %s\n", merchant.tid);
 
     address_name.append(ezxml_child(tran, "Address")->txt);
-    printf("Address and Name : %s\n", ezxml_child(tran, "Address")->txt);
+    // printf("Address and Name : %s\n", ezxml_child(tran, "Address")->txt);
 
     pos = 0;
     pos = address_name.find('|');
     strncpy(merchant.name, address_name.substr(0, pos).c_str(), sizeof(merchant.name) - 1);
-    printf("Merchant Name : %s\n", merchant.name);
+    // printf("Merchant Name : %s\n", merchant.name);
 
     if(address_name.substr(pos + 1, std::string::npos).empty())
     {
@@ -177,32 +176,32 @@ int saveMerchantDataXml(const char* merchantXml)
         strncpy(merchant.address, address_name.substr(pos + 1, std::string::npos).c_str(), sizeof(merchant.address) - 1);
     }
     
-    printf("Address : %s\n", merchant.address);
+    // printf("Address : %s\n", merchant.address);
 
     strncpy(merchant.rrn, ezxml_child(tran, "RRN")->txt, sizeof(merchant.rrn) - 1);
-    printf("rrn : %s\n", merchant.rrn);
+    // printf("rrn : %s\n", merchant.rrn);
 
     strncpy(merchant.tid, ezxml_child(tran, "message")->txt, sizeof(merchant.tid) - 1);
-    printf("rrn : %s\n", merchant.tid);
+    // printf("rrn : %s\n", merchant.tid);
     
     strncpy(merchant.stamp_label, ezxml_child(tran, "STAMP_LABEL")->txt, sizeof(merchant.stamp_label) - 1);
-    printf("Stamp Label : %s\n", merchant.stamp_label);
+    // printf("Stamp Label : %s\n", merchant.stamp_label);
     
     merchant.stamp_duty_threshold = atoi(ezxml_child(tran, "STAMP_DUTY_THRESHOLD")->txt);
-    printf("Stamp threshold : %d\n", merchant.stamp_duty_threshold);
+    // printf("Stamp threshold : %d\n", merchant.stamp_duty_threshold);
 
     merchant.stamp_duty = atoi(ezxml_child(tran, "STAMP_DUTY")->txt);
-    printf("Stamb duty : %d\n", merchant.stamp_duty);
+    // printf("Stamb duty : %d\n", merchant.stamp_duty);
 
     strncpy(merchant.port_type, ezxml_child(tran, "PORT_TYPE")->txt, sizeof(merchant.port_type) - 1);
-    printf("Port Type : %s\n", merchant.port_type);
+    // printf("Port Type : %s\n", merchant.port_type);
     
     strncpy(merchant.platform_label, ezxml_child(tran, "PREFIX")->txt, sizeof(merchant.platform_label) - 1);
-    printf("Platform Label: %s\n", merchant.platform_label);
+    // printf("Platform Label: %s\n", merchant.platform_label);
 
     if(ezxml_child(tran, "NOTIFICATION_ID")) {
         strncpy(merchant.notificationIdentifier, ezxml_child(tran, "NOTIFICATION_ID")->txt, sizeof(merchant.notificationIdentifier) - 1);
-        printf("Notification id: %s\n", merchant.notificationIdentifier);
+        // printf("Notification id: %s\n", merchant.notificationIdentifier);
     }
     
 
@@ -210,35 +209,35 @@ int saveMerchantDataXml(const char* merchantXml)
     if(strcmp(merchant.platform_label, "POSVAS") == 0)
     {
         merchant.nibss_platform = 2;
-        printf("Platform is : %d\n", merchant.nibss_platform);
+        // printf("Platform is : %d\n", merchant.nibss_platform);
         
         // get POSVAS IP and PORT SSL
         ip_and_port.append(ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
-        printf("ip and port ssl : %s\n", ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
+        // printf("ip and port ssl : %s\n", ezxml_child(tran, "POSVASPUBLIC_SSL")->txt);
 
         ip_and_port_plain.append(ezxml_child(tran, "POSVASPUBLIC")->txt);
-        printf("ip and port plain : %s\n", ezxml_child(tran, "POSVASPUBLIC")->txt);
+        // printf("ip and port plain : %s\n", ezxml_child(tran, "POSVASPUBLIC")->txt);
 
 
     } else if(strcmp(merchant.platform_label, "EPMS") == 0)
     {
         merchant.nibss_platform = 1;
-        printf("Platform is : %d\n", merchant.nibss_platform);
+        // printf("Platform is : %d\n", merchant.nibss_platform);
 
         // EPMS IP and PORT SSL
         ip_and_port.append(ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
-        printf("ip and port ssl : %s\n", ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
+        // printf("ip and port ssl : %s\n", ezxml_child(tran, "EPMSPUBLIC_SSL")->txt);
 
         ip_and_port_plain.append(ezxml_child(tran, "EPMSPUBLIC")->txt);
-        printf("ip and port plain : %s\n", ezxml_child(tran, "EPMSPUBLIC")->txt);
+        // printf("ip and port plain : %s\n", ezxml_child(tran, "EPMSPUBLIC")->txt);
     }
 
     pos = ip_and_port.find(';');
     strncpy(merchant.nibss_ip, ip_and_port.substr(0, pos).c_str(), sizeof(merchant.nibss_ip) - 1);
-    printf("ip and port : %s\n", merchant.nibss_ip);
+    // printf("ip and port : %s\n", merchant.nibss_ip);
 
     merchant.nibss_ssl_port = atoi(ip_and_port.substr(pos + 1, std::string::npos).c_str());
-    printf("ssl port is : %d\n", merchant.nibss_ssl_port);
+    // printf("ssl port is : %d\n", merchant.nibss_ssl_port);
 
     pos = 0;
     pos = ip_and_port_plain.find(';');
@@ -246,20 +245,19 @@ int saveMerchantDataXml(const char* merchantXml)
     // printf("ip and port : %s\n", merchant.nibss_ip);
 
     merchant.nibss_plain_port = atoi(ip_and_port_plain.substr(pos + 1, std::string::npos).c_str());
-    printf("plain port is : %d\n", merchant.nibss_plain_port);
+    // printf("plain port is : %d\n", merchant.nibss_plain_port);
 
     merchant.account_selection = atoi(ezxml_child(tran, "accountSelection")->txt);
-    printf("Account Selection : %d\n", merchant.account_selection);
+    // printf("Account Selection : %d\n", merchant.account_selection);
 
     strncpy(merchant.phone_no, ezxml_child(tran, "phone")->txt, sizeof(merchant.phone_no) - 1);
-    printf("Platform : %d\n", merchant.nibss_platform);
-    printf("Phone no : %s\n", merchant.phone_no);
+    // printf("Platform : %d\n", merchant.nibss_platform);
+    // printf("Phone no : %s\n", merchant.phone_no);
 
     merchant.is_prepped = 0;
 
     ezxml_free(root);
 
-    
     ret = saveMerchantData(&merchant);
 
     return ret;
@@ -268,13 +266,8 @@ int saveMerchantDataXml(const char* merchantXml)
 
 int readMerchantData(MerchantData* merchant)
 {
-    // Read json
-    // populate the data
 
-    cJSON *json, *pkey;
-    cJSON *jsonAddress, *jsonName, *jsonRrn, *jsonTID, *jsonOldTid, *jsonPlatformLabel, *jsonStampLabel, *jsonStampDuty, *jsonStampDutyThreshold, *jsonNotfId;
-    cJSON *jsonPlatform, *jsonNibssIp, *jsonNibssPort, *jsonPortType, *jsonPhone, *jsonTransType, *jsonAccntSelection, *jsonIsPrep, *jsonNibssPlainPort;
-   
+    cJSON *json, *nextTag;
     char buffer[1024] = {'\0'};
     int ret = -1;
 
@@ -284,149 +277,145 @@ int readMerchantData(MerchantData* merchant)
         return ret;
     }
 
-    // printf("After read record :\n%s\n", (char *)buffer);
-
-    // if(merchant->status = parseJsonFile(buffer, &json) == -1) return;
     parseJsonFile(buffer, &json);
     
-    jsonAddress = cJSON_GetObjectItemCaseSensitive(json, "address");
-    jsonName = cJSON_GetObjectItemCaseSensitive(json, "name");
-    jsonRrn = cJSON_GetObjectItemCaseSensitive(json, "rrn");
-    jsonTID = cJSON_GetObjectItemCaseSensitive(json, "tid");
-    jsonOldTid = cJSON_GetObjectItemCaseSensitive(json, "old_tid");
-    jsonStampLabel = cJSON_GetObjectItemCaseSensitive(json, "stamp_label"); // String
-    jsonPlatformLabel = cJSON_GetObjectItemCaseSensitive(json, "platform_label"); // String
-    jsonNotfId = cJSON_GetObjectItemCaseSensitive(json, "notification_id"); // String
-    jsonStampDuty = cJSON_GetObjectItemCaseSensitive(json, "stamp_duty");   // Int
-    jsonIsPrep = cJSON_GetObjectItemCaseSensitive(json, "is_prepped");   // Int
-    jsonStampDutyThreshold = cJSON_GetObjectItemCaseSensitive(json, "stamp_threshold");    // Int
-    jsonPlatform = cJSON_GetObjectItemCaseSensitive(json, "platform");    // Int
-    jsonPhone = cJSON_GetObjectItemCaseSensitive(json, "phone_no"); // String
-    jsonNibssIp = cJSON_GetObjectItemCaseSensitive(json, "ip");    // String
-    jsonNibssPort = cJSON_GetObjectItemCaseSensitive(json, "port");    // Int
-    jsonNibssPlainPort = cJSON_GetObjectItemCaseSensitive(json, "plain_port");    // Int
-    jsonPortType = cJSON_GetObjectItemCaseSensitive(json, "port_type"); // String
-    jsonAccntSelection = cJSON_GetObjectItemCaseSensitive(json, "account_selection"); // Int
-    jsonTransType = cJSON_GetObjectItemCaseSensitive(json, "trans_type");
-    pkey = cJSON_GetObjectItemCaseSensitive(json, "plain_key");
-
-    if(cJSON_IsString(jsonAddress))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "address");
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->address, jsonAddress->valuestring, sizeof(merchant->address) - 1);
+        strncpy(merchant->address, nextTag->valuestring, sizeof(merchant->address) - 1);
         // printf("Address : %s\n", merchant->address);
     }
 
-    if(cJSON_IsString(jsonName))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "name");
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->name, jsonName->valuestring, sizeof(merchant->name) - 1);
+        strncpy(merchant->name, nextTag->valuestring, sizeof(merchant->name) - 1);
         // printf("Name : %s\n", merchant->name);
     }
 
-    if(cJSON_IsString(jsonRrn))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "rrn");
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->rrn, jsonRrn->valuestring, sizeof(merchant->rrn) - 1);
+        strncpy(merchant->rrn, nextTag->valuestring, sizeof(merchant->rrn) - 1);
         // printf("rrn : %s\n", merchant->rrn);
     }
 
-    if(cJSON_IsString(jsonNotfId))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "notification_id"); // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->notificationIdentifier, jsonNotfId->valuestring, sizeof(merchant->notificationIdentifier) - 1);
+        strncpy(merchant->notificationIdentifier, nextTag->valuestring, sizeof(merchant->notificationIdentifier) - 1);
         // printf("notification id : %s\n", merchant->notificationIdentifier);
     }
 
-    if(cJSON_IsString(jsonTID))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "tid");
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->tid, jsonTID->valuestring, sizeof(merchant->tid) - 1);
+        strncpy(merchant->tid, nextTag->valuestring, sizeof(merchant->tid) - 1);
         // printf("TID : %s\n", merchant->tid);
     }
 
-    if(cJSON_IsString(jsonOldTid))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "old_tid");
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->old_tid, jsonOldTid->valuestring, sizeof(merchant->old_tid) - 1);
+        strncpy(merchant->old_tid, nextTag->valuestring, sizeof(merchant->old_tid) - 1);
         // printf("OLD TID : %s\n", merchant->old_tid);
     }
 
-    if(cJSON_IsString(jsonStampLabel))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "stamp_label"); // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        memcpy(merchant->stamp_label, jsonStampLabel->valuestring, sizeof(merchant->stamp_label) - 1);
+        memcpy(merchant->stamp_label, nextTag->valuestring, sizeof(merchant->stamp_label) - 1);
         // printf("Stamp Label : %s\n", merchant->stamp_label);
     }
 
-     if(cJSON_IsString(jsonPlatformLabel))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "platform_label"); // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        memcpy(merchant->platform_label, jsonPlatformLabel->valuestring, sizeof(merchant->platform_label) - 1);
+        memcpy(merchant->platform_label, nextTag->valuestring, sizeof(merchant->platform_label) - 1);
         // printf("Platform Label : %s\n", merchant->platform_label);
     }
 
-    if(cJSON_IsNumber(jsonStampDuty))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "stamp_duty");   // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->stamp_duty = jsonStampDuty->valueint;
+        merchant->stamp_duty = nextTag->valueint;
         // printf("Stamp duty : %d\n", merchant->stamp_duty);
     }
 
-    if(cJSON_IsNumber(jsonIsPrep))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "is_prepped");   // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->is_prepped = jsonIsPrep->valueint;
+        merchant->is_prepped = nextTag->valueint;
         // printf("Is prepped : %d\n", merchant->is_prepped);
     }
 
-    if(cJSON_IsNumber(jsonStampDutyThreshold))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "stamp_threshold");    // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->stamp_duty_threshold = jsonStampDutyThreshold->valueint;
+        merchant->stamp_duty_threshold = nextTag->valueint;
         // printf("Stamp duty threshold: %d\n", merchant->stamp_duty_threshold);
     }
 
-    if(cJSON_IsNumber(jsonPlatform))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "platform");    // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->nibss_platform = jsonPlatform->valueint;
+        merchant->nibss_platform = nextTag->valueint;
         // printf("Nibss platform : %d\n", merchant->nibss_platform);
     }
 
-    if(cJSON_IsString(jsonNibssIp))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "ip");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->nibss_ip, jsonNibssIp->valuestring, sizeof(merchant->nibss_ip) - 1);
+        strncpy(merchant->nibss_ip, nextTag->valuestring, sizeof(merchant->nibss_ip) - 1);
         // printf("Nibss ip : %s\n", merchant->nibss_ip);
     }
 
-    if(cJSON_IsNumber(jsonNibssPort))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "port");    // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->nibss_ssl_port = jsonNibssPort->valueint;
+        merchant->nibss_ssl_port = nextTag->valueint;
         // printf("Nibss port : %d\n", merchant->nibss_ssl_port);
     }
 
-    if(cJSON_IsNumber(jsonNibssPlainPort))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "plain_port");    // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->nibss_plain_port = jsonNibssPlainPort->valueint;
+        merchant->nibss_plain_port = nextTag->valueint;
         // printf("Nibss plain port : %d\n", merchant->nibss_plain_port);
     }
 
-    if(cJSON_IsString(jsonPhone))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "phone_no"); // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->phone_no, jsonPhone->valuestring, sizeof(merchant->phone_no) - 1);
+        strncpy(merchant->phone_no, nextTag->valuestring, sizeof(merchant->phone_no) - 1);
         // printf("Customer Phone : %s\n", merchant->phone_no);
     }
 
-    if(cJSON_IsString(jsonPortType))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "port_type"); // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->port_type, jsonPortType->valuestring, sizeof(merchant->port_type) - 1);
+        strncpy(merchant->port_type, nextTag->valuestring, sizeof(merchant->port_type) - 1);
         // printf("Port Type : %s\n", merchant->port_type);
     }
 
-    if(cJSON_IsNumber(jsonAccntSelection))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "account_selection"); // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->account_selection = jsonAccntSelection->valueint;
+        merchant->account_selection = nextTag->valueint;
         // printf("Account Selections : %d\n", merchant->account_selection);
     }
 
-    if(cJSON_IsNumber(jsonTransType))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "trans_type");
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
     {
-        merchant->trans_type = jsonTransType->valueint;
+        merchant->trans_type = nextTag->valueint;
         // printf("Trans Type : %d\n", merchant->trans_type);
     }
 
-    if(cJSON_IsString(pkey))
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "plain_key");
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
     {
-        strncpy(merchant->pKey, pkey->valuestring, sizeof(merchant->pKey) - 1);
+        strncpy(merchant->pKey, nextTag->valuestring, sizeof(merchant->pKey) - 1);
     }
 
     cJSON_Delete(json);
@@ -499,7 +488,7 @@ int getMerchantData()
     memset(&netParam, 0, sizeof(NetWorkParameters));
     initTamsParameters(&netParam);
     
-    if(getMerchantDetails(&netParam, responseXml)) return ret;
+    if(getMerchantDetails(&netParam, responseXml, sizeof(responseXml) - 1)) return ret;
 
     // Getting a copy of tid before prepping
     readMerchantData(&mParam);
@@ -508,7 +497,7 @@ int getMerchantData()
         saveMerchantData(&mParam);
     }
 
-    if ((ret = saveMerchantDataXml(responseXml)) != 0) {
+    if ((ret = saveMerchantDataXml(responseXml, sizeof(responseXml) - 1)) != 0) {
         printf("Error saving merchant data, ret : %d\n", ret);
         return ret;
     }

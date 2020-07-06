@@ -42,7 +42,6 @@ typedef struct MerchantData
 
 int readMerchantData(MerchantData* merchant);
 int saveMerchantData(const MerchantData* merchant);
-int saveMerchantDataXml(const char* merchantXml);
 int getMerchantData();
 
 

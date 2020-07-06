@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 
 #include <stdio.h>
@@ -11,6 +12,7 @@
 #include "sdk_xgui.h"
 #include "nibss.h"
 #include "merchant.h"
+#include "callhome.h"
 
 
 
@@ -29,8 +31,10 @@ void app_main()
 
 #ifndef WIN32
 void main(){
+	pthread_t thread;
 
 	app_main();
+	processCallHomeAsync(&thread);
 
 }
 #endif
