@@ -35,7 +35,7 @@ extern "C" {
 enum AlignType{
 	ALIGN_CENTER,
 	ALIGN_LEFT,
-	ALIGH_RIGHT,
+	ALIGN_RIGHT,
 };
 
 void printDottedLine()
@@ -409,7 +409,7 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
         return;
     }
 
-    if (alignType == ALIGH_RIGHT) {
+    if (alignType == ALIGN_RIGHT) {
 
         int index = 0;
 
@@ -464,7 +464,7 @@ void printLine(const char *head, const char *val)
 	int printerWidth = 32;
     char buff[32] = {'\0'};
 
-	alignBuffer(rightAligned, val, printerWidth - strlen(head), ALIGH_RIGHT);
+	alignBuffer(rightAligned, val, printerWidth - strlen(head), ALIGN_RIGHT);
 	
     strcpy(buff, head);
 	UPrint_SetFont(8, 2, 2);
@@ -496,8 +496,8 @@ static void printReceiptAmount(const long long amount, short center)
 		char alignedAmount[35] = {'\0'};
 		const char * amountLabel = "AMOUNT";
 
-		alignBuffer(alignedLine, line, printerWidth, ALIGH_RIGHT);
-		alignBuffer(alignedAmount, buffer, printerWidth - strlen(amountLabel), ALIGH_RIGHT);
+		alignBuffer(alignedLine, line, printerWidth, ALIGN_RIGHT);
+		alignBuffer(alignedAmount, buffer, printerWidth - strlen(amountLabel), ALIGN_RIGHT);
 
        UPrint_Feed(6);
 

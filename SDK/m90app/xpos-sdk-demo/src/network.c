@@ -23,13 +23,25 @@ static int m_connect_time = 0;
 static int m_connect_exit = 0;
 static int m_comm_sock = 1;
 
+typedef int (*PrintSycnCb)(char *title, char* msg, char* leftButton, char* rightButton, int timeover);
+
+static void networkErrorLogger(const int isAsync, const char* title, const char* msg, const int timeout, PrintSycnCb callback)
+{
+	if(isAsync)
+	{
+		LOG_PRINTF("%s : %s\n", title, msg);
+		return;
+	}
+
+	callback(title, msg, "", "Ok", 3000);
+}
+
 
 static void logNetworkParameters(NetWorkParameters * netWorkParameters)
 {
     LOG_PRINTF("Host -> %s:%d, packet size -> %d\n", netWorkParameters->host, netWorkParameters->port, netWorkParameters->packetSize);
     LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
     LOG_PRINTF("Recv Timeout -> %d, title -> %s", netWorkParameters->receiveTimeout, netWorkParameters->title);
-
 }
 
 void platformAutoSwitch(NetType *netType)
@@ -198,6 +210,25 @@ static int comm_page_get_exit()
 	return get_ret;
 }
 
+static int _connect_server_func_proc_async()
+{
+	char msg[32] = {0};
+	int ret = 0;
+	int num = 0;
+
+	num =  Sys_TimerCheck(m_connect_tick) / 1000;
+	
+	if(num <= 0){
+		ret = 1;
+	}
+	else {
+		sprintf(msg , "Connecting(%d)" , num);
+		LOG_PRINTF("%s \n", msg);
+	}
+
+	return ret ;
+}
+
 static int _connect_server_func_proc()
 {
 	char msg[32] = {0};
@@ -268,9 +299,12 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	m_connect_time = i + 1;
 
 	sprintf(tmp, "Connecting...(%d)", i + 1);
-	comm_page_set_page(netParam->title, tmp, 1);
 
-	//comm_page_set_page("COM", tmp , 1);
+	if(netParam->async) {
+		LOG_PRINTF("%s : %s\n", netParam->title, tmp);
+	} else {
+		comm_page_set_page(netParam->title, tmp, 1);
+	}
 
 	if (netParam->isSsl)
 	{
@@ -285,11 +319,21 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 		
 
 		sprintf(tmp , "Connect server %d times" , i + 1);
-		comm_page_set_page("SSL", tmp , 0);
+		if(netParam->async)
+		{
+			LOG_PRINTF("%s : %s\n", "SSL", tmp);
+		} else {
+			comm_page_set_page("SSL", tmp , 0);
+		}
 		
 
 		//TODO: Check callback later.
-		result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc);
+		if(netParam->async)
+		{
+			result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc_async);
+		} else {
+			result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc);
+		}
 		LOG_PRINTF("Ssl connect ret : %d\n", result);
 		
 		if (result)
@@ -300,12 +344,15 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 			return -4;
 		}
 
-		if (comm_page_get_exit() || m_connect_exit == 1)
+		if(!netParam->async) 
 		{
-			LOG_PRINTF("comm_func_connect_server Cancel");
-			comm_ssl_close(COMM_SOCK);
-			Sys_Delay(500);
-			return -5;
+			if (comm_page_get_exit() || m_connect_exit == 1)
+			{
+				LOG_PRINTF("comm_func_connect_server Cancel");
+				comm_ssl_close(COMM_SOCK);
+				Sys_Delay(500);
+				return -5;
+			}
 		}
 	}
 	else
@@ -360,15 +407,15 @@ static short connectToHost(NetWorkParameters *netParam)
 	
 	if (nret != 0)
 	{
-		gui_messagebox_show("NET LINK" , "Link Fail", "" , "" , 10);
+		// Fail to link
+		networkErrorLogger(netParam->async, "NET LINK", "Link Failed!", 10, gui_messagebox_show);	
 		return -1;
 	}
 
 	if(COMM_SOCK = comm_sock_create(0))
 	{
-		// Failed to create socket
-        gui_messagebox_show("SOCKET" , "Socket Failed", "" , "" , 10);
-        printf("Failed to create socket\n");
+		// Fail to create socket
+		networkErrorLogger(netParam->async, "SOCKET", "Socket Failed!", 10, gui_messagebox_show);	
 		return -2;
 	}
 
@@ -381,7 +428,8 @@ static short connectToHost(NetWorkParameters *netParam)
 	}
 
 	if (i == nTime) {
-		gui_messagebox_show(netParam->isSsl ? "HTTPS" : "HTTP" , "Connection Fail", "" , "" , 1000);
+		// Fail to connect
+		networkErrorLogger(netParam->async, netParam->isSsl ? "HTTPS" : "HTTP", "Connection Failed!", 1000, gui_messagebox_show);	
 		return -3;
 	}
 
@@ -433,18 +481,20 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 		int num;
 		unsigned char buffer[2048 * 4] = { '\0' };
 
+		if(!netParam->async)
+		{
+			if(strlen(netParam->title)>0){
+				num = Sys_TimerCheck(tick1)/1000;
+				num = num < 0 ? 0 : num;
 
-		if(strlen(netParam->title)>0){
-			num = Sys_TimerCheck(tick1)/1000;
-			num = num < 0 ? 0 : num;
+				sprintf(msg , "%s...(%d)" , "Receiving" , num);
 
-			sprintf(msg , "%s...(%d)" , "Receiving" , num);
+				comm_page_set_page(netParam->title , msg , 0);
+				ret = comm_page_get_exit();
 
-			comm_page_set_page(netParam->title , msg , 0);
-			ret = comm_page_get_exit();
-
-			if(ret == 1){ 
-				return -2;
+				if(ret == 1){ 
+					return -2;
+				}
 			}
 		}
 
@@ -606,7 +656,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 
 	if (receivePacket(netParam))
 	{
-		gui_messagebox_show("Response", "No response received", "", "", 3000);
+		networkErrorLogger(netParam->async, "Response", "No response received!", 3000, gui_messagebox_show);	
 		return RECEIVING_FAILED;
 	}
 

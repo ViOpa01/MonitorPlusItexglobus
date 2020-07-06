@@ -37,6 +37,7 @@ typedef struct NetWorkParameters
     int port;
     int isSsl;
     int isHttp;
+    int async;
     //char apn[50];
     char title[35];
     //int netLinkTimeout;
