@@ -27,7 +27,7 @@ static void sendCallHome()
         return;
     }
 
-    if (!mParam.is_prepped) { //terminal not preped, parameter not allowed
+    if (!mParam.is_prepped) { //terminal not prepped, parameter not allowed
         fprintf(stderr, "Terminal has not been prepped\n");
         return;
     }

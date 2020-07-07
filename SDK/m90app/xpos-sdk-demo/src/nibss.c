@@ -98,7 +98,7 @@ void addCallHomeData(NetworkManagement *networkMangement)
     strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid));
     strncpy(tid, mParam.tid, 8);
     getFormattedDateTime(dateAndTime, sizeof(dateAndTime));
-    sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
+    sprintf(softwareVersion, "%s %s Built for %s", APP_NAME, APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simId, "%s", getSimId());
@@ -140,7 +140,7 @@ void addCallHomeData(NetworkManagement *networkMangement)
     cJSON_AddItemToObject(callHomeJson, "ss", cJSON_CreateString(ss));
     cJSON_AddItemToObject(callHomeJson, "sv", cJSON_CreateString(softwareVersion));
     cJSON_AddItemToObject(callHomeJson, "tid", cJSON_CreateString(tid));
-    cJSON_AddItemToObject(callHomeJson, "tmanu", cJSON_CreateString("Morefun"));
+    cJSON_AddItemToObject(callHomeJson, "tmanu", cJSON_CreateString(TERMINAL_MANUFACTURER));
     cJSON_AddItemToObject(callHomeJson, "tmn", cJSON_CreateString(APP_MODEL));
 
     callHomeJsonStr = cJSON_PrintUnformatted(callHomeJson);
@@ -383,8 +383,6 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
     if (result <= 0)
         return -1;
 
-    //TODO: Send packet to host,  get response, return negative number on error.
-
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
 
@@ -439,7 +437,7 @@ int sCallHomeAsync(NetworkManagement *networkMangement, NetWorkParameters *netPa
     }
 
 
-    result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
+    result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
     if (result) {
         fprintf(stderr, "Callhome -> Error extracting response....\n");

@@ -192,7 +192,7 @@ static void ShowString()
 	}
 }
 
-void aboutTerminal(char *tid)
+static void keyZeroHandler(const char *tid)
 {
 	int key = UUTIL_TIMEOUT;
 
@@ -201,32 +201,50 @@ void aboutTerminal(char *tid)
 
 	while (key != GUI_KEY_QUIT)
 	{
-		//TODO: Start your application
-		char data[32] = {0};
+		char data[32] = {'\0'};
 		gui_begin_batch_paint();
 		gui_clear_dc();
-		if (key == UUTIL_TIMEOUT)
-		{
-			sprintf(data, "Terminal SN:");
-		}
 
+		sprintf(data, "Terminal SN:");
 		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(1), data);
 
+		memset(data, 0x00, sizeof(data));
 		getTerminalSn(data);
 		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(2), data);
+
+		memset(data, 0x00, sizeof(data));
 		sprintf(data, "TID: %s", tid);
 		gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(3), data);
 		gui_text_out((gui_get_width() - gui_get_text_width(mParam.platform_label)) / 2, GUI_LINE_TOP(4), mParam.platform_label);
 		
 		gui_end_batch_paint();
 
-		key = Util_WaitKey(1);
-
-		switch (key)
+		if((key = Util_WaitKey(1)) == GUI_KEY_QUIT)
 		{
-		case GUI_KEY_QUIT:
 			break;
-		default:
+		}
+	}
+}
+
+static void aboutTerminal(char *tid)
+{
+	int key = UUTIL_TIMEOUT;
+
+	while (key != GUI_KEY_QUIT)
+	{
+		gui_begin_batch_paint();
+		gui_clear_dc();
+		
+		gui_text_out((gui_get_width() - gui_get_text_width(APP_NAME)) / 2, GUI_LINE_TOP(0), APP_NAME);
+		gui_text_out((gui_get_width() - gui_get_text_width(APP_VER)) / 2, GUI_LINE_TOP(1), APP_VER);
+		gui_text_out((gui_get_width() - gui_get_text_width(POWERED_BY)) / 2, GUI_LINE_TOP(2), POWERED_BY);
+		gui_text_out((gui_get_width() - gui_get_text_width(PTAD_WEBSITE)) / 2, GUI_LINE_TOP(3), PTAD_WEBSITE);
+		gui_text_out((gui_get_width() - gui_get_text_width(PTAD_PHONE)) / 2, GUI_LINE_TOP(4), PTAD_PHONE);
+		
+		gui_end_batch_paint();
+
+		if((key = Util_WaitKey(1)) == GUI_KEY_QUIT)
+		{
 			break;
 		}
 	}
@@ -681,19 +699,6 @@ void standby_pagepaint()
 
 	logoleft = 10;
 	logotop = 36;
-
-	// pbmp = gui_load_bmp("data//logo.bmp"/*LOGOIMG*/, &logowidth, &logoheight);
-	// pbmp = gui_load_bmp("itex//bank.bmp"/*BANKLOGO*/, &logowidth, &logoheight);
-
-	
-	/*
-	if (pbmp != 0)
-	{
-		// printf("==============\n");
-		gui_out_bits(logoleft, logotop, pbmp, logowidth, logoheight, 0);
-		free(pbmp);
-	}
-	*/
 	
 	get_yyyymmdd_str(data);
 	data[10] = ' ';
@@ -788,6 +793,17 @@ BEGIN :
 
 					gui_main_menu_show(MAINTENANCE, 0);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
+				}
+				else if (pmsg.wparam == GUI_KEY_0)
+				{
+					MerchantData mParam = {0};
+
+					if (readMerchantData(&mParam))
+					{
+						gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
+						return -1;
+					}
+					keyZeroHandler(mParam.tid);
 				}
 			}
 			else

@@ -25,8 +25,8 @@ iisys::JSObject getState()
     Network netProfile = {'\0'};
     
     char dateAndTime[24] = {'\0'};
-    char simID[32] = {0};
-    char imsi[32] = {0};
+    char simID[32] = {'\0'};
+    char imsi[32] = {'\0'};
     char mcc[4] = {'\0'};
     char mnc[3] = {'\0'};
     char softwareVersion[64] = {'\0'};
@@ -43,10 +43,10 @@ iisys::JSObject getState()
     readMerchantData(&mParam);
     getTerminalSn(terminalSn);
    
-    strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid));
+    strncpy(mid, parameter.cardAcceptiorIdentificationCode, sizeof(mid) - 1);
     strncpy(tid, mParam.tid, 8);
     getFormattedDateTime(dateAndTime, sizeof(dateAndTime));
-    sprintf(softwareVersion, "TAMSLITE %s Built for %s", APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
+    sprintf(softwareVersion, "%s %s Built for %s", APP_NAME, APP_VER, mParam.platform_label);   // "TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019"
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simID, "%s", getSimId());
@@ -64,7 +64,7 @@ iisys::JSObject getState()
     iisys::JSObject cloc;
 
     state("ptad") = "Itex Integrated Services";
-    state("sv") = "7.8.18";     // Register the Morefun version later
+    state("sv") = APP_VER;
     // state("sv") = softwareVersion;
     // Need to know why cash payment method is returning request not authorized with cash payment method
     state("serial") = terminalSn;
@@ -80,7 +80,7 @@ iisys::JSObject getState()
     state("simID") = simID;
     state("imsi") = imsi;
     state("ss") = ss;
-    state("tmanu") = "Morefun";
+    state("tmanu") = TERMINAL_MANUFACTURER;
     state("tmn") = APP_MODEL;
     state("hb") = "true";
     state("pads") = "";
@@ -102,13 +102,12 @@ iisys::JSObject getJournal(const Eft* trxContext)
 {
     MerchantParameters parameter = {'\0'};
     iisys::JSObject journal;
-    // Merchant merchant;
     std::map<std::string, std::string> trx;
 
     ctxToInsertMap(trx, trxContext);
     
     getParameters(&parameter);
-    journal("mid") = parameter.cardAcceptiorIdentificationCode;//merchant.object(config::MID);
+    journal("mid") = parameter.cardAcceptiorIdentificationCode;
     journal("stan") = trx[DB_STAN];
 
 
@@ -122,8 +121,8 @@ iisys::JSObject getJournal(const Eft* trxContext)
     journal("mti") = trx[DB_MTI];
     journal("ps") = trx[DB_PS];
     // journal("resp") = trx[DB_PS]; 
-    journal("merchantName") = parameter.merchantNameAndLocation; /*merchant.object(config::NAME);*/
-    journal("mcc") = parameter.currencyCode;/*merchant.object(config::MCC);*/
+    journal("merchantName") = parameter.merchantNameAndLocation;
+    journal("mcc") = parameter.currencyCode;
     journal("vm") = trxContext->pinDataBcdLen ? "OnlinePin" : "OfflinePin";
 
     journal("ps") = trx[DB_PS];
