@@ -335,9 +335,9 @@ void populateEchoData(char echoData[256])
 
 	if(mParam.notificationIdentifier[0])
 	{
-		sprintf(de59, "%s~%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", mParam.notificationIdentifier, APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
+		sprintf(de59, "%s~%s%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", mParam.notificationIdentifier, TERMINAL_MANUFACTURER, APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
 	} else {
-		sprintf(de59, "%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
+		sprintf(de59, "%s%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", TERMINAL_MANUFACTURER, APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
 	}
 
 	strncpy(echoData, de59, strlen(de59));

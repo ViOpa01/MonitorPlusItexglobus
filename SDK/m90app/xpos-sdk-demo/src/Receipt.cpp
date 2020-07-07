@@ -50,9 +50,9 @@ void printFooter()
 
 	sprintf(buff, "%s %s", APP_NAME, APP_VER);
     UPrint_StrBold(buff, 1, 4, 1);
-	UPrint_StrBold("POWERED BY ITEX", 1, 4, 1);
-    UPrint_StrBold("www.iisysgroup.com", 1, 4, 1);
-	UPrint_StrBold("0700-2255-4839", 1, 4, 1);
+	UPrint_StrBold(POWERED_BY, 1, 4, 1);
+    UPrint_StrBold(PTAD_WEBSITE, 1, 4, 1);
+	UPrint_StrBold(PTAD_PHONE, 1, 4, 1);
 
 	UPrint_Feed(108);
 }
