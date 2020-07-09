@@ -344,7 +344,7 @@ int getSignalLevel()
 
 int getBatteryLevel()
 {
-    // return Sys_GetBatter();  // undefine refence
+    // return Sys_GetBatter();  // undefine refences
     return 100;
 }
 
