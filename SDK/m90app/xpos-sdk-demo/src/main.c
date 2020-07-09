@@ -23,12 +23,12 @@ void app_main()
 	//xgui_default_msg_func_add((void*)sdk_power_proc_page);	// Default message processing
 	Sys_Init(0,0,"itex");	// Directory that contains you file
 	Sys_SetAppVer(APP_VER);
-    pthread_create(&thread, NULL, processCallHomeAsync, NULL);
 
 	//mf_buzzer_control(0);
 	gprsInit(); //net link will have enough time to initialize in the background, we can also add little delay.				
 	EMV_iKernelInit();//Init EMV
 	autoHandshake();
+    pthread_create(&thread, NULL, processCallHomeAsync, NULL);
 	sdk_main_page(); 
 
 }

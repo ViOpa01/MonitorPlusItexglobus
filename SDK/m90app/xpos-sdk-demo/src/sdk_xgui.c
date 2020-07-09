@@ -20,6 +20,8 @@
 #include "Nibss8583.h"
 #include "EmvEft.h"
 
+int isIdleState = 1;
+
 #define LOGOIMG "xxxx\\logo.bmp"
 
 //Used By EOD RECIEPT PRINTING DECLARED IN EMVDB//
@@ -48,6 +50,8 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_CARDLESS_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
+	{MAIN_MENU_PAGE, "TMSTest", ""},
+
 
 	// {MAIN_MENU_PAGE, UI_PAYCODE,          ""},
 	/*
@@ -749,10 +753,13 @@ BEGIN :
 
 			if (pmsg.message_id == GUI_GUIPAINT)
 			{
+				isIdleState = 1;
 				standby_pagepaint();
 			}
 			else if (pmsg.message_id == GUI_KEYPRESS)
 			{
+				isIdleState = 0;
+
 				if (pmsg.wparam == GUI_KEY_OK || pmsg.wparam == GUI_KEY_QUIT)
 				{
 					MerchantData merchantData;
@@ -771,7 +778,7 @@ BEGIN :
 						continue;
 					}
 
-					gui_main_menu_show(MAIN_MENU_PAGE, 0);
+					gui_main_menu_show(MAIN_MENU_PAGE, 30000);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 				// else if (pmsg.wparam == GUI_KEY_1)
@@ -784,14 +791,14 @@ BEGIN :
 				
 					if(validateUsersPin("4839")) goto BEGIN;
 
-					gui_main_menu_show(SUPERVISION, 0);
+					gui_main_menu_show(SUPERVISION, 30000);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 				else if (pmsg.wparam == GUI_KEY_F2)
 				{
 					if(validateUsersPin("4839")) goto BEGIN;
 
-					gui_main_menu_show(MAINTENANCE, 0);
+					gui_main_menu_show(MAINTENANCE, 30000);
 					gui_post_message(GUI_GUIPAINT, 0, 0);
 				}
 				else if (pmsg.wparam == GUI_KEY_0)

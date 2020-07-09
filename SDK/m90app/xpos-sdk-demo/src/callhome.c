@@ -9,7 +9,9 @@
 #include "merchant.h"
 #include "libapi_xpos/inc/libapi_system.h"
 
-static void sendCallHome()
+extern isIdleState;
+
+static int sendCallHome()
 {
     NetworkManagement networkMangement;
     NetWorkParameters netParam;
@@ -25,17 +27,17 @@ static void sendCallHome()
 
     if(readMerchantData(&mParam)) {
         fprintf(stderr, "Error reading parameters\n");
-        return;
+        return -1;
     }
 
     if (!mParam.is_prepped) { //terminal not prepped, parameter not allowed
         fprintf(stderr, "Terminal has not been prepped\n");
-        return;
+        return -1;
     }
 
     if(!mParam.tid[0]) {
         fprintf(stderr, "Terminal ID is empty\n");
-        return;
+        return -1;
     }
 
     strncpy(tid, mParam.tid, strlen(mParam.tid));
@@ -57,10 +59,9 @@ static void sendCallHome()
 
     if (i == maxRetry) {
         fprintf(stderr, "Call Home failed\ns");
-        return;
+        return -1;
     }
 
-    Util_Beep(2);
     return 0;
 
 }
@@ -70,7 +71,6 @@ unsigned int static getCallhomeTime()
     MerchantParameters parameters;
     int tm = 0;
     unsigned int callhomeTime = 1 * 60 * 60 * 1000;
-
 
     memset(&parameters, 0x00, sizeof(MerchantParameters));
     if (getParameters(&parameters))
@@ -100,20 +100,27 @@ void processCallHomeAsync()
     {
         if (Sys_TimerCheck(tick) <= 0)	{
 
+            // 1. send callhome only in idle state of the Terminal
+            if(!isIdleState) {
+                goto resetTimer;  
+            }
+
+			// 2. send call home data
             pthread_create(&dialThread, NULL, preDial, &mParam.gprsSettings);
+            if(sendCallHome()) {
+                printf("Callhome failed\n");
+                Util_Beep(1);   
+            } else {
+                gui_messagebox_show("Callhome", "Success", "", "", 2000);
+                printf("Callhome succesful\n");
+                Util_Beep(2);
+            }
 
-			// 1. send call home data
-            sendCallHome();
-            Util_Beep(1);
-
-            // 2. reset time
+            // 3. reset time
+            resetTimer :
             tick = Sys_TimerOpen(getCallhomeTime());
 		}
 
-        if((Sys_TimerCheck(tick) % 1000) == 0)
-        {
-            printf("callhome remaining time : %d sec.\n", Sys_TimerCheck(tick) / 1000);
-        }
     }
     
 
