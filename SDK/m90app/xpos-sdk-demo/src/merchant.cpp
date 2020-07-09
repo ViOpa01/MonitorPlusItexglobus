@@ -125,11 +125,20 @@ static int saveMerchantDataXml(const char* merchantXml, const int size)
     printf("Raw response is >>>> %s\n", rawResponse);
 
     if (!root) {
+        gui_messagebox_show("ERROR", "Invalid response from Tams", "", "", 3000);
+        ezxml_free(root);
         printf("\nError, Please Try Again\n");
         return ret;
     }
 
     tran = ezxml_child(root, "tran");
+
+    if (!tran) {
+        gui_messagebox_show("ERROR", "Error parsing response", "", "", 3000);
+        ezxml_free(tran);
+        printf("\nError parsing tran, Please Try Again\n");
+        return ret;
+    }
 
     merchant.status = atoi(ezxml_child(tran, "status")->txt);
     // printf("Status : %d\n", merchant.status);
@@ -483,7 +492,7 @@ int getMerchantData()
     NetWorkParameters netParam;
     MerchantData mParam = {'\0'};
     int ret = -1;
-    char responseXml[0x1000] = {'\0'};
+    char responseXml[0x1000 * 2] = {'\0'};
 
     memset(&netParam, 0, sizeof(NetWorkParameters));
     initTamsParameters(&netParam);

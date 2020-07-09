@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "callhome.h"
 #include "nibss.h"
@@ -64,11 +65,12 @@ static void sendCallHome()
 
 }
 
-int static getCallhomeTime()
+unsigned int static getCallhomeTime()
 {
     MerchantParameters parameters;
     int tm = 0;
-    int callhomeTime = 1 * 60 * 60 * 1000;
+    unsigned int callhomeTime = 1 * 60 * 60 * 1000;
+
 
     memset(&parameters, 0x00, sizeof(MerchantParameters));
     if (getParameters(&parameters))
@@ -82,34 +84,30 @@ int static getCallhomeTime()
     return tm ? callhomeTime : tm;
 }
 
-void processCallHomeAsync(pthread_t *thread)
+void processCallHomeAsync()
 {
     MerchantData mParam;
-    // pthread_t dialThread;
+    pthread_t dialThread;
     ssize_t* status = (ssize_t*)0;
 
 
     memset(&mParam, 0x00, sizeof(MerchantData));
 	readMerchantData(&mParam);
 
-    // pthread_create(&dialThread, NULL, preDial, &mParam.gprsSettings);
-    // pthread_join(&dialThread, (void**)&status);
-
-    // if(status != 0) {
-    //     // predial fail
-    //     return;
-    // }
-
-	unsigned int tick = Sys_TimerOpen((unsigned int)getCallhomeTime());
+	unsigned int tick = Sys_TimerOpen(getCallhomeTime());
 
     while (1)
     {
         if (Sys_TimerCheck(tick) <= 0)	{
+
+            pthread_create(&dialThread, NULL, preDial, &mParam.gprsSettings);
+
 			// 1. send call home data
-            pthread_create(thread, NULL, sendCallHome, NULL);
+            sendCallHome();
+            Util_Beep(1);
 
             // 2. reset time
-            tick = Sys_TimerOpen((unsigned int)getCallhomeTime());
+            tick = Sys_TimerOpen(getCallhomeTime());
 		}
 
         if((Sys_TimerCheck(tick) % 1000) == 0)
