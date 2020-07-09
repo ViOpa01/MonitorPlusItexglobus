@@ -70,9 +70,11 @@ typedef struct __st_read_card_out{
 	int track3_len;
 	char vChName[45 +1];
 	int nEmvMode;
+	char signature_flag;//0x01 Need signature;0x00 No signature
 }st_read_card_out;
 
-#define EMVAPI_VER				"EMVAPI_2020-01-10_XP"	
+
+#define EMVAPI_VER				"EMVAPI20200218XP"
 //Transaction Result Code
 #define EMVAPI_RET_TC	 0	 //TC Approval
 #define EMVAPI_RET_ARQC	 1	 //Request Online
@@ -88,8 +90,8 @@ typedef struct __st_read_card_out{
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:zhiyu
 Functions:Process of emv card trans
-Input : card_inï¿½ï¿½The parameter of EMV trans
-Output : card_outï¿½ï¿½Out buffer of EMV trans
+Input : card_in£ºThe parameter of EMV trans
+Output : card_out£ºOut buffer of EMV trans
 return: 
      	EMVAPI_RET_TC	 0	 //TC
 		EMVAPI_RET_ARQC	 1	 //ARQC
@@ -135,5 +137,13 @@ LIB_EXPORT void EMV_SetInputPin(int (*InputPin)(char *,char *,char ,char *));
 LIB_EXPORT void EMV_SetDispOffPin(void (*DispOffPin)(int));
 LIB_EXPORT void EMV_SetReadingCardDisp(void (*ReadingCardDisp)(int));
 
-
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:wuxp
+Functions:Get the EMV kernel version
+Input :  Nothing
+Output : Nothing
+return: emv version
+*************************************************************************************/
+LIB_EXPORT char * EMV_GetVersion(void);
 

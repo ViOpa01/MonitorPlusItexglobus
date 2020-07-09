@@ -68,7 +68,7 @@ iisys::JSObject getState()
     // state("sv") = softwareVersion;
     // Need to know why cash payment method is returning request not authorized with cash payment method
     state("serial") = terminalSn;
-    state("bl") = "100";
+    state("bl") = getBatteryLevel();
     state("btemp") = "35";
     state("ctime") = dateAndTime;
     state("cs") = "Charging";

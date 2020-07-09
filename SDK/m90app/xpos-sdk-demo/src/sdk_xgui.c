@@ -16,11 +16,11 @@
 #include "vas/vasbridge.h"
 #include "ussd/ussdmenu.h"
 
-#define LOGOIMG "xxxx\\logo.bmp"
-
 #include "nibss.h"
 #include "Nibss8583.h"
 #include "EmvEft.h"
+
+#define LOGOIMG "xxxx\\logo.bmp"
 
 //Used By EOD RECIEPT PRINTING DECLARED IN EMVDB//
 #ifndef TXTYPE

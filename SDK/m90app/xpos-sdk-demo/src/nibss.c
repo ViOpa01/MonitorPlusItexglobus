@@ -121,7 +121,7 @@ void addCallHomeData(NetworkManagement *networkMangement)
     cJSON_AddItemToObject(cloc, "mnc", cJSON_CreateString(mnc));
     cJSON_AddItemToObject(cloc, "ss", cJSON_CreateString("-87dbm"));
 
-    cJSON_AddItemToObject(callHomeJson, "bl", cJSON_CreateNumber(100));
+    cJSON_AddItemToObject(callHomeJson, "bl", cJSON_CreateNumber(getBatteryLevel()));
     cJSON_AddItemToObject(callHomeJson, "btemp", cJSON_CreateNumber(35));
     cJSON_AddItemToObject(callHomeJson, "cloc", cloc);
     cJSON_AddItemToObject(callHomeJson, "coms", cJSON_CreateString("GSM/UMTSDualMode"));

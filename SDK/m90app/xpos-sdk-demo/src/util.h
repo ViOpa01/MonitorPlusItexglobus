@@ -40,6 +40,7 @@ void getImsi(char buff[20]);
 void getMcc(char buff[4]);
 void getMnc(char buff[3]);
 int getSignalLevel();
+int getBatteryLevel();
 int getCellId();
 int getLocationAreaCode();
 const char* getSimId();

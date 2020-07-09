@@ -13,6 +13,7 @@
 #include "nibss.h"
 #include "merchant.h"
 #include "callhome.h"
+#include "appInfo.h"
 
 
 
@@ -21,6 +22,7 @@ void app_main()
 	pthread_t thread;
 	//xgui_default_msg_func_add((void*)sdk_power_proc_page);	// Default message processing
 	Sys_Init(0,0,"itex");	// Directory that contains you file
+	Sys_SetAppVer(APP_VER);
     pthread_create(&thread, NULL, processCallHomeAsync, NULL);
 
 	//mf_buzzer_control(0);

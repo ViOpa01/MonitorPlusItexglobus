@@ -8,6 +8,7 @@
 #include "atc_pub.h"
 
 #include "libapi_xpos/inc/libapi_util.h"
+#include "libapi_xpos/inc/libapi_system.h"
 
 
 static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -339,6 +340,12 @@ const char* getSimId()
 int getSignalLevel()
 {
     return atc_signal();
+}
+
+int getBatteryLevel()
+{
+    // return Sys_GetBatter();  // undefine refence
+    return 100;
 }
 
 int getCellId()
