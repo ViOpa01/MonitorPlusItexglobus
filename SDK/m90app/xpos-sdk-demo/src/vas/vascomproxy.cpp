@@ -369,10 +369,18 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
 
 int vasPayloadGenerator(char* auxPayload, const size_t auxPayloadSize, const struct Eft* context)
 {
-    iisys::JSObject* jsonReq = static_cast<iisys::JSObject*>(context->callbackdata);
+    // iisys::JSObject* jsonReq = static_cast<iisys::JSObject*>(context->callbackdata);
     
-    (*jsonReq)("journal") = getJournal(context);
-    strncpy(auxPayload, jsonReq->dump().c_str(), auxPayloadSize -1 );
+    // (*jsonReq)("journal") = getJournal(context);
+    // strncpy(auxPayload, jsonReq->dump().c_str(), auxPayloadSize -1 );
+
+    iisys::JSObject* json = static_cast<iisys::JSObject*>(context->callbackdata);
+    iisys::JSObject jsonReq;
+    
+    (*json)("journal") = getJournal(context);
+    (jsonReq)("vasData") = *json;
+
+    strncpy(auxPayload, jsonReq.dump().c_str(), auxPayloadSize -1 );
 
     return 0;
 

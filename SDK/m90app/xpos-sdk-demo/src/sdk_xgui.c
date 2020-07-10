@@ -50,6 +50,9 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_CARDLESS_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
+	// {MAIN_MENU_PAGE, "TMSTest", ""},
+	// {MAIN_MENU_PAGE, "Version", ""},
+
 
 
 	// {MAIN_MENU_PAGE, UI_PAYCODE,          ""},
@@ -409,7 +412,7 @@ static int _menu_proc(char *pid)
 	}
 	else if (strcmp(pid, "Version") == 0)
 	{
-		sprintf(msg, "app:%s\r\n", APP_VER);
+		sprintf(msg, "app:%s\r\n", Sys_GetAppVer() /*APP_VER*/);
 		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
 		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());
 		sprintf(msg + strlen(msg), "emv:%s\r\n", EMV_GetVersion());
