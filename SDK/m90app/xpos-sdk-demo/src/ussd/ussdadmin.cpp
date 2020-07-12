@@ -518,6 +518,9 @@ int ussdAdmin()
     std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
 
     switch (UI_ShowSelection(30000, "USSD Admin", optionMenu, 0)) {
+    case -1:
+    case -2:
+        break;
     case 0:
         ussdReprintByDate();
         break;
