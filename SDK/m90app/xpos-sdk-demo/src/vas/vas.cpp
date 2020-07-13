@@ -564,22 +564,19 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
             printLine("TID", mParam.tid);
         }
 
-        if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD)) {
+        // "card" is added because requery uses lower case
+        if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD) || record[VASDB_PAYMENT_METHOD] == "card") {
 
-            printLine("CARD NAME ", record[DB_NAME].c_str());
-            printLine("PAN", record[DB_PAN].c_str());
-            printLine("AID", record[DB_AID].c_str());
-            printLine("LABEL", record[DB_LABEL].c_str());
-            printLine("EXPIRY", record[DB_EXPDATE].c_str());
-            printLine("CREF", record[DB_RRN].c_str());
+            const char *keys[] = {DB_NAME, DB_PAN, DB_AID, DB_LABEL, DB_EXPDATE, DB_RRN, DB_AUTHID, DB_RESP};
+            const char *labels[] = {"CARD NAME", "PAN", "AID", "LABEL", "EXPIRY", "CREF", "AUTH CODE", "RESP CODE"};
 
-            if(!record[DB_AUTHID].empty()) {
-                printLine("AUTH CODE", record[DB_AUTHID].c_str()); 
-            }
-            printLine("RESP CODE", record[DB_RESP].c_str());
+            for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+                if (record.find(keys[i]) != record.end()) {
+                    if(*(record[keys[i]].c_str()))
+                        printLine(labels[i], record[keys[i]].c_str());
+                }
+            } 
         }
-    
-    
 
         memset(buff, '\0', sizeof(buff));
         sprintf(buff, "NGN %s", record[VASDB_AMOUNT].c_str());

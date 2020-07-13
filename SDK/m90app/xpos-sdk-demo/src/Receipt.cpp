@@ -401,7 +401,7 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
 	len = strlen(input);
 	requiredSpaces = expectedLen;
 
-	printf("Len -> %d, requireSpace -> %d\n", len, requiredSpaces);
+	// printf("Len -> %d, requireSpace -> %d\n", len, requiredSpaces);
 
     const char * space = " ";
     if(strcmp(space, output) == 0){
