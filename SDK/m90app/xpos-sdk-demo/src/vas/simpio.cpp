@@ -182,7 +182,7 @@ int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const
        return CANCEL;
 
     case 3:
-       return TIMEOUT;
+       return MSG_TIMEOUT;
     
     default:
         break;
