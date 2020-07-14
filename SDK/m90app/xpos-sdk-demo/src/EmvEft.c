@@ -146,62 +146,68 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 
 static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 {
+	
 	int i = 0;
-	int count = 24;
+	int n = 0;
+
+	if(TerminalApps==0)
+		return;
 
 	APP_TRACE("TestDownloadAID");
 	memset(TerminalApps, 0x00, sizeof(TERMINALAPPLIST));
-	TerminalApps->bTermAppCount = 24;										 //AID length
-	memcpy(TerminalApps->TermApp[0].AID, "\xA0\x00\x00\x00\x01\x10\x10", 7); //AID
-	TerminalApps->TermApp[0].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[1].AID, "\xA0\x00\x00\x00\x03\x10\x10", 7);
-	TerminalApps->TermApp[1].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[2].AID, "\xA0\x00\x00\x00\x03\x20\x10", 7);
-	TerminalApps->TermApp[2].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[3].AID, "\xA0\x00\x00\x00\x03\x20\x20", 7);
-	TerminalApps->TermApp[3].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[4].AID, "\xA0\x00\x00\x00\x03\x80\x10", 7);
-	TerminalApps->TermApp[4].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[5].AID, "\xA0\x00\x00\x00\x04\x10\x10", 7);
-	TerminalApps->TermApp[5].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[6].AID, "\xA0\x00\x00\x00\x04\x99\x99", 7);
-	TerminalApps->TermApp[6].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[7].AID, "\xA0\x00\x00\x00\x04\x30\x60", 7);
-	TerminalApps->TermApp[7].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[8].AID, "\xA0\x00\x00\x00\x04\x60\x00", 7);
-	TerminalApps->TermApp[8].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[9].AID, "\xA0\x00\x00\x00\x05\x00\x01", 7);
-	TerminalApps->TermApp[9].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[10].AID, "\xA0\x00\x00\x00\x25\x01", 6);
-	TerminalApps->TermApp[10].AID_Length = 6;
-	memcpy(TerminalApps->TermApp[11].AID, "\xA0\x00\x00\x00\x29\x10\x10", 7);
-	TerminalApps->TermApp[11].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[12].AID, "\xA0\x00\x00\x00\x42\x10\x10", 7);
-	TerminalApps->TermApp[12].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[13].AID, "\xA0\x00\x00\x00\x42\x20\x10", 7);
-	TerminalApps->TermApp[13].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[14].AID, "\xA0\x00\x00\x00\x65\x10\x10", 7);
-	TerminalApps->TermApp[14].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[15].AID, "\xA0\x00\x00\x01\x21\x10\x10", 7);
-	TerminalApps->TermApp[15].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[16].AID, "\xA0\x00\x00\x01\x21\x47\x11", 7);
-	TerminalApps->TermApp[16].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[17].AID, "\xA0\x00\x00\x01\x41\x00\x01", 7);
-	TerminalApps->TermApp[17].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[18].AID, "\xA0\x00\x00\x01\x52\x30\x10", 7);
-	TerminalApps->TermApp[18].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[19].AID, "\xA0\x00\x00\x03\x33\x01\x01\x01", 8);
-	TerminalApps->TermApp[19].AID_Length = 8;
-	memcpy(TerminalApps->TermApp[20].AID, "\xA0\x00\x00\x03\x33\x01\x01", 7);
-	TerminalApps->TermApp[20].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[21].AID, "\xA0\x00\x00\x03\x71\x00\x01", 7);
-	TerminalApps->TermApp[21].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[22].AID, "\xA0\x00\x00\x03\x24\x10\x10", 7);
-	TerminalApps->TermApp[22].AID_Length = 7;
-	memcpy(TerminalApps->TermApp[23].AID, "\xA0\x00\x00\x00\x10\x10\x30", 7);
-	TerminalApps->TermApp[23].AID_Length = 7;
 
-	for (i = 0; i < 24; i++)
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x01\x10\x10", 7); //AID
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x03\x10\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x03\x20\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x03\x20\x20", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x03\x80\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x04\x10\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x04\x99\x99", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x04\x30\x60", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x04\x60\x00", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x05\x00\x01", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x25\x01", 6);
+	TerminalApps->TermApp[n++].AID_Length = 6;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x29\x10\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x42\x10\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x42\x20\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x65\x10\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x01\x21\x10\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x01\x21\x47\x11", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x01\x41\x00\x01", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x01\x52\x30\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x03\x33\x01\x01\x01", 8);
+	TerminalApps->TermApp[n++].AID_Length = 8;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x03\x33\x01\x01", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x03\x71\x00\x01", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x03\x24\x10\x10", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+	memcpy(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x10\x10\x30", 7);
+	TerminalApps->TermApp[n++].AID_Length = 7;
+
+	TerminalApps->bTermAppCount = n > UMAX_TERMINAL_APPL ? UMAX_TERMINAL_APPL : n;//The number of AID
+
+	for (i = 0; i < n; i++)
 	{
 		TerminalApps->TermApp[i].bTerminalPriority = 0x03;							  //Terminal priority
 		TerminalApps->TermApp[i].bMaxTargetPercentageInt = 0x00;					  /*Offset randomly selected maximum target percentage*/
@@ -213,7 +219,7 @@ static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 		memcpy(TerminalApps->TermApp[i].TAC_Denial, "\x00\x00\x00\x00\x00", 5);		  /* TAC Refuse: data format (n5) */
 		memcpy(TerminalApps->TermApp[i].TAC_Online, "\x00\x00\x00\x00\x00", 5);		  /* TAC Online: data format (n5) */
 		memcpy(TerminalApps->TermApp[i].abTrnCurrencyCode, COUNTRYCODE, 2);			  /* Currency code tag: 5F2A */
-		memcpy(TerminalApps->TermApp[i].abTerminalCountryCode, COUNTRYCODE, 2);		  /* Country code terminal tag: 9F1A */
+		// memcpy(TerminalApps->TermApp[i].abTerminalCountryCode, COUNTRYCODE, 2);		  /* Country code terminal tag: 9F1A */
 		TerminalApps->TermApp[i].abTrnCurrencyExp = 0x02;							  /* tag: 5F36 */
 		memcpy(TerminalApps->TermApp[i].abEC_TFL, "\x00\x00\x00\x20\x00", 6);		  /* Terminal electronic cash transaction limit tag: 9F7B n12*/
 		memcpy(TerminalApps->TermApp[i].abRFOfflineLimit, "\x00\x00\x00\x20\x00", 6); /*Contactless offline minimum :DF19*/
@@ -221,10 +227,11 @@ static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 		memcpy(TerminalApps->TermApp[i].abRFCVMLimit, "\x00\x00\x00\x10\x00", 6);	 /*Terminal performs CVM quota: DF21*/
 		memcpy(TerminalApps->TermApp[i].abDDOL, "\x9F\x37\x04", 3);					  /* TDOL */
 		TerminalApps->TermApp[i].DDOL_Length = 0x03;								  /* TDOL Length */
-		TerminalApps->TermApp[i].TerminalType = 0x22;								  /* Terminal type: data format (n 3) */
-		memcpy(TerminalApps->TermApp[i].TerminalCap, "\xE0\xE1\xC8", 3);			  /* Terminal capability: data format (n 3) */
+		// TerminalApps->TermApp[i].TerminalType = 0x22;								  /* Terminal type: data format (n 3) */
+		// memcpy(TerminalApps->TermApp[i].TerminalCap, "\xE0\xE1\xC8", 3);			  /* Terminal capability: data format (n 3) */
 		TerminalApps->TermApp[i].cOnlinePinCap = 0x01;								  /* Terminal online pin capability */
 	}
+
 }
 
 void bcdToAsc(char *asc, unsigned char *bcd, const int size)
@@ -1470,6 +1477,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		TestDownloadAID(&TerminalApps);
 		EMV_PrmClearAIDPrmFile();
 		EMV_PrmSetAIDPrm(&TerminalApps); //Set AID
+
 		if (injectCapks()) { //error
 
 		}

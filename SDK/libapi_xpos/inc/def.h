@@ -807,7 +807,7 @@ typedef struct
 	//byte abMerchantCategoryCode[2];		/* Business category code tag: 9F15 */        
 	//byte bTransactionCategoryCode;		/* Transaction category code Europay only, tag: 9F53 */
 	byte abTrnCurrencyCode[2];			/* Currency code tag: 5F2A */
-	byte abTerminalCountryCode[2];		/* Country code terminal tag: 9F1A */
+	// byte abTerminalCountryCode[2];		/* Country code terminal tag: 9F1A */
 	byte TAC_Default[5];				/* TAC Default data format (n5) DF11 */    
 	byte TAC_Denial[5];					/* TAC Refuse: data format (n5) DF13*/    
 	byte TAC_Online[5];					/* TAC Online: data format (n5) DF12*/  
@@ -817,9 +817,9 @@ typedef struct
 	byte TDOL_Length;					/* TDOL Length */
 	byte abTrnCurrencyExp;				/* tag: 5F36 */
 	byte abEC_TFL[6];					/* Terminal electronic cash transaction limit tag: 9F7B n12*/
-	byte TerminalType;					/* Terminal type: data format (n 3) */
+	// byte TerminalType;					/* Terminal type: data format (n 3) */
 	char cOnlinePinCap;					/* Terminal online pin capability DF18 */
-	byte TerminalCap[3];				/* Terminal capability: data format (n 3) */
+	// byte TerminalCap[3];				/* Terminal capability: data format (n 3) */
 	//byte AddTerminalCap[5];				/* Terminal additional performance :data format (n 3) */
 	byte abRFOfflineLimit[6];			/*Contactless offline minimum :DF19*/
 	byte abRFTransLimit[6];				/*Contactless transaction limit:DF20*/

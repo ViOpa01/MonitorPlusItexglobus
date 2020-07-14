@@ -6,6 +6,7 @@
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "libapi_xpos/inc/libapi_security.h"
 #include "libapi_xpos/inc/libapi_emv.h"
+#include "libapi_xpos/inc/libapi_version.h"
 
 #include "appInfo.h"
 #include "util.h"
@@ -196,6 +197,28 @@ static void ShowString()
 			gui_proc_default_msg(&pmsg); //  Let the system handle some common messages
 		}
 	}
+}
+
+static int getversions( char *buff)
+{
+	int i = 0;
+
+	i += sprintf(buff + i, "api:%s\r\n", libapi_version());
+	i += sprintf(buff + i, "emv:%s\r\n", EMV_GetVersion());
+	i += sprintf(buff + i, "apppub:%s\r\n", apppub_version());
+	i += sprintf(buff + i, "atc:%s\r\n", atc_version());
+	i += sprintf(buff + i, "json:%s\r\n", json_version());
+	i += sprintf(buff + i, "net:%s\r\n", net_version());
+	i += sprintf(buff + i, "power:%s\r\n", power_version());
+	i += sprintf(buff + i, "producttest:%s\r\n", producttest_version());
+	i += sprintf(buff + i, "pub:%s\r\n", pub_version());
+	i += sprintf(buff + i, "sqlite:%s\r\n", sqlite_version());
+	i += sprintf(buff + i, "switchcheck:%s\r\n", switchcheck_version());
+	i += sprintf(buff + i, "tms:%s\r\n", tms_version());
+	i += sprintf(buff + i, "wifi:%s\r\n", wifi_version());
+	i += sprintf(buff + i, "xgui:%s\r\n", xgui_version());
+
+	return i;
 }
 
 static void keyZeroHandler(const char *tid)
@@ -389,7 +412,7 @@ static int _menu_proc(char *pid)
 	int ret;
 	char buff[20];
 	int pos = 0;
-	char msg[256];
+	char msg[1024];
 	int acctTypeValue = -1;
 
 	printf("pid -> %s\n", pid);
@@ -412,11 +435,12 @@ static int _menu_proc(char *pid)
 	}
 	else if (strcmp(pid, "Version") == 0)
 	{
-		sprintf(msg, "app:%s\r\n", Sys_GetAppVer() /*APP_VER*/);
+		sprintf(msg , "app:%s\r\n", Sys_GetAppVer());
+		sprintf(msg+ strlen(msg) , "Device Type:%s\r\n", Sys_GetDeviceType() == SYS_DEVICE_TYPE_H9G ? "H9G":"MP70G");
 		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
 		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());
-		sprintf(msg + strlen(msg), "emv:%s\r\n", EMV_GetVersion());
-		gui_messagebox_show("Version", msg, "", "confirm", 0);
+		getversions(msg+ strlen(msg));
+		gui_messagebox_show( "Version" , msg , "" , "confirm" , 0);
 	}
 	else if (strcmp(pid, "Sales") == 0)
 	{
@@ -490,6 +514,24 @@ static int _menu_proc(char *pid)
 	else if (strcmp(pid, "View CAPK") == 0)
 	{
 		EMV_ShowCAPK_Prm();
+	}
+	else if (strcmp(pid , "View emv") == 0){
+		sprintf(msg + strlen(msg), "%s\r\n", EMV_GetVersion());
+		gui_messagebox_show( "View emv" , msg , "" , "confirm" , 0);
+	}
+	else if(strcmp(pid , "View PRMacqKey") == 0){
+		EMV_ShowRuPayPRMacqKey();
+	}
+	else if(strcmp(pid , "View Service") == 0){
+		EMV_ShowRuPayService();
+	}
+	else if(strcmp(pid , "RP SrData DlTest") == 0)
+	{
+		init_service_prmacqkey(1);
+	}
+	else if(strcmp(pid , "RP SrData Clear") == 0)
+	{
+		clear_service_prmacqkey();
 	}
 	else if (strcmp(pid, "M1 Test") == 0)
 	{

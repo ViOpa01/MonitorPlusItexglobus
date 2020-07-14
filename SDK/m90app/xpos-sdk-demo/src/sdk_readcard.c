@@ -571,7 +571,7 @@ int upay_readcard_proc(st_read_card_in *card_in, st_read_card_out *card_out)
 
 loop_card:
 	memset(card_out, 0, sizeof(st_read_card_out));
-	//dukpt_prepare_key(0, card_out->pin_ksn);//ksnÔÚ¶Á¿¨ºó¶ÁÈ¡²»ÐèÒªµ¥¶À¶ÁÈ¡
+	//dukpt_prepare_key(0, card_out->pin_ksn);//ksnï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡
 
 	ret = emv_read_card(card_in, card_out);
 
