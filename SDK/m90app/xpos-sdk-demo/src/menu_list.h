@@ -52,6 +52,8 @@
 #define UI_ACCNT_SELECTION  "Account Selection"
 #define UI_TRANS_TYPE       "Trans Type"
 #define UI_NOTIF_ID         "Notification ID"
+#define UI_CHECK_UPGRADE    "TMSTest"
+#define UI_HWR_VERSION      "Version"
 #define UI_REBOOT           "Reboot"
 
 #define UI_DEFAULT_ACCT     "Default"

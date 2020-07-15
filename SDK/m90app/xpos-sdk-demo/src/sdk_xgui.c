@@ -137,6 +137,8 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAINTENANCE, UI_ACCNT_SELECTION, ""},
 	{MAINTENANCE, UI_TRANS_TYPE, ""},
 	{MAINTENANCE, UI_NOTIF_ID, ""},
+	{MAINTENANCE, UI_CHECK_UPGRADE, ""},
+	{MAINTENANCE, UI_HWR_VERSION, ""},
 	{MAINTENANCE, UI_REBOOT},
 
 };
@@ -433,7 +435,7 @@ static int _menu_proc(char *pid)
 	{
 		return 0;
 	}
-	else if (strcmp(pid, "Version") == 0)
+	else if (strcmp(pid, UI_HWR_VERSION) == 0)
 	{
 		sprintf(msg , "app:%s\r\n", Sys_GetAppVer());
 		sprintf(msg+ strlen(msg) , "Device Type:%s\r\n", Sys_GetDeviceType() == SYS_DEVICE_TYPE_H9G ? "H9G":"MP70G");
@@ -503,7 +505,7 @@ static int _menu_proc(char *pid)
 	{
 		ShowString();
 	}
-	else if (strcmp(pid, "TMSTest") == 0)
+	else if (strcmp(pid, UI_CHECK_UPGRADE) == 0)
 	{
 		argot_action("#1#");
 	}
