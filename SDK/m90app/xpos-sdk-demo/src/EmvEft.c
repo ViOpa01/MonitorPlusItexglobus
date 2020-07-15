@@ -107,6 +107,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	termconfig->TermType = 0x22;									  /*Terminal type '9F35'*/
 	memcpy(termconfig->TransCurrCode, COUNTRYCODE, 2);				  /*Transaction currency '5F2A'*/
 	termconfig->TransCurrExp = 0x02;								  /*Transaction currency index '5F36'*/
+	memcpy(termconfig->szTransProp,"\x36\x00\xC0\x00",4);				/*TTQ'9F66'*/
 
 	termconfig->bPSE = YES;				   /*Whether to support the choice PSE 1*/
 	termconfig->bCardHolderConfirm = YES;  /*Whether to support cardholder confirmation 1*/
@@ -142,6 +143,15 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	termconfig->bBatchDataCapture = YES; /*Whether to support batch data collection*/
 	termconfig->bDefaultTDOL = YES;		 /*Is there a default? TDOL*/
 	termconfig->bAccountSelect = YES;	/*Whether to support account selection*/
+	//visa check value
+	termconfig->checkAmtZore=1;
+	termconfig->checkRCTL=1;
+	termconfig->checkStatus=1;
+	termconfig->checkFloorLimit=1;
+	termconfig->optionAmtZore=0;
+	termconfig->checkCVMLimit=1;
+	termconfig->checkOnPIN=1;
+	termconfig->checkSig=1;
 }
 
 static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
