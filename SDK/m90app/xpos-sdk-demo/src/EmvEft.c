@@ -1428,6 +1428,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	card_in->pin_dukpt_gid = -1;  //The key index of DUKPT PIN KEY
 	card_in->des_mode = 0;		  //0 ECB, 1 CBC
 	card_in->data_dukpt_gid = -1; //The key index of DUPKT Track data KEY
+	card_in->ic_online_resp = 1;	//0:not support; 1:chip card reading support online response processing
 	card_in->pin_timeover = 60000;
 
 	puts("==================> 2");
