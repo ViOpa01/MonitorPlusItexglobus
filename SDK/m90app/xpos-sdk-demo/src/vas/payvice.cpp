@@ -189,8 +189,6 @@ int beginLoginSequence(Payvice& payvice)
     char key[128] = { 0 };
     TamsPayviceResponse payviceResponse;
     
-    // CURL* curl_handle; Handle send and receive
-
     Demo_SplashScreen("www.payvice.com", "Please wait...");
     payviceResponse = getPayviceKeys(payvice);
     if (payviceResponse.status != "1" || payviceResponse.result != "0") {
@@ -213,7 +211,7 @@ int beginLoginSequence(Payvice& payvice)
     payvice.object(Payvice::WALLETID) = payviceResponse.macros_tid;
     payvice.object(Payvice::KEY) = key;
 
-    payviceResponse = loginPayVice(/* curl_handle, */key, payvice);
+    payviceResponse = loginPayVice(key, payvice);
     if (payviceResponse.result != "0" || payviceResponse.status != "0") {
         UI_ShowButtonMessage(10000, "Error", payviceResponse.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
         return -1;

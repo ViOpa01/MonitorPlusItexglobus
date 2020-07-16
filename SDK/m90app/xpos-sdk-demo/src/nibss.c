@@ -417,6 +417,7 @@ int sCallHomeAsync(NetworkManagement *networkMangement, NetWorkParameters *netPa
     int result = -1;
     unsigned char packet[1024];
     unsigned char response[512];
+    int status = RECEIVING_FAILED;
 
     networkMangement->type = CALL_HOME;
     addGenericNetworkFields(networkMangement);
@@ -431,9 +432,11 @@ int sCallHomeAsync(NetworkManagement *networkMangement, NetWorkParameters *netPa
     memcpy(netParam->packet, packet, result);
     
     strcpy(netParam->title, "CALLHOME");
-    if (sendAndRecvPacket(netParam) != SEND_RECEIVE_SUCCESSFUL) {
+
+    status = sendAndRecvPacket(netParam);
+    if (status != SEND_RECEIVE_SUCCESSFUL) {
         fprintf(stderr, "Callhome -> Error send and receive failed....\n");
-        return -2;
+        return status;
     }
 
 

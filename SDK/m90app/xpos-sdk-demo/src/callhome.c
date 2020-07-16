@@ -48,12 +48,14 @@ static int sendCallHome()
 
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
     netParam.async = 1;
+    netParam.receiveTimeout = 5000;    // set to 5s
 
     addCallHomeData(&networkMangement);
         
     for (i = 0; i < maxRetry; i++)
     {
-        if (!sCallHomeAsync(&networkMangement, &netParam))
+        int ret = sCallHomeAsync(&networkMangement, &netParam);
+        if (!ret || (ret == RECEIVING_FAILED) || !isIdleState )
             break;
     }
 
@@ -72,16 +74,18 @@ unsigned int static getCallhomeTime()
     int tm = 0;
     unsigned int callhomeTime = 1 * 60 * 60 * 1000;
 
-    memset(&parameters, 0x00, sizeof(MerchantParameters));
-    if (getParameters(&parameters))
-	{
-		printf("Error getting parameters\n");
-		return callhomeTime;
-	}
+    return 4000;
 
-    tm = atoi(parameters.callHomeTime) * 60 * 60 * 1000;
+    // memset(&parameters, 0x00, sizeof(MerchantParameters));
+    // if (getParameters(&parameters))
+	// {
+	// 	printf("Error getting parameters\n");
+	// 	return callhomeTime;
+	// }
 
-    return tm ? callhomeTime : tm;
+    // tm = atoi(parameters.callHomeTime) * 60 * 60 * 1000;
+
+    // return tm ? callhomeTime : tm;
 }
 
 void processCallHomeAsync()
@@ -111,7 +115,7 @@ void processCallHomeAsync()
                 printf("Callhome failed\n");
                 Util_Beep(1);   
             } else {
-                gui_messagebox_show("Callhome", "Success", "", "", 2000);
+                // gui_messagebox_show("Callhome", "Success", "", "", 2000);
                 printf("Callhome succesful\n");
                 Util_Beep(2);
             }
