@@ -74,18 +74,16 @@ unsigned int static getCallhomeTime()
     int tm = 0;
     unsigned int callhomeTime = 1 * 60 * 60 * 1000;
 
-    return 4000;
+    memset(&parameters, 0x00, sizeof(MerchantParameters));
+    if (getParameters(&parameters))
+	{
+		printf("Error getting parameters\n");
+		return callhomeTime;
+	}
 
-    // memset(&parameters, 0x00, sizeof(MerchantParameters));
-    // if (getParameters(&parameters))
-	// {
-	// 	printf("Error getting parameters\n");
-	// 	return callhomeTime;
-	// }
+    tm = atoi(parameters.callHomeTime) * 60 * 60 * 1000;
 
-    // tm = atoi(parameters.callHomeTime) * 60 * 60 * 1000;
-
-    // return tm ? callhomeTime : tm;
+    return tm ? callhomeTime : tm;
 }
 
 void processCallHomeAsync()
