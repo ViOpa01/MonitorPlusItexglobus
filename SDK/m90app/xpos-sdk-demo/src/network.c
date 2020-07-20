@@ -23,6 +23,7 @@ static int m_connect_time = 0;
 static int m_connect_exit = 0;
 static int m_comm_sock = 1;
 
+extern isIdleState;
 typedef int (*PrintSycnCb)(char *title, char* msg, char* leftButton, char* rightButton, int timeover);
 
 static void networkErrorLogger(const int isAsync, const char* title, const char* msg, const int timeout, PrintSycnCb callback)
@@ -637,10 +638,12 @@ void hostTest(void)
 
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 {
+	isIdleState = 0;
 	logNetworkParameters(netParam);
 
 	if (connectToHost(netParam))
 	{
+		isIdleState = 1;
 		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
 		comm_net_unlink(); // Unlink network connection
 		return CONNECTION_FAILED;
@@ -650,6 +653,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 
 	if (sendPacket(netParam))
 	{
+		isIdleState = 1;
 		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
 		comm_net_unlink(); // Unlink network connection
 		return SENDING_FAILED;
@@ -661,6 +665,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 
 	if (receivePacket(netParam))
 	{
+		isIdleState = 1;
 		networkErrorLogger(netParam->async, "Response", "No response received!", 3000, gui_messagebox_show);	
 		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
 		comm_net_unlink(); // Unlink network connection
@@ -668,7 +673,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	}
 
 	puts("Receive Successful!\n");
-
+	isIdleState = 1;
 	netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
 	comm_net_unlink(); // Unlink network connection
 	return SEND_RECEIVE_SUCCESSFUL;

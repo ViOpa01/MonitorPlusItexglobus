@@ -1551,21 +1551,21 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 		gui_messagebox_show("", "Declined", "", "ok", 0);
 		free(card_in);
 		free(card_out);
-		return 0;
+		return -1;
 	}
 	else if (EMVAPI_RET_AAR == ret)
 	{
 		gui_messagebox_show("", "Terminate", "", "ok", 0);
 		free(card_in);
 		free(card_out);
-		return 0;
+		return -1;
 	}
 	else
 	{
 		gui_messagebox_show("", "Cancel", "", "ok", 0);
 		free(card_in);
 		free(card_out);
-		return 0;
+		return -1;
 	}
 
 	puts("==================> 7");

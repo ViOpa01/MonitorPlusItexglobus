@@ -18,6 +18,7 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
 {
     MerchantData mParam = { 0 };
     NetWorkParameters netParam = { 0 };
+    int ret = -1;
     pthread_t thread;
 
     trxContext->transType = EFT_PURCHASE;
@@ -31,19 +32,19 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
 
     if (trxContext->switchMerchant) {
         if (swithMerchantToVas(trxContext) < 0)
-            return -1;
+            return ret;
     } else {
         MerchantParameters merchantParameters;
         char sessionKey[32 + 1] = { 0 };
 
         if (getSessionKey(sessionKey)) {
             printf("Error getting session key");
-            return -1;
+            return ret;
         }
 
         if (getParameters(&merchantParameters)) {
             printf("Error getting parameters\n");
-            return -1;
+            return ret;
         }
         strncpy(trxContext->sessionKey, sessionKey, sizeof(trxContext->sessionKey));
         strncpy(trxContext->terminalId, mParam.tid, strlen(mParam.tid));
@@ -58,7 +59,9 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
     pthread_create(&thread, NULL, preDial, &mParam.gprsSettings);
 
     sprintf(trxContext->amount, "%012lu", amount);
-    performEft(trxContext, &netParam, transTypeToTitle(EFT_PURCHASE));
+    if((ret = performEft(trxContext, &netParam, transTypeToTitle(EFT_PURCHASE))) < 0) {
+        return ret;
+    }
 
     return 0;
 }

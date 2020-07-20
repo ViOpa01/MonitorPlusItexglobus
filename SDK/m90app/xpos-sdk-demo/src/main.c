@@ -25,7 +25,8 @@ void app_main()
 	Sys_SetAppVer(APP_VER);
 
 	//mf_buzzer_control(0);
-	gprsInit(); //net link will have enough time to initialize in the background, we can also add little delay.				
+	gprsInit(); //net link will have enough time to initialize in the background, we can also add little delay.	
+	Sys_tms_AppBusy(0);
 	EMV_iKernelInit();//Init EMV
 	autoHandshake();
     pthread_create(&thread, NULL, processCallHomeAsync, NULL);
