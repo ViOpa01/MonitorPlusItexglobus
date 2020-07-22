@@ -13,6 +13,10 @@ extern "C" {
 
 #include "Nibss8583.h"
 
+#define EFT_DEFAULT_TABLE "Transactions"
+#define DBNAME "itex/emvdb.db"
+
+
 //Used By EOD RECIEPT PRINTING DECLARED IN EMVDB//
 #ifndef TXTYPE
     typedef enum

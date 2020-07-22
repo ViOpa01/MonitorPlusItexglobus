@@ -23,9 +23,6 @@ extern "C"{
 #include "merchant.h"
 #include "processEod.h"
 
-const  std::string DBNAME = "itex/emvdb.db"; 
-#define EFT_DEFAULT_TABLE "Transactions"
-
 static short updateEftRequired(const Eft * eft) 
 {
     if (!strncmp(eft->responseCode, "00", 2)) return 1;

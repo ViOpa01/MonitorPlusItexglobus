@@ -20,6 +20,7 @@
 #include "nibss.h"
 #include "Nibss8583.h"
 #include "EmvEft.h"
+#include "EftDbImpl.h"
 
 int isIdleState = 1;
 
@@ -99,7 +100,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	
 	{UI_SETTINGS, "Net Select", ""},
 	{UI_SETTINGS, "WIFI Settings", "WIFI Menu"},
-	{UI_SETTINGS, "TimeSet", ""},
+	{UI_SETTINGS, UI_SET_TIME, ""},
 
 	/*
 	* Demo menus
@@ -111,6 +112,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{SUPERVISION, UI_EOD, ""},
 	{SUPERVISION, UI_NETWORK, ""},
 	{SUPERVISION, UI_DOWNLOAD_LOGO, ""},
+	{SUPERVISION, UI_SET_TIME, ""},
 	{SUPERVISION, UI_ABOUT, ""},
 
 	{UI_NETWORK, UI_NET_SELECT, ""},
@@ -137,7 +139,7 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAINTENANCE, UI_ACCNT_SELECTION, ""},
 	{MAINTENANCE, UI_TRANS_TYPE, ""},
 	{MAINTENANCE, UI_NOTIF_ID, ""},
-	{MAINTENANCE, UI_CHECK_UPGRADE, ""},
+	{MAINTENANCE, UI_CHECK_UPDATE, ""},
 	{MAINTENANCE, UI_HWR_VERSION, ""},
 	{MAINTENANCE, UI_REBOOT},
 
@@ -456,10 +458,6 @@ static int _menu_proc(char *pid)
 	{
 		sdk_print();
 	}
-	else if (strcmp(pid, "TimeSet") == 0)
-	{
-		time_set_page();
-	}
 	else if (strcmp(pid, "InitDukpt") == 0)
 	{
 		dukptTest();
@@ -505,7 +503,7 @@ static int _menu_proc(char *pid)
 	{
 		ShowString();
 	}
-	else if (strcmp(pid, UI_CHECK_UPGRADE) == 0)
+	else if (strcmp(pid, UI_CHECK_UPDATE) == 0)
 	{
 		argot_action("#1#");
 	}
@@ -539,17 +537,6 @@ static int _menu_proc(char *pid)
 	{
 		sdk_M1test();
 	}
-	else if (strcmp(pid, UI_ABOUT) == 0)
-	{
-		MerchantData mParam = {0};
-
-		if (readMerchantData(&mParam))
-		{
-			gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
-			return -1;
-		}
-		aboutTerminal(mParam.tid);
-	}
 	else if (strcmp(pid, "My Plain") == 0)
 	{
 		//sendAndReceiveDemoRequest(0, 80);
@@ -561,7 +548,7 @@ static int _menu_proc(char *pid)
 	else if (!strcmp(pid, UI_REPRINT_BY_DATE))
 	{
 		Eft eft;
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, ALL_TRX_TYPES);  
 	}
 	else if (!strcmp(pid, UI_REPRINT_BY_RRN))
@@ -581,49 +568,49 @@ static int _menu_proc(char *pid)
 	else if (!strcmp(pid, UI_EOD_ALL_TRANS))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, ALL_TRX_TYPES);
 	}
 	else if (!strcmp(pid, UI_EOD_CASHADVANCE))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, CASH_ADV);
 	}
 	else if (!strcmp(pid, UI_EOD_CASHBACK))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, PURCHASE_WC);
 	}
 	else if (!strcmp(pid, UI_EOD_PURCHASE))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, PURCHASE);
 	}
 	else if (!strcmp(pid, UI_EOD_PREAUTH))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, PRE_AUTH);
 	}
 	else if (!strcmp(pid, UI_EOD_COMPLETION))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, PRE_AUTH_C);
 	}
 	else if (!strcmp(pid, UI_EOD_REVERSAL))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, REVERSAL);
 	}
 	else if (!strcmp(pid, UI_EOD_REFUND))
 	{
 		Eft eft = {0};
-		strcpy(eft.tableName, "Transactions");
+		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, REFUND);
 	}
 	else if (!strcmp(pid, UI_ACCNT_SELECTION))
@@ -686,6 +673,21 @@ static int _menu_proc(char *pid)
 			gui_messagebox_show("ERROR", "Logo download failed!!!\n Try again", "", "", 0);
 			return -1;
 		}
+	}
+	else if (strcmp(pid, UI_SET_TIME) == 0)
+	{
+		time_set_page();
+	}
+	else if (strcmp(pid, UI_ABOUT) == 0)
+	{
+		MerchantData mParam = {0};
+
+		if (readMerchantData(&mParam))
+		{
+			gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
+			return -1;
+		}
+		aboutTerminal(mParam.tid);
 	}
 
 	return 0;

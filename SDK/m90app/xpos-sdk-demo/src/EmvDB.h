@@ -31,7 +31,7 @@
 #define DB_FISC "fisc"
 #define DB_STAN "stan"
 
-#define DBFILE "flash/testemv.db"
+#define DBFILE "itex/emvdb.db"
 
 
 typedef enum
