@@ -260,7 +260,8 @@ int vasTransactionTypes()
 {
     static int once_flag = VasDB::init();
     std::vector<std::string> menu;
-    VAS_Menu_T menuOptions[] = { ENERGY, AIRTIME, TV_SUBSCRIPTIONS, DATA, SMILE, CASHIO };
+    // VAS_Menu_T menuOptions[] = { ENERGY, AIRTIME, TV_SUBSCRIPTIONS, DATA, SMILE, CASHIO };
+    VAS_Menu_T menuOptions[] = { CASHIO, ENERGY, AIRTIME, TV_SUBSCRIPTIONS, DATA, SMILE };
 
     (void)once_flag;
 
