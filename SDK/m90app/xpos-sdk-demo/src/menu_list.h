@@ -44,7 +44,7 @@
 
 #define UI_NETWORK          "Network"       // Menu for Network
 #define UI_DOWNLOAD_LOGO    "Download Logo" // Menu for Download Logo
-#define UI_SET_TIME         "TimeSet"       // Set time
+#define UI_SET_TIME         "Set Date and Time"       // Set time
 #define UI_ABOUT            "About"         // Menu for About
 
 #define UI_PREP_TERMINAL    "Prep Terminal"
@@ -53,7 +53,7 @@
 #define UI_ACCNT_SELECTION  "Account Selection"
 #define UI_TRANS_TYPE       "Trans Type"
 #define UI_NOTIF_ID         "Notification ID"
-#define UI_CHECK_UPDATE    "Check Update"
+#define UI_CHECK_UPDATE     "Check Update"
 #define UI_HWR_VERSION      "Version"
 #define UI_REBOOT           "Reboot"
 
