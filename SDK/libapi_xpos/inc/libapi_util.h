@@ -165,8 +165,27 @@ Remarks: When the input mode is numeric and alphabetic input, the switching betw
 		capitalized and lowercase letters is carried out by pressing a button continuously.
 *************************************************************************************/
 LIB_EXPORT int Util_InputText(int disp_line, char * msgPrompt, int input_line, char *str, int min, int max, int disp_pattern, byte disp_mode ,int timeout);
-
-
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:yangjy
+Functions:2.2.5.13	string input (Util_InputText) number, child, password input
+Input : disp_line:     the number of rows displayed
+		msgPrompt:     prompt information (left justified)
+		input_line£º   number of rows displayed in input data
+		min:           minimum input length
+		max:           maximum input length
+		disp_pattern:  input data display position, 0 left alignment, 1 center; 2 right alignment
+		disp_mode£º    input mode, 0 digit input; 1 digit, child input; 2 password input.
+		timeout:       waiting for input timeout time (seconds)
+Output : str:          input data
+return: success: returns the str byte number of input data.
+		UUTIL_TIMEOUT  = -3,    // input timeout
+		UUTIL_CANCEL   = -2,    //input cancelled
+		UUTIL_FAIL           = -1,    Fail
+Remarks: When the input mode is numeric and alphabetic input, the switching between numeric,
+		capitalized and lowercase letters is carried out by pressing a button continuously.
+*************************************************************************************/
+LIB_EXPORT int Util_InputTextEx(int disp_line, char * msgPrompt, int input_line, char *str, int min, int max, int disp_pattern, byte disp_mode ,int timeout);
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:yangjy
