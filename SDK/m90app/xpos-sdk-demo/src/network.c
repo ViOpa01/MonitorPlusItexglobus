@@ -313,8 +313,8 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 
 		//for(;;) 
 		//{
-			result = comm_ssl_init(COMM_SOCK, 0/*netParam->serverCert*/, 0 /*netParam->clientCert*/, 0/*netParam->clientKey*/, 0/*netParam->verificationLevel*/);
-			LOG_PRINTF("Ignoring ssl init return -> %d, comm socket -> %d", result, COMM_SOCK);
+			result = comm_ssl_init(netParam->socketFd, 0/*netParam->serverCert*/, 0 /*netParam->clientCert*/, 0/*netParam->clientKey*/, 0/*netParam->verificationLevel*/);
+			LOG_PRINTF("Ignoring ssl init return -> %d, comm socket -> %d", result, netParam->socketFd);
 			//if (result == 0) break;
 			//Sys_Delay(5000);
 		//}
@@ -332,16 +332,16 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 		//TODO: Check callback later.
 		if(netParam->async)
 		{
-			result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc_async);
+			result = comm_ssl_connect2(netParam->socketFd, netParam->host, netParam->port, _connect_server_func_proc_async);
 		} else {
-			result = comm_ssl_connect2(COMM_SOCK, netParam->host, netParam->port, _connect_server_func_proc);
+			result = comm_ssl_connect2(netParam->socketFd, netParam->host, netParam->port, _connect_server_func_proc);
 		}
 		LOG_PRINTF("Ssl connect ret : %d\n", result);
 		
 		if (result)
 		{
 			LOG_PRINTF("Ssl connect failed... ret : %d\n", result);
-			comm_ssl_close(COMM_SOCK);
+			comm_ssl_close(netParam->socketFd);
 			Sys_Delay(500);
 			return -4;
 		}
@@ -351,7 +351,7 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 			if (comm_page_get_exit() || m_connect_exit == 1)
 			{
 				LOG_PRINTF("comm_func_connect_server Cancel");
-				comm_ssl_close(COMM_SOCK);
+				comm_ssl_close(netParam->socketFd);
 				Sys_Delay(500);
 				return -5;
 			}
@@ -359,10 +359,10 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	}
 	else
 	{
-		if (comm_sock_connect(sock, netParam->host, netParam->port)) //  Connect to http server
+		if (comm_sock_connect(netParam->socketFd, netParam->host, netParam->port)) //  Connect to http server
 		{
 			LOG_PRINTF("Socket connect failed...\n");
-			comm_sock_close(COMM_SOCK);
+			comm_sock_close(netParam->socketFd);
 			Sys_Delay(500);
 			return -6;
 		}
@@ -401,6 +401,7 @@ static short connectToHost(NetWorkParameters *netParam)
     int nret;	
 	const int nTime = 3;
 	MerchantData merchantData;
+	netParam->socketFd = 1;
 
 	memset(&merchantData, 0x00, sizeof(MerchantData));
 	readMerchantData(&merchantData);
@@ -413,10 +414,11 @@ static short connectToHost(NetWorkParameters *netParam)
 		networkErrorLogger(netParam->async, "NET LINK", "Link Failed!", 10, gui_messagebox_show);	
 		return -1;
 	}
-
-	if(COMM_SOCK = comm_sock_create(0))
+	
+	if((netParam->socketFd = comm_sock_create(netParam->socketIndex)) != netParam->socketIndex)	// socketIndex (0/1), only callhome thread using 1
 	{
 		// Fail to create socket
+		printf("****Net descriptor : %d***\n", netParam->socketFd);
 		networkErrorLogger(netParam->async, "SOCKET", "Socket Failed!", 10, gui_messagebox_show);	
 		return -2;
 	}
@@ -448,12 +450,12 @@ static short sendPacket(NetWorkParameters *netParam)
 
 	if (netParam->isSsl)
 	{
-		result = comm_ssl_send(COMM_SOCK, netParam->packet, netParam->packetSize);
+		result = comm_ssl_send(netParam->socketFd, netParam->packet, netParam->packetSize);
 		return result;
 	}
 	else
 	{
-		result = comm_sock_send(COMM_SOCK, (unsigned char *)netParam->packet, netParam->packetSize);
+		result = comm_sock_send(netParam->socketFd, (unsigned char *)netParam->packet, netParam->packetSize);
 	}
 
 	printf("Send Result : %d\n", result);
@@ -502,9 +504,9 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 
 
 		if(netParam->isSsl == 1){
-			nret = comm_ssl_recv( COMM_SOCK, (unsigned char *)buffer/*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen*/);
+			nret = comm_ssl_recv( netParam->socketFd, (unsigned char *)buffer/*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen*/);
 		}else{
-			nret = comm_sock_recv( COMM_SOCK, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 5000);
+			nret = comm_sock_recv( netParam->socketFd, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 5000);
 		}
 
 		//printf("nret is : %d\n", nret);
@@ -522,7 +524,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 				break;
 			}
 		}else if(Sys_TimerCheck(tick2) == 0 && netParam->isSsl == 1){
-			mf_ssl_recv3(COMM_SOCK);
+			mf_ssl_recv3(netParam->socketFd);
 			//printf("----------mf_ssl_recv3\r\n");
 			tick2 = Sys_TimerOpen(1000);
 		}
@@ -644,7 +646,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	if (connectToHost(netParam))
 	{
 		isIdleState = 1;
-		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+		netParam->isSsl ? comm_ssl_close(netParam->socketFd) : comm_sock_close(netParam->socketFd);
 		comm_net_unlink(); // Unlink network connection
 		return CONNECTION_FAILED;
 	}
@@ -654,7 +656,7 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	if (sendPacket(netParam))
 	{
 		isIdleState = 1;
-		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+		netParam->isSsl ? comm_ssl_close(netParam->socketFd) : comm_sock_close(netParam->socketFd);
 		comm_net_unlink(); // Unlink network connection
 		return SENDING_FAILED;
 	}
@@ -667,14 +669,14 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	{
 		isIdleState = 1;
 		networkErrorLogger(netParam->async, "Response", "No response received!", 3000, gui_messagebox_show);	
-		netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+		netParam->isSsl ? comm_ssl_close(netParam->socketFd) : comm_sock_close(netParam->socketFd);
 		comm_net_unlink(); // Unlink network connection
 		return RECEIVING_FAILED;
 	}
 
 	puts("Receive Successful!\n");
 	isIdleState = 1;
-	netParam->isSsl ? comm_ssl_close(COMM_SOCK) : comm_sock_close(COMM_SOCK);
+	netParam->isSsl ? comm_ssl_close(netParam->socketFd) : comm_sock_close(netParam->socketFd);
 	comm_net_unlink(); // Unlink network connection
 	return SEND_RECEIVE_SUCCESSFUL;
 }

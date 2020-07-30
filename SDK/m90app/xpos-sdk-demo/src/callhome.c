@@ -48,6 +48,7 @@ static int sendCallHome()
 
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
     netParam.async = 1;
+    netParam.socketIndex = 1;   // occupy socket index 1, others 0
     netParam.receiveTimeout = 5000;    // set to 5s
 
     addCallHomeData(&networkMangement);
