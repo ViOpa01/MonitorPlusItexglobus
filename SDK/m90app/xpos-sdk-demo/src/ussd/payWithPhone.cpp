@@ -159,10 +159,10 @@ static short getPhoneNumber(char* phoneNumber)
 
 static unsigned long getPayWithPhoneAmount(void)
 {
-    int amount;
+    unsigned long amount;
 
     amount = getAmount("Pay with Phone");
-    return amount < 0 ? 0 : amount;
+    return amount;
 }
 
 const char * payWithPhoneError(const char* statusCode)

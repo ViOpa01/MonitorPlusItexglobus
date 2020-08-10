@@ -365,7 +365,7 @@ static int enableAndDisableOtherTrans()
 
 #include "sdk_security.h"
 
-static short hanshakeHandler(const char *pid)
+static short adminHandler(const char *pid)
 {
 	if (strcmp(pid, UI_PREP_TERMINAL) == 0)
 	{
@@ -386,6 +386,47 @@ static short hanshakeHandler(const char *pid)
 	{
 		uiCallHome();
 	}
+	else if (strcmp(pid, UI_ACCNT_SELECTION) == 0)
+	{
+		int ret = enableAndDisableAccountSelection();
+		printf("Enable / Disable ret : %d\n", ret);
+	} 
+	else if (strcmp(pid, UI_TRANS_TYPE) == 0)
+	{
+		int ret = enableAndDisableOtherTrans();
+		printf("Enable / Disable ret : %d\n", ret);
+	}
+	else if (strcmp(pid, UI_NOTIF_ID) == 0)
+	{
+		MerchantData mParam = {'\0'};
+		readMerchantData(&mParam);
+
+		if(mParam.notificationIdentifier[0]) {
+			gui_messagebox_show("Notification ID", mParam.notificationIdentifier, "", "", 3000);
+		} else {
+			gui_messagebox_show("Notification ID", "Empty notification identifier", "", "", 3000);
+		}
+
+	}
+	else if (strcmp(pid, UI_CHECK_UPDATE) == 0)
+	{
+		argot_action("#1#");
+	}
+	else if (strcmp(pid, UI_HWR_VERSION) == 0)
+	{
+		char msg[1024] = {'\0'};
+
+		sprintf(msg , "app:%s\r\n", Sys_GetAppVer());
+		sprintf(msg+ strlen(msg) , "Device Type:%s\r\n", Sys_GetDeviceType() == SYS_DEVICE_TYPE_H9G ? "H9G":"MP70G");
+		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
+		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());
+		getversions(msg+ strlen(msg));
+		gui_messagebox_show( "Version" , msg , "" , "confirm" , 0);
+	}
+	else if(strcmp(pid, UI_REBOOT) == 0)
+	{
+		Sys_Reboot();
+	}
 	else
 	{
 		return -1;
@@ -394,158 +435,9 @@ static short hanshakeHandler(const char *pid)
 	return 0;
 }
 
-static void removeMerchantData(void)
-{
-	if (!UFile_Clear(MERCHANT_DETAIL_FILE, FILE_PRIVATE))
-	{
-		gui_messagebox_show("", "Merchant Record", "", "Cleared", 2000);
-	}
-	else
-	{
-		gui_messagebox_show("", "Merchant Record", "", "Error", 2000);
-	}
-}
-
-
-//gui_get_message()
-// The menu callback function, as long as all the menu operations of this function are registered,
-// this function will be called, and the selected menu name will be returned.
-// It is mainly determined in this function that the response menu name is processed differently.
-static int _menu_proc(char *pid)
-{
-	int ret;
-	char buff[20];
-	int pos = 0;
-	char msg[1024];
-	int acctTypeValue = -1;
-
-	printf("pid -> %s\n", pid);
-
-	if(!strcmp(pid, UI_CARD_PAYMENT)) {
-		eftTrans(cardPaymentHandler(), SUB_NONE);
-		return 0;
-	}
-	else if(!strcmp(pid, UI_CARDLESS_PAYMENT)) {
-		ussdTransactionsMenu();
-		return 0;
-	}
-	if(!strcmp(pid, UI_VAS)) {
-		vasTransactionTypesBridge();
-		return 0;
-	}
-	else if (!hanshakeHandler(pid))
-	{
-		return 0;
-	}
-	else if (strcmp(pid, UI_HWR_VERSION) == 0)
-	{
-		sprintf(msg , "app:%s\r\n", Sys_GetAppVer());
-		sprintf(msg+ strlen(msg) , "Device Type:%s\r\n", Sys_GetDeviceType() == SYS_DEVICE_TYPE_H9G ? "H9G":"MP70G");
-		sprintf(msg + strlen(msg), "hardware:%s\r\n", sec_get_hw_ver());
-		sprintf(msg + strlen(msg), "fireware:%s\r\n", sec_get_fw_ver());
-		getversions(msg+ strlen(msg));
-		gui_messagebox_show( "Version" , msg , "" , "confirm" , 0);
-	}
-	else if (strcmp(pid, "Sales") == 0)
-	{
-		upay_consum();
-	}
-	else if (strcmp(pid, "CodePay") == 0)
-	{
-		upay_barscan();
-	}
-	else if (strcmp(pid, "Print") == 0)
-	{
-		sdk_print();
-	}
-	else if (strcmp(pid, "InitDukpt") == 0)
-	{
-		dukptTest();
-	}
-	else if (strcmp(pid, "SetMainKey") == 0)
-	{
-		mkskTest();
-	}
-	else if (strcmp(pid, "PinTest") == 0)
-	{
-		PinTest();
-	}
-	else if (strcmp(pid, "RsaTest") == 0)
-	{
-		RsaTest();
-	}
-	else if (strcmp(pid, "Http") == 0)
-	{
-		sdk_http_test();
-	}
-	else if (strcmp(pid, "Https") == 0)
-	{
-		//test2();
-		sdk_https_test();
-	}
-	else if (strcmp(pid, "ShowQr") == 0)
-	{
-		showQrTest();
-	}
-	else if (strcmp(pid, "File") == 0)
-	{
-		fileTest();
-	}
-	else if (strcmp(pid, "Led") == 0)
-	{
-		sdk_driver_led();
-	}
-	else if (strcmp(pid, "Open Log") == 0)
-	{
-		//LogOutSet_Show();
-	}
-	else if (strcmp(pid, "ShowString") == 0)
-	{
-		ShowString();
-	}
-	else if (strcmp(pid, UI_CHECK_UPDATE) == 0)
-	{
-		argot_action("#1#");
-	}
-	else if (strcmp(pid, "View AID") == 0)
-	{
-		EMV_ShowAID_Prm();
-	}
-	else if (strcmp(pid, "View CAPK") == 0)
-	{
-		EMV_ShowCAPK_Prm();
-	}
-	else if (strcmp(pid , "View emv") == 0){
-		sprintf(msg + strlen(msg), "%s\r\n", EMV_GetVersion());
-		gui_messagebox_show( "View emv" , msg , "" , "confirm" , 0);
-	}
-	else if(strcmp(pid , "View PRMacqKey") == 0){
-		EMV_ShowRuPayPRMacqKey();
-	}
-	else if(strcmp(pid , "View Service") == 0){
-		EMV_ShowRuPayService();
-	}
-	else if(strcmp(pid , "RP SrData DlTest") == 0)
-	{
-		init_service_prmacqkey(1);
-	}
-	else if(strcmp(pid , "RP SrData Clear") == 0)
-	{
-		clear_service_prmacqkey();
-	}
-	else if (strcmp(pid, "M1 Test") == 0)
-	{
-		sdk_M1test();
-	}
-	else if (strcmp(pid, "My Plain") == 0)
-	{
-		//sendAndReceiveDemoRequest(0, 80);
-	}
-	else if (strcmp(pid, "My Ssl") == 0)
-	{
-		//sendAndReceiveDemoRequest(1, 443);
-	}
-	else if (!strcmp(pid, UI_REPRINT_BY_DATE))
+static short operatorHandler(const char *pid)
+{ 
+	if (!strcmp(pid, UI_REPRINT_BY_DATE))
 	{
 		Eft eft;
 		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
@@ -613,32 +505,6 @@ static int _menu_proc(char *pid)
 		strcpy(eft.tableName, EFT_DEFAULT_TABLE);
 		getListOfEod(&eft, REFUND);
 	}
-	else if (!strcmp(pid, UI_ACCNT_SELECTION))
-	{
-		int ret = enableAndDisableAccountSelection();
-		printf("Enable / Disable ret : %d\n", ret);
-	} 
-	else if (!strcmp(pid, UI_TRANS_TYPE))
-	{
-		int ret = enableAndDisableOtherTrans();
-		printf("Enable / Disable ret : %d\n", ret);
-	}
-	else if (!strcmp(pid, UI_NOTIF_ID))
-	{
-		MerchantData mParam = {'\0'};
-		readMerchantData(&mParam);
-
-		if(mParam.notificationIdentifier[0]) {
-			gui_messagebox_show("Notification ID", mParam.notificationIdentifier, "", "", 3000);
-		} else {
-			gui_messagebox_show("Notification ID", "Empty notification identifier", "", "", 3000);
-		}
-
-	}
-	else if(!strcmp(pid, UI_REBOOT))
-	{
-		Sys_Reboot();
-	}
 	else if (!strcmp(pid, UI_DOWNLOAD_LOGO))
 	{
 		MerchantData mParam = {0};
@@ -689,7 +555,158 @@ static int _menu_proc(char *pid)
 		}
 		aboutTerminal(mParam.tid);
 	}
+	else
+	{
+		return -1;
+	}
 
+	return 0;
+}
+
+
+static void removeMerchantData(void)
+{
+	if (!UFile_Clear(MERCHANT_DETAIL_FILE, FILE_PRIVATE))
+	{
+		gui_messagebox_show("", "Merchant Record", "", "Cleared", 2000);
+	}
+	else
+	{
+		gui_messagebox_show("", "Merchant Record", "", "Error", 2000);
+	}
+}
+
+
+//gui_get_message()
+// The menu callback function, as long as all the menu operations of this function are registered,
+// this function will be called, and the selected menu name will be returned.
+// It is mainly determined in this function that the response menu name is processed differently.
+static int _menu_proc(char *pid)
+{
+	int ret;
+	char buff[20];
+	int pos = 0;
+	char msg[1024];
+	int acctTypeValue = -1;
+
+	printf("pid -> %s\n", pid);
+
+	if(!strcmp(pid, UI_CARD_PAYMENT)) {
+		eftTrans(cardPaymentHandler(), SUB_NONE);
+		return 0;
+	}
+	else if(!strcmp(pid, UI_CARDLESS_PAYMENT)) {
+		ussdTransactionsMenu();
+		return 0;
+	}
+	if(!strcmp(pid, UI_VAS)) {
+		vasTransactionTypesBridge();
+		return 0;
+	}
+	else if (!adminHandler(pid))
+	{
+		return 0;
+	}
+	else if(!operatorHandler(pid))
+	{
+		return 0;
+	}
+	else if (strcmp(pid, "Sales") == 0)
+	{
+		upay_consum();
+	}
+	else if (strcmp(pid, "CodePay") == 0)
+	{
+		upay_barscan();
+	}
+	else if (strcmp(pid, "Print") == 0)
+	{
+		sdk_print();
+	}
+	else if (strcmp(pid, "InitDukpt") == 0)
+	{
+		dukptTest();
+	}
+	else if (strcmp(pid, "SetMainKey") == 0)
+	{
+		mkskTest();
+	}
+	else if (strcmp(pid, "PinTest") == 0)
+	{
+		PinTest();
+	}
+	else if (strcmp(pid, "RsaTest") == 0)
+	{
+		RsaTest();
+	}
+	else if (strcmp(pid, "Http") == 0)
+	{
+		sdk_http_test();
+	}
+	else if (strcmp(pid, "Https") == 0)
+	{
+		//test2();
+		sdk_https_test();
+	}
+	else if (strcmp(pid, "ShowQr") == 0)
+	{
+		showQrTest();
+	}
+	else if (strcmp(pid, "File") == 0)
+	{
+		fileTest();
+	}
+	else if (strcmp(pid, "Led") == 0)
+	{
+		sdk_driver_led();
+	}
+	else if (strcmp(pid, "Open Log") == 0)
+	{
+		//LogOutSet_Show();
+	}
+	else if (strcmp(pid, "ShowString") == 0)
+	{
+		ShowString();
+	}
+	else if (strcmp(pid, "View AID") == 0)
+	{
+		EMV_ShowAID_Prm();
+	}
+	else if (strcmp(pid, "View CAPK") == 0)
+	{
+		EMV_ShowCAPK_Prm();
+	}
+	else if (strcmp(pid , "View emv") == 0){
+		sprintf(msg + strlen(msg), "%s\r\n", EMV_GetVersion());
+		gui_messagebox_show( "View emv" , msg , "" , "confirm" , 0);
+	}
+	else if(strcmp(pid , "View PRMacqKey") == 0){
+		EMV_ShowRuPayPRMacqKey();
+	}
+	else if(strcmp(pid , "View Service") == 0){
+		EMV_ShowRuPayService();
+	}
+	else if(strcmp(pid , "RP SrData DlTest") == 0)
+	{
+		init_service_prmacqkey(1);
+	}
+	else if(strcmp(pid , "RP SrData Clear") == 0)
+	{
+		clear_service_prmacqkey();
+	}
+	else if (strcmp(pid, "M1 Test") == 0)
+	{
+		sdk_M1test();
+	}
+	else if (strcmp(pid, "My Plain") == 0)
+	{
+		//sendAndReceiveDemoRequest(0, 80);
+	}
+	else if (strcmp(pid, "My Ssl") == 0)
+	{
+		//sendAndReceiveDemoRequest(1, 443);
+	}
+	
 	return 0;
 }
 
@@ -706,8 +723,6 @@ void get_hhmmss_str(char *buff)
 	Sys_GetDateTime(d);
 	sprintf(buff, "%c%c:%c%c:%c%c", d[8], d[9], d[10], d[11], d[12], d[13]);
 }
-
-
 
 static short validateUsersPin(const char* validPin)
 {
@@ -779,6 +794,8 @@ void sdk_main_page()
 	char time_cur[20];
 	char time_last[20];
 	int i;
+
+	unsigned int tick = Sys_TimerOpen(getCallhomeTime());
 
 BEGIN :
 	
@@ -866,6 +883,16 @@ BEGIN :
 				gui_proc_default_msg(&pmsg);
 			}
 		}
+
+		// sending callhome
+		if (Sys_TimerCheck(tick) <= 0)	{
+
+			// 1. send call home data
+			uiCallHome();
+
+			// 2. reset time
+			tick = Sys_TimerOpen(getCallhomeTime());
+    	}
 
 		Sys_GetDateTime(time_cur);
 		if (strcmp(time_last, time_cur) != 0)

@@ -69,7 +69,7 @@ static int sendCallHome()
 
 }
 
-unsigned int static getCallhomeTime()
+unsigned int  getCallhomeTime()
 {
     MerchantParameters parameters;
     int tm = 0;

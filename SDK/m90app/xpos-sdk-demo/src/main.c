@@ -29,7 +29,7 @@ void app_main()
 	Sys_tms_AppBusy(0);
 	EMV_iKernelInit();//Init EMV
 	autoHandshake();
-    pthread_create(&thread, NULL, processCallHomeAsync, NULL);
+    // pthread_create(&thread, NULL, processCallHomeAsync, NULL);
 	sdk_main_page(); 
 
 }
