@@ -130,7 +130,8 @@ Author:yangjy
 Functions:2.2.5.12	 input method input (Util_InputMethod) supports data input from input method switching.
 Input : disp_line:     the number of rows displayed
 		msgPrompt:     prompt information (left justified)
-		input_line£º   number of rows displayed in input data
+		input_lineï¿½ï¿½   number of rows displayed in input data
+					   (if input_lien >0 it only show 0ne line, if input_line <0,it can show multiple line begin at one line)
 		min:           minimum input length
 		max:           maximum input length
 		disp_pattern:  input data display position, 0 left alignment, 1 center; 2 right alignment
@@ -150,11 +151,11 @@ Author:yangjy
 Functions:2.2.5.13	string input (Util_InputText) number, child, password input
 Input : disp_line:     the number of rows displayed
 		msgPrompt:     prompt information (left justified)
-		input_line£º   number of rows displayed in input data
+		input_lineï¿½ï¿½   number of rows displayed in input data
 		min:           minimum input length
 		max:           maximum input length
 		disp_pattern:  input data display position, 0 left alignment, 1 center; 2 right alignment
-		disp_mode£º    input mode, 0 digit input; 1 digit, child input; 2 password input.
+		disp_modeï¿½ï¿½    input mode, 0 digit input; 1 digit, child input; 2 password input.
 		timeout:       waiting for input timeout time (seconds)
 Output : str:          input data
 return: success: returns the str byte number of input data.
@@ -171,12 +172,13 @@ Author:yangjy
 Functions:2.2.5.13	string input (Util_InputText) number, child, password input
 Input : disp_line:     the number of rows displayed
 		msgPrompt:     prompt information (left justified)
-		input_line£º   number of rows displayed in input data
+		input_lineï¿½ï¿½   number of rows displayed in input data
 		min:           minimum input length
 		max:           maximum input length
 		disp_pattern:  input data display position, 0 left alignment, 1 center; 2 right alignment
-		disp_mode£º    input mode, 0 digit input; 1 digit, child input; 2 password input.
+		disp_modeï¿½ï¿½    input modeï¿½ï¿½ 1 digit, character input; 2 password input.	(press # to change digit to alphabet or character)
 		timeout:       waiting for input timeout time (seconds)
+		title:		   if title length is not zero ,show title on first line center 
 Output : str:          input data
 return: success: returns the str byte number of input data.
 		UUTIL_TIMEOUT  = -3,    // input timeout
@@ -185,17 +187,17 @@ return: success: returns the str byte number of input data.
 Remarks: When the input mode is numeric and alphabetic input, the switching between numeric,
 		capitalized and lowercase letters is carried out by pressing a button continuously.
 *************************************************************************************/
-LIB_EXPORT int Util_InputTextEx(int disp_line, char * msgPrompt, int input_line, char *str, int min, int max, int disp_pattern, byte disp_mode ,int timeout);
+LIB_EXPORT int Util_InputTextEx(int disp_line, char * msgPrompt, int input_line, char *str, int min, int max, int disp_pattern, byte disp_mode ,int timeout, char *title);
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:yangjy
-Functions:	amount input£¨Util_InputAmount£©
+Functions:	amount inputï¿½ï¿½Util_InputAmountï¿½ï¿½
 Input : disp_line:     the number of rows displayed
 		msgPrompt:     prompt information (left justified)
-		input_line£º   number of rows displayed in input data
+		input_lineï¿½ï¿½   number of rows displayed in input data
 		disp_pattern:  input data display position, 0 left alignment, 1 center; 2 right alignment
 		timeout:       waiting for input timeout time (seconds)
-Output : amount£ºoutput amount
+Output : amountï¿½ï¿½output amount
 return: success: returns the str byte number of input data.
 		UUTIL_TIMEOUT  = -3,    // input timeout
 		UUTIL_CANCEL   = -2,    //input cancelled
@@ -208,10 +210,10 @@ LIB_EXPORT int Util_InputAmount(int disp_line, char * msgPrompt, int input_line,
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:yangjy
-Functions: IP  input£¨Util_InputIp£©
+Functions: IP  inputï¿½ï¿½Util_InputIpï¿½ï¿½
 Input : disp_line:     the number of rows displayed
 		msgPrompt:     prompt information (left justified)
-		input_line£º   number of rows displayed in input data
+		input_lineï¿½ï¿½   number of rows displayed in input data
 		disp_pattern:  input data display position, 0 left alignment, 1 center; 2 right alignment
 		timeout:       waiting for input timeout time (seconds)
 Output : ip:           IP address

@@ -752,21 +752,15 @@ void standby_pagepaint()
 {
 	int pos;
 	char data[32] = {0};
-	int logowidth;
-	int logoheight;
-	int logoleft;
-	int logotop;
-	char *pbmp;
 	char f1Msg[] = "Operator";
 	char f2Msg[] = "Admin";
 	char spaceRequired[35] = {'\0'};
+	int widthlength = gui_get_width();
+	int pixelperchar = gui_get_text_width(f1Msg) / strlen(f1Msg);
 
 	gui_begin_batch_paint();
 	gui_clear_dc();
 
-	logoleft = 10;
-	logotop = 36;
-	
 	get_yyyymmdd_str(data);
 	data[10] = ' ';
 	data[11] = ' ';
@@ -776,9 +770,9 @@ void standby_pagepaint()
 	sprintf(data, "Version:%s", APP_VER);
 	gui_text_out((gui_get_width() - gui_get_text_width(data)) / 2, GUI_LINE_TOP(4), data);
 
-	pos = 32 - strlen(f1Msg) - strlen(f2Msg);
-	memset(spaceRequired, ' ', pos);
+	pos = (widthlength - gui_get_text_width(f1Msg) - gui_get_text_width(f2Msg)) / pixelperchar;
 
+	memset(spaceRequired, ' ', pos);
 	pos = sprintf(data, "%s%s%s", f1Msg, spaceRequired, f2Msg);
 	data[pos] = 0;
 
