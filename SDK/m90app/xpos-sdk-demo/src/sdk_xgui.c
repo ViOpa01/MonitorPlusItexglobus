@@ -528,7 +528,7 @@ static short operatorHandler(const char *pid)
 		{
 			if(!downloadRemoteLogo(mParam.tid))
 			{
-				printf("Image donloaded successfully\n");
+				printf("Image downloaded successfully\n");
 				gui_messagebox_show("MESSAGE" , "Logo downloaded", "" , "" , 0);
 				break;
 			}

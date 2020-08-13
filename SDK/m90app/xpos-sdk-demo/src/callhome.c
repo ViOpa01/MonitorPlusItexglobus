@@ -71,9 +71,11 @@ static int sendCallHome()
 
 unsigned int  getCallhomeTime()
 {
+    unsigned int callhomeTime = 1 * 60 * 60 * 1000;
+
+    /*
     MerchantParameters parameters;
     int tm = 0;
-    unsigned int callhomeTime = 1 * 60 * 60 * 1000;
 
     memset(&parameters, 0x00, sizeof(MerchantParameters));
     if (getParameters(&parameters))
@@ -85,6 +87,9 @@ unsigned int  getCallhomeTime()
     tm = atoi(parameters.callHomeTime) * 60 * 60 * 1000;
 
     return tm ? callhomeTime : tm;
+    */
+   
+    return callhomeTime;
 }
 
 void processCallHomeAsync()
