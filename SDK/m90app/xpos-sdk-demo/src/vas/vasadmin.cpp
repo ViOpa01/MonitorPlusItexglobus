@@ -264,6 +264,7 @@ int printRequery(iisys::JSObject& transaction)
     std::string statusMsg;
     VasStatus status;
     std::map<std::string, std::string> record;
+    char amountStr[16] = {'\0'};
     
     statusMsg = transaction("status").getString();
     productName = transaction("product").getString();
@@ -423,7 +424,9 @@ int printRequery(iisys::JSObject& transaction)
     }
     
 
-    record[VASDB_AMOUNT] = transaction("amount").getString();
+    // This fix requery amount bug that comes out in exponential format
+    sprintf(amountStr, "%lu", transaction("amount").getInt());
+    record[VASDB_AMOUNT] = amountStr;
     record[VASDB_DATE] = transaction("date").getString();
 
     iisys::JSObject& cardName = transaction("cardName");
