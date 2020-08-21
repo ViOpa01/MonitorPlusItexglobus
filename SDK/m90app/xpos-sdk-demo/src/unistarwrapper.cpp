@@ -765,7 +765,7 @@ void writeUserCardTest(void)
 
     ret = detectSmartCard("INSERT CARD", "CUSTOMER CARD", 3 * 60 * 1000);
 
-    if (ret != READ_CARD_RET_IC)
+    if (ret)
     {
         return;
     }
@@ -794,7 +794,7 @@ void writeUserCardTest(void)
 
     ret = detectSmartCard("INSERT CARD", "CUSTOMER CARD", 3 * 60 * 1000);
 
-    if (ret != READ_CARD_RET_IC)
+    if (ret)
     {
         return;
     }
@@ -838,7 +838,7 @@ void customerCardInfo(void)
 
     ret = detectSmartCard("INSERT CARD", "CUSTOMER CARD", 3 * 60 * 1000);
 
-    if (ret != READ_CARD_RET_IC)
+    if (ret)
     {
         return;
     }
