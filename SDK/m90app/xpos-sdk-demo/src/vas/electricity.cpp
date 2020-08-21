@@ -11,6 +11,7 @@
 #include "pfm.h"
 #include "vasdb.h"
 #include "electricity.h"
+#include "unistarwrapper.h"
 
 extern "C" {
 #include "../merchant.h"
@@ -38,7 +39,14 @@ VasStatus Electricity::beginVas()
         return VasStatus(USER_CANCELLATION);
     }
 
-    meterNo = getMeterNo(serviceToString(service));
+   if (energyType == PREPAID_SMARTCARD) {
+        if (readSmartCard(&userCardInfo) == 0) {
+            meterNo = (const char*)userCardInfo.CM_UserNo;
+        }
+    } else {
+        meterNo = getMeterNo(serviceToString(service));
+    }
+
     if (meterNo.empty()) {
         return VasStatus(USER_CANCELLATION);
     }
@@ -49,7 +57,7 @@ VasStatus Electricity::beginVas()
 Electricity::EnergyType Electricity::getEnergyType(Service service, const char* title)
 {
     int selection;
-    const char* energyTypes[] = { "Token", "Postpaid" };
+    const char* energyTypes[] = { "Token", "Postpaid", "SmartCard" };
     std::vector<std::string> menu(energyTypes, energyTypes + sizeof(energyTypes) / sizeof(char*));
 
     if (service == EKEDC) {
@@ -62,6 +70,8 @@ Electricity::EnergyType Electricity::getEnergyType(Service service, const char* 
         return PREPAID_TOKEN;
     case 1:
         return POSTPAID;
+    case 2:
+        return PREPAID_SMARTCARD;
     default:
         return TYPE_UNKNOWN;
     }
@@ -234,6 +244,15 @@ VasStatus Electricity::complete(const VasStatus& initiateStatus)
 
     response = processPaymentResponse(json, service);
 
+    
+    if (energyType == PREPAID_SMARTCARD && response.error == NO_ERRORS) {
+        const iisys::JSObject& unitValue = json("unit_value");
+        if (!unitValue.isNull()) {
+            userCardInfo.CM_Purchase_Power = unitValue.getNumber();
+            updateSmartCard(&userCardInfo);
+        }
+    }
+    
 
     return response;
 }
@@ -488,6 +507,74 @@ std::string Electricity::getMeterNo(const char* title)
     }
 
     return std::string(number);
+}
+
+int Electricity::readSmartCard(La_Card_info * userCardInfo) const
+{
+    unsigned char inData[512] = { 0 };
+    unsigned char outData[512] = { 0 };
+    SmartCardInFunc smartCardInFunc; 
+
+    bindSmartCardApi(&smartCardInFunc);
+
+    smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
+
+    if (smartCardInFunc.detectSmartCardCb("READ CARD", "INSERT CUSTOMER CARD", 3 * 60 * 1000)) 
+    {
+        return -1;
+    }
+
+    memset(userCardInfo, 0x00, sizeof(La_Card_info));
+    int result = readUserCard(userCardInfo, outData, inData, &smartCardInFunc);
+    if (result) {
+        UI_ShowOkCancelMessage(30000, "Read Error", unistarErrorToString(result), UI_DIALOG_TYPE_NONE);
+    }
+
+    smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
+
+    return result;
+}
+
+/*
+int Electricity::updateSmartCard(unsigned char * psamBalance, La_Card_info * userCardInfo)
+{
+    SmartCardInFunc smartCardInFunc = { 0 };
+
+    bindSmartCardApi(&smartCardInFunc);
+
+    int result = updateUserCard(psamBalance, userCardInfo, &smartCardInFunc);
+
+    return result;
+}
+*/
+
+int Electricity::updateSmartCard(La_Card_info * userCardInfo) const
+{
+    SmartCardInFunc smartCardInFunc = { 0 };
+    unsigned char psamBalance[16] = { 0 };
+
+    bindSmartCardApi(&smartCardInFunc);
+
+    
+    smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
+
+    if (smartCardInFunc.detectSmartCardCb("UPDATE CARD", "INSERT CUSTOMER CARD", 3 * 60 * 1000)) 
+    {
+        return -1;
+    }
+
+    userCardInfo->CM_Purchase_Times += 1;
+    int result = updateUserCard(psamBalance, userCardInfo, &smartCardInFunc);
+
+    if (result) {
+        UI_ShowOkCancelMessage(30000, "Update Error", unistarErrorToString(result), UI_DIALOG_TYPE_NONE);
+    }
+
+    smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
+
+    //TODO: persist psamBalance
+
+    return result;
 }
 
 const char* Electricity::abujaMeterType(EnergyType type)

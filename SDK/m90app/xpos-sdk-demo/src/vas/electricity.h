@@ -5,13 +5,17 @@
 #include "vascomproxy.h"
 #include "vasflow.h"
 
+#include "unistar-smartcard/CpuCard_Fun.h"
+
 #include "jsobject.h"
 
-int electricity(const char* title);
+int electricity(const char *title);
 
-struct Electricity : FlowDelegate {
+struct Electricity : FlowDelegate
+{
 
-    typedef enum {
+    typedef enum
+    {
         TYPE_UNKNOWN,
         GENERIC_ENERGY,
         PREPAID_TOKEN,
@@ -19,40 +23,41 @@ struct Electricity : FlowDelegate {
         POSTPAID
     } EnergyType;
 
-    Electricity(const char* title, VasComProxy& proxy);
+    Electricity(const char *title, VasComProxy &proxy);
 
     VasStatus beginVas();
-    VasStatus lookup(const VasStatus&);
-    VasStatus initiate(const VasStatus&);
-    VasStatus complete(const VasStatus&);
+    VasStatus lookup(const VasStatus &);
+    VasStatus initiate(const VasStatus &);
+    VasStatus complete(const VasStatus &);
 
     Service vasServiceType();
-    std::map<std::string, std::string> storageMap(const VasStatus& completionStatus);
+    std::map<std::string, std::string> storageMap(const VasStatus &completionStatus);
 
-    VasStatus processPaymentResponse(iisys::JSObject& json, Service service);
-    
+    VasStatus processPaymentResponse(iisys::JSObject &json, Service service);
+
 protected:
     std::string _title;
     Service service;
-    VasComProxy& comProxy;
-
+    VasComProxy &comProxy;
 
     std::string meterNo;
     std::string phoneNumber;
     PaymentMethod payMethod;
     EnergyType energyType;
     unsigned long amount;
-
+    La_Card_info userCardInfo;
     CardPurchase cardPurchase;
 
-    struct {
+    struct
+    {
         std::string name;
         std::string address;
         std::string productCode;
         unsigned long minPayableAmount;
     } lookupResponse;
 
-    struct {
+    struct
+    {
         std::string message;
         std::string reference;
         std::string transactionSeq;
@@ -60,21 +65,22 @@ protected:
         std::string serviceData;
     } paymentResponse;
 
-    VasStatus lookupCheck(const VasStatus& lookupStatus);
-    EnergyType getEnergyType(Service service, const char * title);
-    const char* payloadServiceTypeString(EnergyType energyType);
-    
-    std::string getMeterNo(const char* prompt);
-    const char* abujaMeterType(EnergyType energyType);
+    VasStatus lookupCheck(const VasStatus &lookupStatus);
+    EnergyType getEnergyType(Service service, const char *title);
+    const char *payloadServiceTypeString(EnergyType energyType);
 
-    const char* productString(EnergyType type);
+    std::string getMeterNo(const char *prompt);
+    const char *abujaMeterType(EnergyType energyType);
 
-    int getLookupJson(iisys::JSObject& json, Service service);
-    int getPaymentJson(iisys::JSObject& json, Service service);
+    const char *productString(EnergyType type);
 
+    int getLookupJson(iisys::JSObject &json, Service service);
+    int getPaymentJson(iisys::JSObject &json, Service service);
 
-    const char* paymentPath(Service service);
+    int updateSmartCard(La_Card_info * userCardInfo) const;
+    int readSmartCard(La_Card_info * userCardInfo) const;
 
+    const char *paymentPath(Service service);
 };
 
 #endif

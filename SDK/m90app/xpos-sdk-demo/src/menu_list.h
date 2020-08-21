@@ -7,6 +7,7 @@
 #define UI_CARD_PAYMENT     "Card Payment"
 #define UI_CARDLESS_PAYMENT "Cardless Payment"
 #define UI_VAS              "Value Added Service"
+#define SMART_CARD_TEST     "Smart Card Test"
 /*
 #define UI_PURCHASE         "Purchase"          // Menu for Purchase
 #define UI_CASHBACK         "Cashback"

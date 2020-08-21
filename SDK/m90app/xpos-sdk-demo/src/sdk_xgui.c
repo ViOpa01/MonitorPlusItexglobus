@@ -22,6 +22,9 @@
 #include "EmvEft.h"
 #include "EftDbImpl.h"
 
+#include "unistarwrapper.h"
+
+
 int isIdleState = 1;
 
 #define LOGOIMG "xxxx\\logo.bmp"
@@ -52,6 +55,8 @@ static const st_gui_menu_item_def _menu_def[] = {
 	{MAIN_MENU_PAGE, UI_CARD_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_CARDLESS_PAYMENT, ""},
 	{MAIN_MENU_PAGE, UI_VAS,          ""},
+	{MAIN_MENU_PAGE, SMART_CARD_TEST,          ""},
+
 	// {MAIN_MENU_PAGE, "TMSTest", ""},
 	// {MAIN_MENU_PAGE, "Version", ""},
 
@@ -577,6 +582,31 @@ static void removeMerchantData(void)
 }
 
 
+static void smartCardTestMenu(void)
+{
+	int option = -1;
+
+	char *payment_list[] = {
+		"Read Customer Card",
+		"Write Customer Card",
+	};
+
+
+	switch (option = gui_select_page_ex("Select Option", payment_list, 2, 30000, 0)) // if exit : -1, timout : -2
+	{
+	case 0:
+		customerCardInfo();
+		break;
+	case 1:
+		
+		writeUserCardTest();
+	
+	default:
+		return 0;
+	}
+
+}
+
 //gui_get_message()
 // The menu callback function, as long as all the menu operations of this function are registered,
 // this function will be called, and the selected menu name will be returned.
@@ -597,6 +627,9 @@ static int _menu_proc(char *pid)
 	}
 	else if(!strcmp(pid, UI_CARDLESS_PAYMENT)) {
 		ussdTransactionsMenu();
+		return 0;
+	}else if(!strcmp(pid, SMART_CARD_TEST)) {
+		smartCardTestMenu();
 		return 0;
 	}
 	if(!strcmp(pid, UI_VAS)) {
