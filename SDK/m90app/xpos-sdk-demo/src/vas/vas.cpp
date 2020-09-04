@@ -760,20 +760,40 @@ Service selectService(const char * title, std::vector<Service>& services)
     return services[selection];
 }
 
+VasError vasStatusNumberToError(int status)
+{
+    switch (status) {
+    case VAS_TXN_NOT_FOUND_STATUS_NUMBER:
+        return TXN_NOT_FOUND;
+    case VAS_PENDING_STATUS_NUMBER:
+        return TXN_PENDING;
+    default:
+        return VAS_DECLINED;
+    }
+}
+
 VasStatus vasErrorCheck(const iisys::JSObject& data)
 {
-    iisys::JSObject error = data("error");
-    iisys::JSObject message = data("message");
+    const iisys::JSObject& error = data("error");
+    const iisys::JSObject& message = data("message");
 
     if (error.isNull()) {
         return VasStatus(KEY_NOT_FOUND, "No Error Tag");
     }
 
     if (error.getBool() == true) {
-        if (message.isNull() || !message.isString()) {
-            return VasStatus(VAS_ERROR);
+        VasError vasError = VAS_DECLINED;
+        const iisys::JSObject& status = data("status");
+
+        if (!status.isNull()) {
+            vasError = vasStatusNumberToError(status.getInt());
         }
-        return VasStatus(VAS_ERROR, message.getString().c_str());
+
+        if (message.isNull() || !message.isString()) {
+            return VasStatus(vasError);
+        }
+
+        return VasStatus(vasError, message.getString().c_str());
     }
 
     if (message.isNull() || !message.isString()) {
@@ -782,6 +802,7 @@ VasStatus vasErrorCheck(const iisys::JSObject& data)
 
     return VasStatus(NO_ERRORS, message.getString().c_str());
 }
+
 
 VasError requeryVas(iisys::JSObject& transaction, const char * clientRef, const char *serverRef)
 {
