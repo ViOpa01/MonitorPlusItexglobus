@@ -169,6 +169,28 @@ LIB_EXPORT int Icc_CardInsertDetect();
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:ruansj
+Functions: Check whether the user swipes the card at the terminal
+Input :	 Nothing
+Output : Nothing
+return: UICC_FAIL			= -1,   // Fail
+		UICC_OK            =  0    // Success
+Remarks: Nothing
+*************************************************************************************/
+LIB_EXPORT int Icc_CardRfDetect();
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:George
+Functions: Clear magtek buffer
+Input :	 Nothing
+Output : nothing
+return: nothing
+Remarks: Nothing
+*************************************************************************************/
+LIB_EXPORT void card_magtek_flush(void);
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:ruansj
 Functions: Check if the terminal is swiping
 Input :	 Nothing
 Output : trackinfo ,If successful, the magnetic stripe card data is returned.
