@@ -46,6 +46,15 @@ int isIdleState = 1;
 #define TXTYPE
 #endif
 
+static int rowlup;
+static int nMainTotal;
+
+typedef struct __st_gui_menu_key_def{
+	char *name;	
+	char *id;	
+	unsigned int uKey;
+}st_gui_key_menu;
+
 
 // Define the menu array, the first parameter is the name of the parent menu,
 // the second parameter is the name of the current menu,
@@ -261,6 +270,7 @@ static void keyZeroHandler(const char *tid)
 		{
 			break;
 		}
+		
 	}
 }
 
@@ -794,7 +804,13 @@ void standby_pagepaint()
 	gui_begin_batch_paint();
 	gui_clear_dc();
 
+	char msg[] = "DEVICE NOT READY";
+
+
 	get_yyyymmdd_str(data);
+
+	gui_text_out((gui_get_width() - gui_get_text_width(msg)) / 2, GUI_LINE_TOP(1), msg);
+
 	data[10] = ' ';
 	data[11] = ' ';
 	get_hhmmss_str(&data[12]);
@@ -814,6 +830,207 @@ void standby_pagepaint()
 	gui_end_batch_paint();
 }
 
+static const st_gui_key_menu _main_menu_def_n[] = 
+{
+	{UI_CARD_PAYMENT,		"",	GUI_KEY_1},
+	{UI_CARDLESS_PAYMENT,	"",	GUI_KEY_2},
+	{UI_VAS,				"",	GUI_KEY_3},
+	// {SMART_CARD_TEST,		"",	GUI_KEY_4},
+};
+
+void main_page_show()
+{
+	int i=0;
+	char szLine1[16]={0};
+	char szLine2[16]={0};
+	char szLine3[16]={0};
+	char szLine4[16]={0};
+	gui_begin_batch_paint();
+	gui_clear_dc();
+	gui_set_text_zoom(2);
+	//gui_set_font(0);
+	i = rowlup*4;
+
+	char msg[] = "SELECT OPTION";
+
+	gui_text_out((gui_get_width() - gui_get_text_width(msg)) / 2, GUI_LINE_TOP(0), msg);
+
+	sprintf(szLine1,"%d.%s",++i,_main_menu_def_n[i-1].name);
+	gui_text_out(0, GUI_LINE_TOP(1), szLine1);
+
+	if(i!=nMainTotal){
+		sprintf(szLine2,"%d.%s",++i,_main_menu_def_n[i-1].name);
+		gui_text_out(0, GUI_LINE_TOP(2), szLine2);
+	}
+	
+	if(i!=nMainTotal){
+		sprintf(szLine3,"%d.%s",++i,_main_menu_def_n[i-1].name);
+		gui_text_out(0, GUI_LINE_TOP(3), szLine3);
+	}
+	
+	if(i!=nMainTotal){
+		sprintf(szLine4,"%d.%s",++i,_main_menu_def_n[i-1].name);
+		gui_text_out(0, GUI_LINE_TOP(4), szLine4);
+	}
+
+	gui_end_batch_paint();
+}
+
+void sdk_main_page()
+{
+	st_gui_message pmsg;
+	static int xgui_init_flag = 0;
+	char time_cur[20];
+	char time_last[20];
+	int i;
+	int nMainPages;
+	MerchantData merchantData;
+	memset(&merchantData, 0x00, sizeof(MerchantData));
+
+	unsigned int tick = Sys_TimerOpen(getCallhomeTime());
+
+BEGIN :
+
+	rowlup=0;
+
+	
+	if(xgui_init_flag == 0){
+		xgui_init_flag = 1;
+		gui_main_menu_func_add((void *)_menu_proc);	// Registration menu callback processing
+		for(i = 0; i < sizeof(_menu_def)/sizeof(st_gui_menu_item_def); i ++){	// Add menu items cyclically
+			gui_main_menu_item_add(_menu_def + i);	
+		}
+	}
+	nMainTotal = sizeof(_main_menu_def_n)/sizeof(st_gui_key_menu);
+	nMainPages = (nMainTotal+3) / 4;// 4 menu line for one page
+
+	gui_post_message(GUI_GUIPAINT, 0 , 0);
+
+	readMerchantData(&merchantData);
+
+	// if (readMerchantData(&merchantData))
+	// {
+	// 	gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
+	// 	goto BEGIN;
+	// }
+
+	printf("Is Terminal prepped : %d\n", merchantData.is_prepped);
+
+	while(1){
+
+		if (gui_get_message(&pmsg, 300) == 0) {
+
+			if (pmsg.message_id == GUI_GUIPAINT) {
+
+				readMerchantData(&merchantData);
+
+				if (merchantData.is_prepped)
+				{
+					main_page_show();
+				} else {
+					standby_pagepaint();
+				}
+
+			}
+			else if (pmsg.message_id == GUI_KEYPRESS) {
+				
+				readMerchantData(&merchantData);
+
+				if (merchantData.is_prepped)
+				{
+					for(i=0; i < nMainTotal; i++){
+						if (pmsg.wparam == _main_menu_def_n[i].uKey){
+							gui_main_menu_show(_main_menu_def_n[i].name , 0);	
+							gui_post_message(GUI_GUIPAINT, 0 , 0);
+						}
+					}
+				}
+				
+				if ( pmsg.wparam == GUI_KEY_0)
+				{
+					//processing of KEY 0
+					keyZeroHandler(merchantData.tid);
+					gui_post_message(GUI_GUIPAINT, 0 , 0);
+				}
+				else if(pmsg.wparam	==	GUI_KEY_F1)
+				{
+					//processing of KEY F1
+					if(validateUsersPin("4839")) goto BEGIN;
+
+					gui_main_menu_show(SUPERVISION, 30000);
+					gui_post_message(GUI_GUIPAINT, 0 , 0);
+				}
+				else if(pmsg.wparam == GUI_KEY_F2)
+				{
+					//processing of KEY F2
+					if(validateUsersPin("4839")) goto BEGIN;
+
+					gui_main_menu_show(MAINTENANCE, 30000);
+					gui_post_message(GUI_GUIPAINT, 0, 0);
+				}
+				else if(pmsg.wparam == GUI_KEY_QUIT)
+				{
+					readMerchantData(&merchantData);
+
+					if (merchantData.is_prepped)
+					{
+						main_page_show();
+					} else {
+						standby_pagepaint();
+					}
+
+				}
+				else if(pmsg.wparam == GUI_KEY_DOWN)
+				{
+					rowlup++;
+					if(rowlup == nMainPages)
+					rowlup=0;
+
+					readMerchantData(&merchantData);
+
+					if (merchantData.is_prepped)
+					{
+						main_page_show();
+					} else {
+						standby_pagepaint();
+					}
+				}
+				else if(pmsg.wparam == GUI_KEY_UP)
+				{
+					rowlup--;
+					if(rowlup<0)
+					rowlup=nMainPages-1;
+
+					readMerchantData(&merchantData);
+
+					if (merchantData.is_prepped)
+					{
+						main_page_show();
+					} else {
+						standby_pagepaint();
+					}
+
+				}
+			}
+			else{
+				gui_proc_default_msg(&pmsg);
+			}
+		}	
+
+
+		// sending callhome
+		if (Sys_TimerCheck(tick) <= 0)	{
+
+			// 1. send call home data
+			uiCallHome();
+
+			// 2. reset time
+			tick = Sys_TimerOpen(getCallhomeTime());
+		}
+	}
+}
+
+/*
 void sdk_main_page()
 {
 	st_gui_message pmsg;
@@ -929,3 +1146,4 @@ BEGIN :
 		}
 	}
 }
+*/
