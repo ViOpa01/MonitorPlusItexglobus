@@ -835,7 +835,7 @@ static const st_gui_key_menu _main_menu_def_n[] =
 	{UI_CARD_PAYMENT,		"",	GUI_KEY_1},
 	{UI_CARDLESS_PAYMENT,	"",	GUI_KEY_2},
 	{UI_VAS,				"",	GUI_KEY_3},
-	// {SMART_CARD_TEST,		"",	GUI_KEY_4},
+	{SMART_CARD_TEST,		"",	GUI_KEY_4},
 };
 
 void main_page_show()
@@ -913,8 +913,6 @@ BEGIN :
 	// 	gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
 	// 	goto BEGIN;
 	// }
-
-	printf("Is Terminal prepped : %d\n", merchantData.is_prepped);
 
 	while(1){
 
@@ -1029,6 +1027,7 @@ BEGIN :
 		}
 	}
 }
+
 
 /*
 void sdk_main_page()

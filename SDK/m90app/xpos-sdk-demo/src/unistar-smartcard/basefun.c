@@ -470,7 +470,7 @@ signed int decrease(int aiddev, double adcharge, const SmartCardInFunc * smartCa
 	strncat(strCommand, StrTemp1, 8);
 
 	memset(StrRetData, 0, 256);
-	liret = SendCmd(aiddev, 18, strCommand, 1, &rlen, StrRetData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, 18, strCommand, 1, &rlen, StrRetData, smartCardInFunc);
 
 	if (liret != 0)
 		return -1;
@@ -490,7 +490,7 @@ signed int decrease(int aiddev, double adcharge, const SmartCardInFunc * smartCa
 *Input	    :   iSig : no use
 */
 
-signed int SendCmd(int aicdev, unsigned int lilen, unsigned char *strCmd, unsigned char iSig, unsigned int *arlen, unsigned char *strRet, const SmartCardInFunc * smartCardInFunc)
+signed int ItexSendCmd(int aicdev, unsigned int lilen, unsigned char *strCmd, unsigned char iSig, unsigned int *arlen, unsigned char *strRet, const SmartCardInFunc * smartCardInFunc)
 {
 	//int i, iTemp;
 	//long lTemp;
@@ -656,7 +656,7 @@ signed int SelectFile(int aicdev, unsigned int iFileID, const SmartCardInFunc * 
 	//get_char();
 #endif
 
-	liret = SendCmd(aicdev, 14, strCommand, 0, &rlen, strRet, smartCardInFunc);
+	liret = ItexSendCmd(aicdev, 14, strCommand, 0, &rlen, strRet, smartCardInFunc);
 
 	printf("Select file ret -> %d\n", liret);
 
@@ -728,7 +728,7 @@ signed int ReadCard_Base(int aiddev, unsigned int iFileID, unsigned int iOffset,
 		}
 	}
 	memset(strData, 0, 256);
-	liret = SendCmd(aiddev, strlen(strCommand), strCommand, iSig, &rlen, strData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, strlen(strCommand), strCommand, iSig, &rlen, strData, smartCardInFunc);
 	if (liret != 0)
 		return liret;
 
@@ -845,7 +845,7 @@ signed int WriteCard_Base(int aiddev, unsigned int iFileID, unsigned int iOffset
 	//get_char();
 #endif
 
-	liret = SendCmd(aiddev, strlen(strCommand), strCommand, iSig, &rlen, strData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, strlen(strCommand), strCommand, iSig, &rlen, strData, smartCardInFunc);
 	if (liret != 0)
 		return liret;
 
@@ -979,7 +979,7 @@ signed int InternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc)
 	if (liret != 0)
 		return -1;
 	memcpy(strComm, "0084000008", 10);
-	liret = SendCmd(aiddev, 10, strComm, 0, &rlen, strRetData, smartCardInFunc); //get 8 byte Random number from USER_CARD
+	liret = ItexSendCmd(aiddev, 10, strComm, 0, &rlen, strRetData, smartCardInFunc); //get 8 byte Random number from USER_CARD
 	if (liret != 0)
 		return -2;
 
@@ -993,7 +993,7 @@ signed int InternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc)
 
 	//LOG_PRINTF("=========> 2");
 
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc); //USER_CARD encrypt calc
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc); //USER_CARD encrypt calc
 	if (liret != 0)
 		return -3;
 
@@ -1024,7 +1024,7 @@ signed int InternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc)
 
 	//LOG_PRINTF("=========> 6");
 
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc); //USER_CARD make a inside encrypt calc
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc); //USER_CARD make a inside encrypt calc
 	if (liret != 0)
 		return -7;
 
@@ -1080,7 +1080,7 @@ signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCa
 	printf("\r\n%s ========================> 1.3", __FUNCTION__);
 
 	memcpy(strComm, "0084000008", 10);
-	liret = SendCmd(aiddev, 10, strComm, 0, &rlen, strRetData, smartCardInFunc); //get 8 byte Random number from USER_CARD
+	liret = ItexSendCmd(aiddev, 10, strComm, 0, &rlen, strRetData, smartCardInFunc); //get 8 byte Random number from USER_CARD
 	if (liret != 0)
 		return -2;
 
@@ -1114,7 +1114,7 @@ signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCa
 	memset(strComm, 0, sizeof(strComm));
 	memcpy(strComm, "80FA000408", 10);
 	strncat(strComm, lCM_Card_SerNo, 16);
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
 	if (liret != 0)
 		return -7;
 
@@ -1127,7 +1127,7 @@ signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCa
 
 	printf("\r\n%s ========================> 1.9", __FUNCTION__);
 
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
 	if (liret != 0)
 		return -7;
 
@@ -1143,7 +1143,7 @@ signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCa
 	memcpy(strComm, "0082000408", 10);
 	asc2hex(strRetData, 8, strTemp, 16);
 	strncat(strComm, strTemp, 16);
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
 	if (liret != 0)
 		return -1;
 
@@ -1178,7 +1178,7 @@ signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCard
 	if (liret != 0)
 		return -6;
 	memcpy(strComm, "0084000008", 10);
-	liret = SendCmd(aiddev, 10, strComm, 0, &rlen, strRetData, smartCardInFunc); //Send user card 8 byte random number
+	liret = ItexSendCmd(aiddev, 10, strComm, 0, &rlen, strRetData, smartCardInFunc); //Send user card 8 byte random number
 	if (liret != 0)
 		return -2;
 	memcpy(strRandom, strRetData, 16);
@@ -1203,7 +1203,7 @@ signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCard
 	memset(strComm, 0, sizeof(strComm));
 	memcpy(strComm, "80FA000608", 10);
 	strncat(strComm, lCM_Card_SerNo, 16);
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
 	if (liret != 0)
 		return -7;
 
@@ -1212,7 +1212,7 @@ signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCard
 	asc2hex(strRandom, 8, strTemp, 16);
 	strncat(strComm, strTemp, 16);
 
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
 	if (liret != 0)
 		return -7;
 
@@ -1227,7 +1227,7 @@ signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCard
 
 	//LOG_PRINTF(("%s::::::Before SendCmd", __FUNCTION__));
 	//get_char();
-	liret = SendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, 26, strComm, 1, &rlen, strRetData, smartCardInFunc);
 	if (liret != 0)
 		return -1;
 
@@ -1259,7 +1259,7 @@ signed int ReadRecord(int aiddev, unsigned int iFileID, unsigned int iOffset, un
 	asc2hex(strTemp, 5, strCommand, 10);
 
 	memset(strData, 0, 256);
-	liret = SendCmd(aiddev, strlen(strCommand), strCommand, iSig, &rlen, strData, smartCardInFunc);
+	liret = ItexSendCmd(aiddev, strlen(strCommand), strCommand, iSig, &rlen, strData, smartCardInFunc);
 	if (liret != 0)
 		return liret;
 

@@ -125,7 +125,7 @@ typedef struct
 //signed int Set_Nad(int *aicdev, enum TCardPosition CardPos);
 //signed int smartCardInFunc->resetCard(int aicdev, unsigned char *adatabuffer);
 void asc2hex(char *ascStr, unsigned int ascLen, unsigned char *hexStr, unsigned int hexLen);
-signed int SendCmd(int aicdev, unsigned int lilen, unsigned char *strCmd, unsigned char iSig, unsigned int *arlen, unsigned char *strRet, const SmartCardInFunc * smartCardInFunc);
+signed int ItexSendCmd(int aicdev, unsigned int lilen, unsigned char *strCmd, unsigned char iSig, unsigned int *arlen, unsigned char *strRet, const SmartCardInFunc * smartCardInFunc);
 signed int SelectFile(int aicdev, unsigned int iFileID, const SmartCardInFunc * smartCardInFunc);
 signed int ReadCard(int aicdev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc);
 signed int IsSysCard(int aiddev, const SmartCardInFunc * smartCardInFunc);
