@@ -5,6 +5,8 @@
 #include <map>
 #include "jsobject.h"
 
+#define VAS_PENDING_STATUS_NUMBER 14
+#define VAS_TXN_NOT_FOUND_STATUS_NUMBER 3
 
 typedef enum {
     ENERGY,
@@ -72,8 +74,10 @@ typedef enum {
     STATUS_ERROR,
     TXN_NOT_FOUND,
     CARD_APPROVED,
+    CASH_STATUS_UNKNOWN,
     CARD_STATUS_UNKNOWN,
     CARD_PAYMENT_DECLINED,
+    VAS_DECLINED,
     NOT_LOGGED_IN
 } VasError;
 

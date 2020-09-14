@@ -147,7 +147,7 @@ std::string Postman::generateRequestAuthorization(const std::string& requestBody
 
 VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, const std::map<std::string, std::string>* headers)
 {
-    VasStatus status;
+    VasStatus status(CASH_STATUS_UNKNOWN);
     std::string body;
 
     NetWorkParameters netParam = {'\0'};
@@ -250,7 +250,7 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
 VasStatus
 Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const std::map<std::string, std::string>* headers, CardPurchase* cardPurchase)
 {
-    VasStatus status;
+    VasStatus status(CARD_STATUS_UNKNOWN);
     
     iisys::JSObject jsonReq;
 

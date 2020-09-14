@@ -84,24 +84,29 @@ VasDB::TrxStatus VasDB::vasErrToTrxStatus(VasError error)
     switch (error) {
     case NO_ERRORS:
         return VasDB::APPROVED;
-    case VAS_ERROR:
-    case USER_CANCELLATION:
-    case INVALID_JSON:
-    case TYPE_MISMATCH:
-    case KEY_NOT_FOUND:
-    case INPUT_ABORT:
-    case INPUT_TIMEOUT_ERROR:
-    case INPUT_ERROR:
-    case STATUS_ERROR:
-    case TXN_NOT_FOUND:
+    case VAS_DECLINED:
     case CARD_PAYMENT_DECLINED:
-    case NOT_LOGGED_IN:
         return VasDB::DECLINED;
     case CARD_APPROVED:
         return VasDB::CARDAPPROVED;
     case TXN_PENDING:
         return VasDB::PENDING;
     case CARD_STATUS_UNKNOWN:
+    case CASH_STATUS_UNKNOWN:
+    case INVALID_JSON:
+    case TYPE_MISMATCH:
+    case KEY_NOT_FOUND:
+    case STATUS_ERROR:
+    case EMPTY_VAS_RESPONSE:
+    //
+    case VAS_ERROR:
+    case LOOKUP_ERROR:
+    case USER_CANCELLATION:
+    case INPUT_ABORT:
+    case INPUT_TIMEOUT_ERROR:
+    case INPUT_ERROR:
+    case TXN_NOT_FOUND:
+    case NOT_LOGGED_IN:
         return VasDB::STATUS_UNKNOWN;
     }
 }
