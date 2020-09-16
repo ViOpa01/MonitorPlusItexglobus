@@ -32,7 +32,7 @@ VasStatus ViceBanking::beginVas()
     }
 
     if (service == TRANSFER) {
-        beneficiary = beneficiaryAccount("Enter Beneficairy Account", "Transfer");
+        beneficiary = beneficiaryAccount("Beneficairy Account", "Transfer");
         if (beneficiary.empty()) {
             return VasStatus(USER_CANCELLATION);
         }

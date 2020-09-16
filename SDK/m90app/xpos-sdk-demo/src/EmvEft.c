@@ -1416,6 +1416,8 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	TERMINALAPPLIST TerminalApps = {0};
 	// 	CAPUBLICKEY pkKey={0};
 
+	// strncpy(eft->responseCode, "06", 2);	// set response code to Error
+
 	card_in = (st_read_card_in *)malloc(sizeof(st_read_card_in));
 	memset(card_in, 0x00, sizeof(st_read_card_in));
 	//Set card_in
