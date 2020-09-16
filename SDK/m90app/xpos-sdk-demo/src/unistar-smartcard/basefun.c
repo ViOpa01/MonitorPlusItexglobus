@@ -100,7 +100,7 @@ unsigned char abcd_to_asc(unsigned char abyte)
 	return (abyte);
 }
 
-void BCDToASC(unsigned char *asc_buf, unsigned char *bcd_buf, int n)
+void ItexBCDToASC(unsigned char *asc_buf, unsigned char *bcd_buf, int n)
 {
 	int i, j;
 
@@ -628,7 +628,7 @@ signed int ItexSendCmd(int aicdev, unsigned int lilen, unsigned char *strCmd, un
 	return 0;
 }
 
-signed int SelectFile(int aicdev, unsigned int iFileID, const SmartCardInFunc * smartCardInFunc)
+signed int ItexSelectFile(int aicdev, unsigned int iFileID, const SmartCardInFunc * smartCardInFunc)
 {
 	int i;
 	unsigned int rlen;
@@ -691,7 +691,7 @@ signed int ReadCard_Base(int aiddev, unsigned int iFileID, unsigned int iOffset,
 
 	if ((iOffset > 0x00ff) || (iFileID > 31))
 	{
-		liret = SelectFile(aiddev, iFileID, smartCardInFunc);
+		liret = ItexSelectFile(aiddev, iFileID, smartCardInFunc);
 		if (liret != 0)
 			return -1;
 
@@ -749,7 +749,7 @@ signed int ReadCard_Base(int aiddev, unsigned int iFileID, unsigned int iOffset,
        0 or not
        
  ********************************************************************************/
-signed int ReadCard(int aiddev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc)
+signed int ItexReadCard(int aiddev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc)
 {
 	signed int liret;
 	unsigned int iReadLen;
@@ -797,7 +797,7 @@ signed int WriteCard_Base(int aiddev, unsigned int iFileID, unsigned int iOffset
 		//LOG_PRINTF(("%s:::::::::Case 1", __FUNCTION__));
 		//get_char();
 
-		liret = SelectFile(aiddev, iFileID, smartCardInFunc);
+		liret = ItexSelectFile(aiddev, iFileID, smartCardInFunc);
 		if (liret != 0)
 			return -1;
 
@@ -895,7 +895,7 @@ unsigned char AddCheckSum(unsigned int inLen, unsigned char *inData)
 	return LSum;
 }
 
-signed int IsSysCard(int aiddev, const SmartCardInFunc * smartCardInFunc)
+signed int ItexIsSysCard(int aiddev, const SmartCardInFunc * smartCardInFunc)
 {
 	signed int liret;
 	unsigned char LSum;
@@ -904,12 +904,12 @@ signed int IsSysCard(int aiddev, const SmartCardInFunc * smartCardInFunc)
 
 	puts("**********IsSysCard  1");
 
-	if (SelectFile(aiddev, 0x3f01, smartCardInFunc) != 0)
+	if (ItexSelectFile(aiddev, 0x3f01, smartCardInFunc) != 0)
 		return -1;
 
 	puts("**********IsSysCard  2");
 
-	liret = ReadCard(aiddev, 1, 0, 0x0c, 1, strRetData, smartCardInFunc);
+	liret = ItexReadCard(aiddev, 1, 0, 0x0c, 1, strRetData, smartCardInFunc);
 	if (liret != 0) {
 		printf("Error reading card\r\n");
 		return -1;
@@ -964,7 +964,7 @@ signed int IsSysCard(int aiddev, const SmartCardInFunc * smartCardInFunc)
 	return 0;
 }
 
-signed int InternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc)
+signed int ItexInternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc)
 {
 	signed int liret;
 	unsigned int rlen;
@@ -1012,7 +1012,7 @@ signed int InternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc)
 
 	//LOG_PRINTF("=========> 4");
 
-	liret = SelectFile(aiddev, 0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev, 0x3f01, smartCardInFunc);
 	if (liret != 0)
 		return -6;
 
@@ -1050,7 +1050,7 @@ signed int InternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc)
  * Return
  *
  */
-signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc)
+signed int ItexPurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc)
 {
 	signed int liret;
 	unsigned int rlen;
@@ -1073,7 +1073,7 @@ signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCa
 
 	printf("\r\n%s ========================> 1.2", __FUNCTION__);
 
-	liret = SelectFile(aiddev, 0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev, 0x3f01, smartCardInFunc);
 	if (liret != 0)
 		return -6;
 
@@ -1101,7 +1101,7 @@ signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCa
 
 	printf("\r\n%s ========================> 1.6", __FUNCTION__);
 
-	liret = SelectFile(aiddev, 0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev, 0x3f01, smartCardInFunc);
 	if (liret != 0)
 		return -6;
 
@@ -1165,7 +1165,7 @@ signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCa
  * Return
  *
  */
-signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc)
+signed int ItexReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc)
 {
 	signed int liret;
 	unsigned int rlen;
@@ -1174,7 +1174,7 @@ signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCard
 	liret = smartCardInFunc->cardPostion2Slot(&aiddev, CP_TOP);
 	if (liret != 0)
 		return -1;
-	liret = SelectFile(aiddev, 0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev, 0x3f01, smartCardInFunc);
 	if (liret != 0)
 		return -6;
 	memcpy(strComm, "0084000008", 10);
@@ -1192,7 +1192,7 @@ signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCard
 	if (liret != 0)
 		return -5;
 
-	liret = SelectFile(aiddev, 0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev, 0x3f01, smartCardInFunc);
 	if (liret != 0)
 		return -6;
 
@@ -1245,7 +1245,7 @@ signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCard
 		  iOffset: file's quantity 
 		  iLen: file's length   
  */
-signed int ReadRecord(int aiddev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc)
+signed int ItexReadRecord(int aiddev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc)
 {
 	signed int liret;
 	unsigned char strTemp[128] = {0}, strCommand[128] = {0};

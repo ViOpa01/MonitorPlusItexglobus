@@ -273,14 +273,14 @@ int ReadUserCard(unsigned char *inData,unsigned char *outData, const SmartCardIn
 	
 //////////////////////////////////////////////////////////////////////////
 
-	liret = IsSysCard(aiddev, smartCardInFunc);
+	liret = ItexIsSysCard(aiddev, smartCardInFunc);
 
 	if (liret!=0)
 		return -3;
 
 	printf("%s -------------------------> 8\r\n", __FUNCTION__);
 
-	liret = InternalAuth(aiddev, smartCardInFunc);
+	liret = ItexInternalAuth(aiddev, smartCardInFunc);
 
 	if (liret!=0)
 		return -4;
@@ -296,14 +296,14 @@ int ReadUserCard(unsigned char *inData,unsigned char *outData, const SmartCardIn
 
 	printf("%s -------------------------> 10\r\n", __FUNCTION__);
 
-	liret = SelectFile(aiddev,0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev,0x3f01, smartCardInFunc);
 	if (liret!=0)
 		return -6;
 
 	printf("%s -------------------------> 11\r\n", __FUNCTION__);
 
 	//Read File info
-	liret = ReadCard(aiddev,1,12,46,1,StrRetData, smartCardInFunc);
+	liret = ItexReadCard(aiddev,1,12,46,1,StrRetData, smartCardInFunc);
 	if (liret!=0)
 		return -7;
 
@@ -397,7 +397,7 @@ int ReadUserCard(unsigned char *inData,unsigned char *outData, const SmartCardIn
 	}
 	outData[107]='\0';
 
-	liret = ReadCard(aiddev,2,0,85,1,StrRetData, smartCardInFunc);
+	liret = ItexReadCard(aiddev,2,0,85,1,StrRetData, smartCardInFunc);
 	if (liret!=0)
 		return -7; //03-22
 
@@ -536,12 +536,12 @@ int readUserCard(La_Card_info * userCardInfo, unsigned char *outData, const unsi
 	
 //////////////////////////////////////////////////////////////////////////
 
-	liret = IsSysCard(aiddev, smartCardInFunc);
+	liret = ItexIsSysCard(aiddev, smartCardInFunc);
 
 	if (liret!=0)
 		return -3;
 
-	liret = InternalAuth(aiddev, smartCardInFunc);
+	liret = ItexInternalAuth(aiddev, smartCardInFunc);
 
 	if (liret!=0)
 		return -4;
@@ -553,12 +553,12 @@ int readUserCard(La_Card_info * userCardInfo, unsigned char *outData, const unsi
 	if (liret!=0)
 		return -35;
 
-	liret = SelectFile(aiddev,0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev,0x3f01, smartCardInFunc);
 	if (liret!=0)
 		return -6;
 
 	//Read File info
-	liret = ReadCard(aiddev,1,12,46,1,StrRetData, smartCardInFunc);
+	liret = ItexReadCard(aiddev,1,12,46,1,StrRetData, smartCardInFunc);
 	if (liret!=0)
 		return -7;
 
@@ -648,7 +648,7 @@ int readUserCard(La_Card_info * userCardInfo, unsigned char *outData, const unsi
 	}
 	outData[107]='\0';
 
-	liret = ReadCard(aiddev,2,0,85,1,StrRetData, smartCardInFunc);
+	liret = ItexReadCard(aiddev,2,0,85,1,StrRetData, smartCardInFunc);
 	if (liret!=0)
 		return -7; //03-22
 
@@ -859,7 +859,7 @@ if (smartCardInFunc->isDebug == 0)
 
 	//LOG_PRINTF(("========================> 2"));
 
-	liret = SelectFile(aiddev,0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev,0x3f01, smartCardInFunc);
 	if (liret!=0)
 		return -6;//03-22
 
@@ -867,7 +867,7 @@ if (smartCardInFunc->isDebug == 0)
 	//LOG_PRINTF(("========================> 2.1"));
 
 
-	liret = ReadRecord(aiddev,3,1,4,0,StrRetData, smartCardInFunc);
+	liret = ItexReadRecord(aiddev,3,1,4,0,StrRetData, smartCardInFunc);
 	if (liret!=0)
 		return -6;//03-22
 
@@ -904,7 +904,7 @@ if (smartCardInFunc->isDebug == 0)
 
 	//LOG_PRINTF(("FIRST AUTH: aiddev = %d, serial: %s", aiddev,  LUserCi.CM_Card_SerNo));
 
-	liret= PurchaseAuth(aiddev, LUserCi.CM_Card_SerNo, smartCardInFunc);
+	liret= ItexPurchaseAuth(aiddev, LUserCi.CM_Card_SerNo, smartCardInFunc);
 	if (liret!=0)
 		return -8;
 
@@ -1019,7 +1019,7 @@ if (smartCardInFunc->isDebug == 0)
 	//LOG_PRINTF("SECOND AUTH: aiddev = %d, serial: %s", aiddev,  LUserCi.CM_Card_SerNo);
 	
 
-	liret= ReturnAuth(aiddev, LUserCi.CM_Card_SerNo, smartCardInFunc);
+	liret= ItexReturnAuth(aiddev, LUserCi.CM_Card_SerNo, smartCardInFunc);
 	if (liret!=0)
 		return -23;//03-22
 
@@ -1122,12 +1122,12 @@ if (smartCardInFunc->isDebug == 0)
 		return -2;//03-22
 
 
-	liret = SelectFile(aiddev,0x3f01, smartCardInFunc);
+	liret = ItexSelectFile(aiddev,0x3f01, smartCardInFunc);
 	if (liret!=0)
 		return -6;//03-22
 
 
-	liret = ReadRecord(aiddev,3,1,4,0,StrRetData, smartCardInFunc);
+	liret = ItexReadRecord(aiddev,3,1,4,0,StrRetData, smartCardInFunc);
 	if (liret!=0)
 		return -6;//03-22
 
@@ -1153,7 +1153,7 @@ if (smartCardInFunc->isDebug == 0)
 //	LUserCi->CP_Remain_Auth = lasql;
 
 	
-	liret= PurchaseAuth(aiddev,LUserCi->CM_Card_SerNo, smartCardInFunc);
+	liret= ItexPurchaseAuth(aiddev,LUserCi->CM_Card_SerNo, smartCardInFunc);
 	if (liret!=0)
 		return -8;
 
@@ -1207,7 +1207,7 @@ if (smartCardInFunc->isDebug == 0)
 //////////////////////////////////////////////////////////////////////////
 
 	//��д��֤
-	liret= ReturnAuth(aiddev,LUserCi->CM_Card_SerNo, smartCardInFunc);
+	liret= ItexReturnAuth(aiddev,LUserCi->CM_Card_SerNo, smartCardInFunc);
 	if (liret!=0)
 		return -23;//03-22
     memset(StrTemp,0xFF,sizeof(StrTemp));  //All 0xFF  Clean the Meter return area

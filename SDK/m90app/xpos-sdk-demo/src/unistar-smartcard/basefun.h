@@ -126,14 +126,14 @@ typedef struct
 //signed int smartCardInFunc->resetCard(int aicdev, unsigned char *adatabuffer);
 void asc2hex(char *ascStr, unsigned int ascLen, unsigned char *hexStr, unsigned int hexLen);
 signed int ItexSendCmd(int aicdev, unsigned int lilen, unsigned char *strCmd, unsigned char iSig, unsigned int *arlen, unsigned char *strRet, const SmartCardInFunc * smartCardInFunc);
-signed int SelectFile(int aicdev, unsigned int iFileID, const SmartCardInFunc * smartCardInFunc);
-signed int ReadCard(int aicdev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc);
-signed int IsSysCard(int aiddev, const SmartCardInFunc * smartCardInFunc);
-signed int InternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc);
-signed int PurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc);
-signed int ReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc);
-signed int ReadRecord(int aiddev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc);
-void BCDToASC(unsigned char * asc_buf, unsigned char * bcd_buf, int n);
+signed int ItexSelectFile(int aicdev, unsigned int iFileID, const SmartCardInFunc * smartCardInFunc);
+signed int ItexReadCard(int aicdev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc);
+signed int ItexIsSysCard(int aiddev, const SmartCardInFunc * smartCardInFunc);
+signed int ItexInternalAuth(int aiddev, const SmartCardInFunc * smartCardInFunc);
+signed int ItexPurchaseAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc);
+signed int ItexReturnAuth(int aiddev, unsigned char *lCM_Card_SerNo, const SmartCardInFunc * smartCardInFunc);
+signed int ItexReadRecord(int aiddev, unsigned int iFileID, unsigned int iOffset, unsigned int iLen, unsigned char iSig, unsigned char *strData, const SmartCardInFunc * smartCardInFunc);
+void ItexBCDToASC(unsigned char * asc_buf, unsigned char * bcd_buf, int n);
 #ifdef __cplusplus
 }
 #endif

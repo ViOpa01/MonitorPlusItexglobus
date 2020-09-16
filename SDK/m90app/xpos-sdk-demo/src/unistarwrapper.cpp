@@ -366,7 +366,7 @@ char iccIsoCommandCB(int slot, APDU_SEND *apduSend, APDU_RESP *apduRecv)
     /*
         apduRecv->LenOut = ret * 2;
 
-        BCDToASC(apduRecv->DataOut, sdkApdu.R_Data, ret);
+        ItexBCDToASC(apduRecv->DataOut, sdkApdu.R_Data, ret);
         printf("Raw Data -> %s\r\n", sdkApdu.R_Data);
         //bcdToAsc((char *)apduRecv->DataOut, sdkApdu.R_Data, ret);
         */
