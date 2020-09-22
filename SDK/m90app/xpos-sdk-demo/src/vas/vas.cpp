@@ -519,6 +519,12 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
         printReceiptLogo(logoFileName);
         printReceiptHeader(record[VASDB_DATE].c_str());
 
+        if(type == ENERGY) {
+            memset(buff, '\0', sizeof(buff));
+            strcpy(buff, record[VASDB_PRODUCT].c_str());
+            UPrint_StrBold(buff, 1, 4, 1);
+        }
+
         strcpy(buff, record[VASDB_SERVICE].c_str());
         UPrint_StrBold(buff, 1, 4, 1);
 

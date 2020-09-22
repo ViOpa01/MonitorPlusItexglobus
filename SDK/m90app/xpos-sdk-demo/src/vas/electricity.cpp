@@ -496,7 +496,7 @@ std::string Electricity::getMeterNo(const char* title)
     char number[16] = { 0 };
     std::string prompt;
 
-    if (energyType == PREPAID_TOKEN) {
+    if (energyType == PREPAID_TOKEN || energyType == GENERIC_ENERGY) {
         prompt = "Meter No";
     } else if (energyType == POSTPAID) {
         prompt = "Account No";
