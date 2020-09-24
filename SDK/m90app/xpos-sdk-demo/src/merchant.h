@@ -34,6 +34,10 @@ typedef struct MerchantData
     short trans_type;
     short is_prepped;
 
+    char callhome_ip[22];
+    int  callhome_port;
+    int  callhome_time;
+
     char pKey[33];
     
     Network gprsSettings;

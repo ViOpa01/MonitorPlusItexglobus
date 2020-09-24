@@ -69,25 +69,15 @@ static int sendCallHome()
 
 }
 
-unsigned int  getCallhomeTime()
+unsigned int  getCallhomeTime(const int cTime)
 {
-    unsigned int callhomeTime = 1 * 60 * 60 * 1000;
+    unsigned int callhomeTime = 0;
 
-    /*
-    MerchantParameters parameters;
-    int tm = 0;
-
-    memset(&parameters, 0x00, sizeof(MerchantParameters));
-    if (getParameters(&parameters))
-	{
-		printf("Error getting parameters\n");
-		return callhomeTime;
-	}
-
-    tm = atoi(parameters.callHomeTime) * 60 * 60 * 1000;
-
-    return tm ? callhomeTime : tm;
-    */
+    if(cTime > 0) {
+        callhomeTime = cTime * 60 * 1000;
+    } else {
+        callhomeTime = 60 * 60 * 1000;
+    }
    
     return callhomeTime;
 }
@@ -102,7 +92,7 @@ void processCallHomeAsync()
     memset(&mParam, 0x00, sizeof(MerchantData));
 	readMerchantData(&mParam);
 
-	unsigned int tick = Sys_TimerOpen(getCallhomeTime());
+	unsigned int tick = Sys_TimerOpen(getCallhomeTime(mParam.callhome_time));
 
     while (1)
     {
@@ -126,7 +116,7 @@ void processCallHomeAsync()
 
             // 3. reset time
             resetTimer :
-            tick = Sys_TimerOpen(getCallhomeTime());
+            tick = Sys_TimerOpen(getCallhomeTime(mParam.callhome_time));
 		}
 
     }

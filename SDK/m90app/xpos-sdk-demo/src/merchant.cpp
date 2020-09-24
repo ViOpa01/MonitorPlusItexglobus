@@ -93,7 +93,7 @@ static short parseJsonFile(char *buff, cJSON **parsed)
     if(cJSON_IsNumber(status))
     {
         ret = status->valueint;
-        printf("Parameter status : %d\n", status->valueint);
+        // printf("Parameter status : %d\n", status->valueint);
 
     }
 
@@ -227,6 +227,12 @@ static int saveMerchantDataXml(const char* merchantXml, const int size)
         ip_and_port_plain.append(ezxml_child(tran, "POSVASPUBLIC")->txt);
         // printf("ip and port plain : %s\n", ezxml_child(tran, "POSVASPUBLIC")->txt);
 
+        merchant.callhome_port = atoi(ezxml_child(tran, "CallhomePosvasPort")->txt);
+        // printf("Callhome port : %d\n", merchant.callhome_port);
+
+        strncpy(merchant.callhome_ip, ezxml_child(tran, "CallhomePosvasIp")->txt, sizeof(merchant.callhome_ip) - 1);
+        // printf("Callhome ip : %s\n", merchant.callhome_ip);
+
 
     } else if(strcmp(merchant.platform_label, "EPMS") == 0)
     {
@@ -239,7 +245,16 @@ static int saveMerchantDataXml(const char* merchantXml, const int size)
 
         ip_and_port_plain.append(ezxml_child(tran, "EPMSPUBLIC")->txt);
         // printf("ip and port plain : %s\n", ezxml_child(tran, "EPMSPUBLIC")->txt);
+
+        merchant.callhome_port = atoi(ezxml_child(tran, "CallhomePort")->txt);
+        // printf("Callhome port : %d\n", merchant.callhome_port);
+
+        strncpy(merchant.callhome_ip, ezxml_child(tran, "CallhomeIp")->txt, sizeof(merchant.callhome_ip) - 1);
+        // printf("Callhome ip : %s\n", merchant.callhome_ip);
     }
+
+    merchant.callhome_time = atoi(ezxml_child(tran, "CallhomeTime")->txt);
+    // printf("Callhome time : %d\n", merchant.callhome_time);
 
     pos = ip_and_port.find(';');
     strncpy(merchant.nibss_ip, ip_and_port.substr(0, pos).c_str(), sizeof(merchant.nibss_ip) - 1);
@@ -427,6 +442,27 @@ int readMerchantData(MerchantData* merchant)
         strncpy(merchant->pKey, nextTag->valuestring, sizeof(merchant->pKey) - 1);
     }
 
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "callhome_ip");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        strncpy(merchant->callhome_ip, nextTag->valuestring, sizeof(merchant->callhome_ip) - 1);
+        // printf("Callhome ip : %s\n", merchant->callhome_ip);
+    }
+
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "callhome_port");    // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        merchant->callhome_port = nextTag->valueint;
+        // printf("Callhome port : %d\n", merchant->callhome_port);
+    }
+
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "callhome_time");    // Int
+    if(cJSON_IsNumber(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        merchant->callhome_time = nextTag->valueint;
+        // printf("Callhome time : %d\n", merchant->callhome_time);
+    }
+
     cJSON_Delete(json);
 
     return 0;
@@ -475,6 +511,11 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "trans_type", cJSON_CreateNumber(merchant->trans_type));
 
     cJSON_AddItemToObject(requestJson, "plain_key", cJSON_CreateString(merchant->pKey));
+
+    cJSON_AddItemToObject(requestJson, "callhome_ip", cJSON_CreateString(merchant->callhome_ip));
+    cJSON_AddItemToObject(requestJson, "callhome_port", cJSON_CreateNumber(merchant->callhome_port));
+    cJSON_AddItemToObject(requestJson, "callhome_time", cJSON_CreateNumber(merchant->callhome_time));
+
 
 
 

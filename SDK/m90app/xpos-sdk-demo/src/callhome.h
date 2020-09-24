@@ -2,7 +2,7 @@
 #define _CALLHOME_INCLUDED_
 
 void processCallHomeAsync();
-unsigned int getCallhomeTime();
+unsigned int getCallhomeTime(const int cTime);
 void processCallHome();
 
 

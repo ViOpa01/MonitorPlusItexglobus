@@ -887,7 +887,16 @@ void sdk_main_page()
 	MerchantData merchantData;
 	memset(&merchantData, 0x00, sizeof(MerchantData));
 
-	unsigned int tick = Sys_TimerOpen(getCallhomeTime());
+
+	readMerchantData(&merchantData);
+
+	// if (readMerchantData(&merchantData))
+	// {
+	// 	gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
+	// 	goto BEGIN;
+	// }
+
+	unsigned int tick = Sys_TimerOpen(getCallhomeTime(merchantData.callhome_time));
 
 BEGIN :
 
@@ -906,13 +915,6 @@ BEGIN :
 
 	gui_post_message(GUI_GUIPAINT, 0 , 0);
 
-	readMerchantData(&merchantData);
-
-	// if (readMerchantData(&merchantData))
-	// {
-	// 	gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
-	// 	goto BEGIN;
-	// }
 
 	while(1){
 
@@ -1015,7 +1017,6 @@ BEGIN :
 			}
 		}	
 
-
 		// sending callhome
 		if (Sys_TimerCheck(tick) <= 0)	{
 
@@ -1023,7 +1024,8 @@ BEGIN :
 			uiCallHome();
 
 			// 2. reset time
-			tick = Sys_TimerOpen(getCallhomeTime());
+			tick = Sys_TimerOpen(getCallhomeTime(merchantData.callhome_time));
+			goto BEGIN;
 		}
 	}
 }
@@ -1038,7 +1040,7 @@ void sdk_main_page()
 	char time_last[20];
 	int i;
 
-	unsigned int tick = Sys_TimerOpen(getCallhomeTime());
+	unsigned int tick = Sys_TimerOpen(getCallhomeTime(5));
 
 BEGIN :
 	
@@ -1134,7 +1136,7 @@ BEGIN :
 			uiCallHome();
 
 			// 2. reset time
-			tick = Sys_TimerOpen(getCallhomeTime());
+			tick = Sys_TimerOpen(getCallhomeTime(5));
     	}
 
 		Sys_GetDateTime(time_cur);

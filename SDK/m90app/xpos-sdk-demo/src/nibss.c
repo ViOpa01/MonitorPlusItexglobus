@@ -722,6 +722,10 @@ short uiCallHome(void)
     memcpy(networkMangement.sessionKey.clearKey, sessionKey, strlen(sessionKey));
 
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
+
+    // Reset callhome IP and Port
+    strncpy(netParam.host, mParam.callhome_ip, strlen(mParam.callhome_ip));
+	netParam.port = mParam.callhome_port;
     
     addCallHomeData(&networkMangement);
 
@@ -783,7 +787,7 @@ short uiHandshake(void)
     }
 
     if(readMerchantData(&mParam)) return -2;
-
+    
     if (isDevMode(CURRENT_PLATFORM)) {
         strncpy(mParam.tid, tid, sizeof(mParam.tid));
     }
@@ -864,7 +868,10 @@ short uiHandshake(void)
 
     addCallHomeData(&networkMangement);
 
-   
+    // Reset callhome IP and Port
+    strncpy(netParam.host, mParam.callhome_ip, strlen(mParam.callhome_ip));
+	netParam.port = mParam.callhome_port;
+
     for (i = 0; i < maxRetry; i++)
     {
         if (!sCallHome(&networkMangement, &netParam))
