@@ -586,7 +586,7 @@ int bindSmartCardApi(SmartCardInFunc *smartCardInFunc)
     smartCardInFunc->printCustomerCardInfoCb = printCustomerCardInfo;
     smartCardInFunc->removeCustomerCardCb = removeCustomerCard;
     smartCardInFunc->detectSmartCardCb = detectSmartCard;
-    //smartCardInFunc->isDebug = 1; // only for development purpose
+    smartCardInFunc->isDebug = 0; // only for development purpose
 
     return 0;
 }

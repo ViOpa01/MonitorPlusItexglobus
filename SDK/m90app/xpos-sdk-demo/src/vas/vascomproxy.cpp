@@ -36,7 +36,7 @@ std::string vasApiKey();
 
 int vasPayloadGenerator(char* auxPayload, const size_t auxPayloadSize, const Eft* context);
 
-Postman::Postman() : vas("vas.itexapp.com")     // staging is staging.itexapp.com
+Postman::Postman() : vas("vas.itexapp.com")     // staging : staging.itexapp.com, live : vas.itexapp.com, test : baseflat.itexapp.com
 {
 
 }
@@ -158,7 +158,7 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
 	strncpy(netParam.title, "vas", 10);
     netParam.isHttp = 1;
     netParam.isSsl = 0;
-    netParam.port = 80;   // staging 8028, live 80
+    netParam.port = 80;   // staging 8028, live 80, test 8029
     netParam.endTag = "";  // I might need to comment it out later
 
 
@@ -177,6 +177,13 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
         getFormattedDateTime(timestamp, sizeof(timestamp));
         timestamp[16] = '\0';
 
+        /*
+        // Static Authorization
+        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Authorization: %s\r\n", "IISYSGROUP c1e750cf89b05b0fc56eecf6fc25cce85e2bb8e0c46d7bfed463f6c6c89d4b8e");
+        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "sysid: %s\r\n", "ee2dadd1e684032929a2cea40d1b9a2453435da4f588c1ee88b1e76abb566c31");
+        */
+
+        // Dynamic Authorization
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Authorization: %s\r\n", generateRequestAuthorization(body, timestamp).c_str());
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Username: itex\r\n");
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Vend-Type: %s\r\n", vasOrganizationName());
@@ -282,6 +289,12 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
         getFormattedDateTime(timestamp, sizeof(timestamp));
         timestamp[16] = '\0';
 
+        /*
+        // Static Authorization
+        jsonReq("headers")("Authorization") = "IISYSGROUP c1e750cf89b05b0fc56eecf6fc25cce85e2bb8e0c46d7bfed463f6c6c89d4b8e";
+        jsonReq("headers")("sysid") = "ee2dadd1e684032929a2cea40d1b9a2453435da4f588c1ee88b1e76abb566c31";
+        */
+        // Dynamic Authorization
         jsonReq("headers")("Authorization") = generateRequestAuthorization(body, timestamp);
         jsonReq("headers")("Username") = "itex";
         jsonReq("headers")("Vend-Type") = vasOrganizationName();

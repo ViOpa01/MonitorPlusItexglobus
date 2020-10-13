@@ -1024,7 +1024,7 @@ BEGIN :
 			uiCallHome();
 
 			// 2. reset time
-			tick = Sys_TimerOpen(getCallhomeTime(merchantData.callhome_time));
+			tick = Sys_TimerOpen(getCallhomeTime(120/*merchantData.callhome_time*/));
 			goto BEGIN;
 		}
 	}

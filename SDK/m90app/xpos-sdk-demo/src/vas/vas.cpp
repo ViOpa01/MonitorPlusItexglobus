@@ -429,6 +429,22 @@ void printCashio(std::map<std::string, std::string> &record)
     } 
 }
 
+void printTokenList(const char* token, const char* description, std::map<std::string, std::string> &record) {
+
+    if(!record[token].empty() && !record[description].empty()) {
+        char buff[128] = {'\0'};
+        UPrint_SetFont(8, 2, 2);
+
+        sprintf(buff, "***%s***", record[description].c_str());
+        UPrint_StrBold(buff, 1, 1, 1);
+
+        memset(buff, '\0', sizeof(buff));
+        strncpy(buff, record[token].c_str(), record[token].length());
+        UPrint_StrBold(buff, 1, 4, 1);
+        printDottedLine();
+    }
+}
+
 void printElectricity(std::map<std::string, std::string> &record)
 {
     const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_ADDR, VASDB_BENEFICIARY_PHONE
@@ -445,20 +461,37 @@ void printElectricity(std::map<std::string, std::string> &record)
         if (record.find(keys[i]) != record.end()) {
 
             if(!strcmp("TOKEN", labels[i])) {
-                char buff[80] = {'\0'};
 
+                if(!record["token1"].empty() || !record["token2"].empty() || !record["token3"].empty()) {
+                    
+                    printDottedLine();
+                    if(!record["token1"].empty() && !record["token1_desc"].empty()) {
+                       printTokenList("token1", "token1_desc", record);
+                    }
 
-                printDottedLine();
-                UPrint_SetFont(8, 2, 2);
+                    if(!record["token2"].empty() && !record["token2_desc"].empty()) {
+                       printTokenList("token2", "token2_desc", record);
+                    }
 
-                strncpy(buff, "**Token**", 9);
-                UPrint_StrBold(buff, 1, 1, 1);
+                    if(!record["token3"].empty() && !record["token3_desc"].empty()) {
+                       printTokenList("token3", "token3_desc", record);
+                    }
 
-                memset(buff, '\0', sizeof(buff));
-                strncpy(buff, record[keys[i]].c_str(), record[keys[i]].length());
-                UPrint_StrBold(buff, 1, 4, 1);
-                printDottedLine();
+                } else {
+                    char buff[128] = {'\0'};
 
+                    printDottedLine();
+                    UPrint_SetFont(8, 2, 2);
+
+                    strncpy(buff, "**Token**", 9);
+                    UPrint_StrBold(buff, 1, 1, 1);
+
+                    memset(buff, '\0', sizeof(buff));
+                    strncpy(buff, record[keys[i]].c_str(), record[keys[i]].length());
+                    UPrint_StrBold(buff, 1, 4, 1);
+                    printDottedLine();
+                }
+                
             } else {
                 char buff[25] = {'\0'};
                 strncpy(buff, record[keys[i]].c_str(), sizeof(buff) - 1);

@@ -224,7 +224,8 @@ static int _connect_server_func_proc_async()
 		ret = 1;
 	}
 	else {
-		sprintf(msg , "Connecting(%d)" , num);
+		// sprintf(msg , "Connecting(%d)" , num);
+		sprintf(msg , "Connecting...");
 		LOG_PRINTF("%s \n", msg);
 	}
 
@@ -247,7 +248,8 @@ static int _connect_server_func_proc()
 		ret = 1;
 	}
 	else if(m_connect_exit == 0){
-		sprintf(msg , "Connecting(%d)" , num);
+		// sprintf(msg , "Connecting(%d)" , num);
+		sprintf(msg , "Connecting...");
 		comm_page_set_page("Http", msg , 0);
 	}
 	else{
@@ -300,7 +302,8 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	m_connect_exit = 0;
 	m_connect_time = i + 1;
 
-	sprintf(tmp, "Connecting...(%d)", i + 1);
+	// sprintf(tmp, "Connecting...(%d)", i + 1);
+	sprintf(tmp, "Connecting...");
 
 	if(netParam->async) {
 		LOG_PRINTF("%s : %s\n", netParam->title, tmp);
@@ -491,7 +494,8 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 				num = Sys_TimerCheck(tick1)/1000;
 				num = num < 0 ? 0 : num;
 
-				sprintf(msg , "%s...(%d)" , "Receiving" , num);
+				// sprintf(msg , "%s...(%d)" , "Receiving" , num);
+				sprintf(msg , "Receiving...");
 
 				comm_page_set_page(netParam->title , msg , 0);
 				ret = comm_page_get_exit();

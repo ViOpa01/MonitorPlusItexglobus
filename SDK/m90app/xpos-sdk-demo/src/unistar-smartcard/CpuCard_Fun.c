@@ -410,7 +410,7 @@ int ReadUserCard(unsigned char *inData,unsigned char *outData, const SmartCardIn
 	sprintf(StrTemp, "%-2X",LUserCi.CF_MeterStatus);
 	memcpy(outData+107,StrTemp,2);
 	//by jarod 2012.04.12
-	if (StrRetData[28]==0xff && smartCardInFunc->isDebug)
+	if (StrRetData[28]==0xff && smartCardInFunc->isDebug == 0)
 	{
 		return -9;
 

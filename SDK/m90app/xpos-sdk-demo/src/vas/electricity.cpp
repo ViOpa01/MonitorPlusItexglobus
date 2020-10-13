@@ -481,6 +481,28 @@ VasStatus Electricity::processPaymentResponse(iisys::JSObject& json, Service ser
         }
     }
 
+    iisys::JSObject tokenList;
+    iisys::JSObject tokenTemp = json("tokenList");
+    if(!tokenTemp.isNull()) {
+
+        if(tokenTemp.isObject()) {
+            tokenList = tokenTemp;
+        }else if(tokenTemp.isString()) {
+            tokenList.load(tokenTemp.getString());
+        }
+
+        const char* tokenKeys[] = {"token1", "token2", "token3", "token1_desc", "token2_desc", "token3_desc", NULL};
+
+        for (size_t i = 0; tokenKeys[i] != NULL; ++i) {
+            temp = tokenList(tokenKeys[i]);
+            if (!temp.isNull() && !temp.getString().empty()) {
+                data(tokenKeys[i]) = temp;
+                printf("%s : %s\n",tokenKeys[i], data(tokenKeys[i]).getString().c_str());
+            }
+        }
+
+    }
+
     if (!data.isNull())
         paymentResponse.serviceData = data.getString();
 
