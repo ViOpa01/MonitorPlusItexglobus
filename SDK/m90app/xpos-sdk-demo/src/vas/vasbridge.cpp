@@ -4,6 +4,7 @@
 #include "vas.h"
 #include "vasbridge.h"
 #include "virtualtid.h"
+#include "../auxPayload.h"
 
 extern "C" {
 #include "util.h"
@@ -30,7 +31,7 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
     readMerchantData(&mParam);
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
-    if (trxContext->switchMerchant) {
+    if (trxContext->vas.switchMerchant) {
         if (swithMerchantToVas(trxContext) < 0)
             return ret;
     } else {
@@ -58,6 +59,7 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
     strcpy(netParam.title, transTypeToTitle(EFT_PURCHASE));
     pthread_create(&thread, NULL, preDial, &mParam.gprsSettings);
 
+    trxContext->vas.genAuxPayload = genAuxPayloadString;
     sprintf(trxContext->amount, "%012lu", amount);
     if((ret = performEft(trxContext, &netParam, transTypeToTitle(EFT_PURCHASE))) < 0) {
         return ret;

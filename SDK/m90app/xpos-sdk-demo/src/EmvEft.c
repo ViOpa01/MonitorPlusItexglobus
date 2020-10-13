@@ -965,10 +965,10 @@ int separatePayload(NetWorkParameters *netParam, Eft *eft)
 	netParam->responseSize = primaryLength + 2;
 	netParam->response[netParam->responseSize] = '\0';
 
-    if (auxLength < sizeof(eft->auxResponse)) {
-        memcpy(eft->auxResponse, response + 4 + primaryLength, auxLength);
+    if (auxLength < sizeof(eft->vas.auxResponse)) {
+        memcpy(eft->vas.auxResponse, response + 4 + primaryLength, auxLength);
     } else {
-        printf("Aux buffer size (%zu) not enough for received data (%d)", sizeof(eft->auxResponse), auxLength);
+        printf("Aux buffer size (%zu) not enough for received data (%d)", sizeof(eft->vas.auxResponse), auxLength);
         return -3;
     }
 
@@ -991,10 +991,10 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 	// unsigned char response[2048];
 	enum CommsStatus commsStatus = CONNECTION_FAILED;
 
-	if (eft->isVasTrans && eft->genAuxPayload && !isReversal(eft) /* && !isManualReversal() */) {
+	if (eft->isVasTrans && eft->vas.genAuxPayload && !isReversal(eft) /* && !isManualReversal() */) {
 		char auxPayload[4096];
 
-        eft->genAuxPayload(auxPayload, sizeof(auxPayload), eft);
+        eft->vas.genAuxPayload(auxPayload, sizeof(auxPayload), eft);
 
 		if (auxPayload[0]) { // prepend aux payload 
 			size_t secLength = strlen(auxPayload);
@@ -1669,7 +1669,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 
 	if (card_out->pin_len) {
-		if (eft->switchMerchant) {
+		if (eft->vas.switchMerchant) {
 			copyVirtualPinBlock(eft, card_out->pin_block);
 			
 		} else {

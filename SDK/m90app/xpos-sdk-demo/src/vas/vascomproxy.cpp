@@ -12,6 +12,7 @@
 #include "EmvDBUtil.h"
 #include "EftDbImpl.h"
 #include "EmvDB.h"
+#include "../auxPayload.h"
 
 #include "vasdb.h"
 
@@ -25,16 +26,12 @@ extern "C" {
 extern "C" int bin2hex(unsigned char *pcInBuffer, char *pcOutBuffer, int iLen);
 extern void getFormattedDateTime(char* dateTime, size_t len);
 
-// extern void prepareTransactionAmmounts(unsigned long long inAmount,
-//     unsigned long long inCashbackAmount,
-//     unsigned char* outAmountBcd,
-//     unsigned char* outCashbackAmountBcd);
-
 const char* vasOrganizationName();
 const char* vasOrganizationCode();
 std::string vasApiKey();
 
-int vasPayloadGenerator(char* auxPayload, const size_t auxPayloadSize, const Eft* context);
+int vasPayloadGenerator(void* jsobject, void* data, const void*);
+
 
 Postman::Postman() : vas("vas.itexapp.com")     // staging : staging.itexapp.com, live : vas.itexapp.com, test : baseflat.itexapp.com
 {
@@ -118,7 +115,7 @@ std::string Postman::generateRequestAuthorization(const std::string& requestBody
         token = (char*)base64_encode((const unsigned char*)key.c_str(), key.length(), &i);
     }
 
-    printf("Token: %s\n", token);
+    // printf("Token: %s\n", token);
 
     if (!token) {
         return std::string();
@@ -264,7 +261,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
     std::string body;
 
     memset((void*)&cardPurchase->trxContext, 0, sizeof(Eft));
-    cardPurchase->trxContext.switchMerchant = itexIsMerchant() ? 0 : 1;
+    cardPurchase->trxContext.vas.switchMerchant = itexIsMerchant() ? 0 : 1;
    
     strcpy(cardPurchase->trxContext.dbName, VASDB_FILE);
     strcpy(cardPurchase->trxContext.tableName, VASCARDTABLENAME);
@@ -311,8 +308,9 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
 
     jsonReq("terminalId") = getDeviceTerminalId();
 
-    cardPurchase->trxContext.genAuxPayload = vasPayloadGenerator;
-    cardPurchase->trxContext.callbackdata = (void*)&jsonReq;
+    if (addPayloadGenerator(&cardPurchase->trxContext, vasPayloadGenerator, (void*)&jsonReq) != 0) {
+        return status;
+    }
     
     strncpy(cardPurchase->trxContext.echoData, cardPurchase->refcode.c_str(), sizeof(cardPurchase->trxContext.echoData) - 1);
 
@@ -321,18 +319,18 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
     }
 
     cardPurchase->primaryIndex = cardPurchase->trxContext.atPrimaryIndex;
-    if (cardPurchase->trxContext.switchMerchant) {
+    if (cardPurchase->trxContext.vas.switchMerchant) {
         cardPurchase->purchaseTid = Payvice().object(Payvice::VIRTUAL)(Payvice::TID).getString();
     } else {
         cardPurchase->purchaseTid = getDeviceTerminalId();
     }
 
-    if (cardPurchase->trxContext.auxResponse[0]) {
+    if (cardPurchase->trxContext.vas.auxResponse[0]) {
         // Extra check to assert that card tranaction was successful?
         if (!strcmp(cardPurchase->trxContext.responseCode, "00") && cardPurchase->trxContext.transType == EFT_PURCHASE) {
             status.error = NO_ERRORS;
         }
-        status.message = cardPurchase->trxContext.auxResponse;
+        status.message = cardPurchase->trxContext.vas.auxResponse;
         return status;
     }
     
@@ -380,20 +378,26 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const 
     return status;
 }
 
-int vasPayloadGenerator(char* auxPayload, const size_t auxPayloadSize, const struct Eft* context)
+int vasPayloadGenerator(void* jsobject, void* data, const void *eft)
 {
-    // iisys::JSObject* jsonReq = static_cast<iisys::JSObject*>(context->callbackdata);
-    
-    // (*jsonReq)("journal") = getJournal(context);
-    // strncpy(auxPayload, jsonReq->dump().c_str(), auxPayloadSize -1 );
+    //TODO later niyen
+    // if (isReversal(context) || isManualReversal()) {
+    //     return 0;
+    // }
 
-    iisys::JSObject* json = static_cast<iisys::JSObject*>(context->callbackdata);
-    iisys::JSObject jsonReq;
-    
-    (*json)("journal") = getJournal(context);
-    (jsonReq)("vasData") = *json;
+    Eft *context = (Eft*)eft;
 
-    strncpy(auxPayload, jsonReq.dump().c_str(), auxPayloadSize -1 );
+    iisys::JSObject* json = static_cast<iisys::JSObject*>(jsobject);
+    iisys::JSObject* jsonReq = static_cast<iisys::JSObject*>(data);
+    
+    (*jsonReq)("journal") = getJournal(context);
+    (*json)("vasData") =  *jsonReq;
+
+    /*
+    "transMethod": "Cash",
+    "vasCategory": "Cash In / Cash Out",
+    "vasProduct": "TRANSFER",
+    */
 
     return 0;
 

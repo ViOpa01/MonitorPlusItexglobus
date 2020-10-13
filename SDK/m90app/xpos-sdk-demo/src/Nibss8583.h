@@ -22,6 +22,18 @@ extern "C"
 #define  INPUT_ONLINE_RESULT_REFERRAL     0x40  // Result_referral
 #define  INPUT_ONLINE_ARC_REFERRAL        0x80  // AuthResp_Referral
 
+typedef int (*AuxPayloadGenerator)(void* jsobject, void* data, const void* eft);
+typedef int (*GenAuxPayLoad)(char* auxPayLoad, const size_t auxPayloadSize, const void * eft);
+
+typedef struct Vas
+{
+    AuxPayloadGenerator auxPayloadGenerators[8];
+    GenAuxPayLoad genAuxPayload;
+    void* callbackdata[8];
+    char auxResponse[0x1000 * 2];
+    char customRefCode[1024];
+    int  switchMerchant;
+} Vas;
 
 typedef struct IccDataT
 {
@@ -197,12 +209,8 @@ typedef struct Eft
     char dateAndTime[32];
     
     // Vas specific additions
-    int (*genAuxPayload)(char auxPayload[], const size_t auxPayloadSize, const struct Eft*);
-    void* callbackdata;
-    char auxResponse[0x1000 * 2];
-    char customRefCode[1024];
-    int  switchMerchant;
     short isVasTrans;
+    Vas vas;
 
 } Eft;
 
