@@ -256,12 +256,15 @@ static int saveMerchantDataXml(const char* merchantXml, const int size)
             // printf("ip and port plain : %s\n", ezxml_child(tran, "POSVASPUBLIC")->txt);
         }
 
-        // merchant.callhome_port = atoi(ezxml_child(tran, "CallhomePosvasPort")->txt);
-        // printf("Callhome port : %d\n", merchant.callhome_port);
+        if(ezxml_child(tran, "CallhomePosvasIp")) {
+            strncpy(merchant.callhome_ip, ezxml_child(tran, "CallhomePosvasIp")->txt, sizeof(merchant.callhome_ip) - 1);
+            // printf("Callhome ip : %s\n", merchant.callhome_ip);
+        }
 
-        // strncpy(merchant.callhome_ip, ezxml_child(tran, "CallhomePosvasIp")->txt, sizeof(merchant.callhome_ip) - 1);
-        // printf("Callhome ip : %s\n", merchant.callhome_ip);
-
+        if(ezxml_child(tran, "CallhomePosvasPort")) {
+            merchant.callhome_port = atoi(ezxml_child(tran, "CallhomePosvasPort")->txt);
+            // printf("Callhome port : %d\n", merchant.callhome_port);
+        }
 
     } else if(strcmp(merchant.platform_label, "EPMS") == 0)
     {
@@ -279,11 +282,21 @@ static int saveMerchantDataXml(const char* merchantXml, const int size)
             // printf("ip and port plain : %s\n", ezxml_child(tran, "EPMSPUBLIC")->txt);
         }
 
-        // merchant.callhome_port = atoi(ezxml_child(tran, "CallhomePort")->txt);
-        // printf("Callhome port : %d\n", merchant.callhome_port);
+        if(ezxml_child(tran, "CallhomeIp")) {
+            strncpy(merchant.callhome_ip, ezxml_child(tran, "CallhomeIp")->txt, sizeof(merchant.callhome_ip) - 1);
+            // printf("Callhome ip : %s\n", merchant.callhome_ip);
+        }
 
-        // strncpy(merchant.callhome_ip, ezxml_child(tran, "CallhomeIp")->txt, sizeof(merchant.callhome_ip) - 1);
-        // printf("Callhome ip : %s\n", merchant.callhome_ip);
+        if(ezxml_child(tran, "CallhomePort")) {
+            merchant.callhome_port = atoi(ezxml_child(tran, "CallhomePort")->txt);
+            // printf("Callhome port : %d\n", merchant.callhome_port);
+        }
+
+    }
+
+    if(ezxml_child(tran, "CallhomeTime")) {
+        merchant.callhome_time = atoi(ezxml_child(tran, "CallhomeTime")->txt);
+        // printf("Callhome time : %d\n", merchant.callhome_time);
     }
 
     pos = ip_and_port.find(';');
@@ -300,21 +313,6 @@ static int saveMerchantDataXml(const char* merchantXml, const int size)
 
     merchant.nibss_plain_port = atoi(ip_and_port_plain.substr(pos + 1, std::string::npos).c_str());
     // printf("plain port is : %d\n", merchant.nibss_plain_port);
-
-    if(ezxml_child(tran, "CallhomePort")) {
-        merchant.callhome_port = atoi(ezxml_child(tran, "CallhomePort")->txt);
-        // printf("Callhome port : %d\n", merchant.callhome_port);
-    }
-
-    if(ezxml_child(tran, "CallhomeIp")) {
-        strncpy(merchant.callhome_ip, ezxml_child(tran, "CallhomeIp")->txt, sizeof(merchant.callhome_ip) - 1);
-        // printf("Callhome ip : %s\n", merchant.callhome_ip);
-    }
-
-    if(ezxml_child(tran, "CallhomeTime")) {
-        merchant.callhome_time = atoi(ezxml_child(tran, "CallhomeTime")->txt);
-        // printf("Callhome time : %d\n", merchant.callhome_time);
-    }
 
     if(ezxml_child(tran, "accountSelection")) {
         merchant.account_selection = atoi(ezxml_child(tran, "accountSelection")->txt);

@@ -24,6 +24,8 @@ static int m_connect_exit = 0;
 static int m_comm_sock = 1;
 
 extern isIdleState;
+
+void resetCallHomeIpAndPort(NetWorkParameters *netParam, MerchantData *mParam);
 typedef int (*PrintSycnCb)(char *title, char* msg, char* leftButton, char* rightButton, int timeover);
 
 static void networkErrorLogger(const int isAsync, const char* title, const char* msg, const int timeout, PrintSycnCb callback)
@@ -726,4 +728,9 @@ short gprsInit(void)
 	}
 
 	return result;
+}
+
+void resetCallHomeIpAndPort(NetWorkParameters *netParam, MerchantData *mParam) {
+	strncpy(netParam->host, mParam->callhome_ip, strlen(mParam->callhome_ip));
+	netParam->port = mParam->callhome_port;
 }
