@@ -46,6 +46,8 @@
 #define NIBSS_HOST "197.253.19.75"
 #define NIBSS_PORT  5003
 
+extern void resetCallHomeIpAndPort(NetWorkParameters *netParam, MerchantData *mParam);
+
 static void getDateTime(char *yyyymmddhhmmss)
 {
     Sys_GetDateTime(yyyymmddhhmmss);
@@ -724,8 +726,7 @@ short uiCallHome(void)
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
     // Reset callhome IP and Port
-    strncpy(netParam.host, mParam.callhome_ip, strlen(mParam.callhome_ip));
-	netParam.port = mParam.callhome_port;
+    resetCallHomeIpAndPort(&netParam, &mParam);
     
     addCallHomeData(&networkMangement);
 
@@ -869,8 +870,7 @@ short uiHandshake(void)
     addCallHomeData(&networkMangement);
 
     // Reset callhome IP and Port
-    strncpy(netParam.host, mParam.callhome_ip, strlen(mParam.callhome_ip));
-	netParam.port = mParam.callhome_port;
+    resetCallHomeIpAndPort(&netParam, &mParam);
 
     for (i = 0; i < maxRetry; i++)
     {
