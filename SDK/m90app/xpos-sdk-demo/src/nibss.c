@@ -30,6 +30,7 @@
 #include "network.h"
 #include "appInfo.h"
 #include "remoteLogo.h"
+#include "itexFile.h"
 
 
 
@@ -903,8 +904,22 @@ short uiHandshake(void)
     }
 
     printHandshakeReceipt(&mParam);
-;
+
     return 0;
+}
+
+short checkToPrepOnDownload()
+{
+    char fileName[] = "toPrep.ini";    // empty file
+    int ret = UFile_Check(fileName, FILE_PRIVATE);
+
+    printf("UFile_Check ret : %d\n", ret);
+
+    if(ret) return 0;
+
+    uiHandshake();
+    return UFile_Remove(fileName, FILE_PRIVATE);
+    
 }
 
 short autoHandshake(void)

@@ -28,6 +28,7 @@ void app_main()
 	gprsInit(); //net link will have enough time to initialize in the background, we can also add little delay.	
 	Sys_tms_AppBusy(0);
 	EMV_iKernelInit();//Init EMV
+	checkToPrepOnDownload();
 	autoHandshake();
     // pthread_create(&thread, NULL, processCallHomeAsync, NULL);
 	sdk_main_page(); 

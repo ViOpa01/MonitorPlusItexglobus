@@ -1542,7 +1542,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	if (EMVAPI_RET_ARQC == ret)
 	{
-		//gui_messagebox_show("", "Online Request", "", "ok", 0);
+		// gui_messagebox_show("", "Online Request", "", "ok", 0);
 	}
 	else if (EMVAPI_RET_TC == ret)
 	{

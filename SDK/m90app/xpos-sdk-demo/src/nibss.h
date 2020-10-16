@@ -57,6 +57,7 @@ short handleDe39(char * responseCode, char * responseDesc);
 
 void addCallHomeData(NetworkManagement *networkMangement);
 int sCallHomeAsync(NetworkManagement *networkMangement, NetWorkParameters *netParam);
+short checkToPrepOnDownload();
 
 
 
