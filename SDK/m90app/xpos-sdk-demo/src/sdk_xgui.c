@@ -835,7 +835,7 @@ static const st_gui_key_menu _main_menu_def_n[] =
 	{UI_CARD_PAYMENT,		"",	GUI_KEY_1},
 	{UI_CARDLESS_PAYMENT,	"",	GUI_KEY_2},
 	{UI_VAS,				"",	GUI_KEY_3},
-	{SMART_CARD_TEST,		"",	GUI_KEY_4},
+	// {SMART_CARD_TEST,		"",	GUI_KEY_4},
 };
 
 void main_page_show()
@@ -867,12 +867,12 @@ void main_page_show()
 		sprintf(szLine3,"%d.%s",++i,_main_menu_def_n[i-1].name);
 		gui_text_out(0, GUI_LINE_TOP(3), szLine3);
 	}
-	
+	/*
 	if(i!=nMainTotal){
 		sprintf(szLine4,"%d.%s",++i,_main_menu_def_n[i-1].name);
 		gui_text_out(0, GUI_LINE_TOP(4), szLine4);
 	}
-
+	*/
 	gui_end_batch_paint();
 }
 
@@ -880,23 +880,14 @@ void sdk_main_page()
 {
 	st_gui_message pmsg;
 	static int xgui_init_flag = 0;
-	char time_cur[20];
-	char time_last[20];
 	int i;
 	int nMainPages;
 	MerchantData merchantData;
 	memset(&merchantData, 0x00, sizeof(MerchantData));
 
-
 	readMerchantData(&merchantData);
 
-	// if (readMerchantData(&merchantData))
-	// {
-	// 	gui_messagebox_show("MERCHANT", "Error getting merchant details", "", "", 3000);
-	// 	goto BEGIN;
-	// }
-
-	unsigned int tick = Sys_TimerOpen(getCallhomeTime(merchantData.callhome_time));
+	unsigned int tick = Sys_TimerOpen(getCallhomeTime(90/*merchantData.callhome_time*/));
 
 BEGIN :
 
@@ -924,7 +915,7 @@ BEGIN :
 
 				readMerchantData(&merchantData);
 
-				if (merchantData.is_prepped)
+				if (merchantData.is_prepped == 1)
 				{
 					main_page_show();
 				} else {
@@ -936,7 +927,7 @@ BEGIN :
 				
 				readMerchantData(&merchantData);
 
-				if (merchantData.is_prepped)
+				if (merchantData.is_prepped == 1)
 				{
 					for(i=0; i < nMainTotal; i++){
 						if (pmsg.wparam == _main_menu_def_n[i].uKey){
@@ -972,7 +963,7 @@ BEGIN :
 				{
 					readMerchantData(&merchantData);
 
-					if (merchantData.is_prepped)
+					if (merchantData.is_prepped == 1)
 					{
 						main_page_show();
 					} else {
@@ -988,7 +979,7 @@ BEGIN :
 
 					readMerchantData(&merchantData);
 
-					if (merchantData.is_prepped)
+					if (merchantData.is_prepped == 1)
 					{
 						main_page_show();
 					} else {
@@ -1003,7 +994,7 @@ BEGIN :
 
 					readMerchantData(&merchantData);
 
-					if (merchantData.is_prepped)
+					if (merchantData.is_prepped == 1)
 					{
 						main_page_show();
 					} else {
@@ -1024,7 +1015,7 @@ BEGIN :
 			uiCallHome();
 
 			// 2. reset time
-			tick = Sys_TimerOpen(getCallhomeTime(120/*merchantData.callhome_time*/));
+			tick = Sys_TimerOpen(getCallhomeTime(90/*merchantData.callhome_time*/));
 			goto BEGIN;
 		}
 	}
