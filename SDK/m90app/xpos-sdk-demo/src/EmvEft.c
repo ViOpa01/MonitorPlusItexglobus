@@ -778,7 +778,21 @@ static void logNetworkParameters(NetWorkParameters *netWorkParameters)
 	LOG_PRINTF("IsSsl -> %s, IsHttp -> %s\n", netWorkParameters->isSsl ? "YES" : "NO", netWorkParameters->isHttp ? "YES" : "NO");
 }
 
+static int checkIsItexMerchant(MerchantData *mParam)
+{
+    char merchantName[24] = {'\0'};
 
+	if(!mParam->name[0]) return 1;
+	strncpy(merchantName, mParam->name, strlen(mParam->name));
+
+    if (!strncmp(merchantName, "ITEX INTEGRATED", 15)) {
+        return 1;
+    } else if (!strncmp(merchantName, "ITEX INTERGRATED", 16)) {
+        return 1;
+    }
+
+    return 0;
+}
 
 static short isPayCode(const enum SubTransType subTransType)
 {
@@ -809,7 +823,6 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 	MerchantData mParam = {'\0'};
 	MerchantParameters merchantParameters;
 	char sessionKey[33] = {'\0'};
-	char tid[9] = {'\0'};
 	NetWorkParameters netParam;
 	pthread_t thread;
 
@@ -817,6 +830,15 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 	memset(&eft, 0x00, sizeof(Eft));
 
 	readMerchantData(&mParam);
+
+	if(checkIsItexMerchant(&mParam) && subTransType == SUB_NONE)
+	{
+		char msg[64] = {'\0'};
+		sprintf(msg, "%s is dissabled", transTypeToTitle(transType));
+        gui_messagebox_show("MESSAGE", msg, "", "", 0);
+
+		return;
+	}
 
 	eft.transType = transType;
 	eft.fromAccount = DEFAULT_ACCOUNT; //perform eft will update it if needed

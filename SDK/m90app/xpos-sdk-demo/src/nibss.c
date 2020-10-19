@@ -913,8 +913,6 @@ short checkToPrepOnDownload()
     char fileName[] = "toPrep.ini";    // empty file
     int ret = UFile_Check(fileName, FILE_PRIVATE);
 
-    printf("UFile_Check ret : %d\n", ret);
-
     if(ret) return 0;
 
     uiHandshake();
