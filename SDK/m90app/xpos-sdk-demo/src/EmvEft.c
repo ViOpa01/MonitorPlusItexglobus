@@ -405,7 +405,7 @@ short autoReversalInPlace(Eft *eft, NetWorkParameters *netParam)
 	netParam->packetSize = result;
 	memcpy(netParam->packet, packet, netParam->packetSize);
 
-	printf("Last 2 bytes -> %02x%02X\n", netParam->packet[result - 2], netParam->packet[result - 1]);
+	LOG_PRINTF("Last 2 bytes -> %02x%02X\n", netParam->packet[result - 2], netParam->packet[result - 1]);
 
 	for (i = 0; i < maxTry; i++)
 	{
@@ -630,12 +630,12 @@ static short uiGetRrn(char rrn[13])
 	gui_clear_dc();
 	if ((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), rrn, 12, 12, 1, 1000)) != 12)
 	{
-		printf("rrn input failed ret : %d\n", result);
-		printf("rrn %s\n", rrn);
+		LOG_PRINTF("rrn input failed ret : %d", result);
+		LOG_PRINTF("rrn %s", rrn);
 		return result;
 	}
 
-	printf("rrn : %s\n", rrn);
+	LOG_PRINTF("rrn : %s", rrn);
 
 	return 0;
 }
@@ -703,7 +703,7 @@ static short getOriginalDataFromDb(Eft *eft)
 	//Restore current transaction type
 	eft->transType = current;
 
-	printf("OriginalMti -> %s\nFISC -> %s\nOriginal Datetime -> %s\nAuthCode -> %s\n",
+	LOG_PRINTF("OriginalMti -> %s\nFISC -> %s\nOriginal Datetime -> %s\nAuthCode -> %s\n",
 		   eft->originalMti, eft->forwardingInstitutionIdCode, eft->originalYyyymmddhhmmss, eft->authorizationCode);
 
 	return 0; //Success																						   //strncpy(eft.authorizationCode, "", sizeof(eft.authorizationCode)); //add if present.
@@ -727,7 +727,7 @@ static short getReversalReason(Eft *eft)
 
 	switch (option = gui_select_page_ex("Reversal Reason", reversal_option_list, 11, 10000, 0)) // if exit : -1, timout : -2
 	{
-		printf("\nReversal reason\n");
+		LOG_PRINTF("\nReversal reason");
 	case -1:
 	case -2:
 		return -1;
@@ -834,7 +834,7 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 		LOG_PRINTF("Invalid Transactipn Type");
 		return;
 	}
-	
+
 	readMerchantData(&mParam);
 
 	if(checkIsItexMerchant(&mParam) && subTransType == SUB_NONE)
@@ -900,7 +900,7 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 		performEft(&eft, &netParam, transTypeToTitle(transType));
 	} else {
 		if (isPayCode(subTransType)) {
-			printf("PayCode trans mode\n");
+			LOG_PRINTF("PayCode trans mode");
 			strncpy(eft.echoData, PTAD_CODE, strlen(PTAD_CODE));
 			strcpy(netParam.title, payCodeTypeToStr(subTransType));
 			performPayCode(&eft, &netParam, subTransType);
@@ -913,6 +913,17 @@ static short amountRequired(const Eft *eft)
 	if (isBalance(eft) || isReversal(eft))
 		return 0;
 	return 1;
+}
+
+static short generateDE54(Eft *eft, const long long cashbackAmount)
+{
+	if(cashbackAmount > 0)
+	{
+		sprintf(eft->additionalAmount, "%02X40%.3sC%012lld", accountTypeToCode(eft->fromAccount), eft->currencyCode, cashbackAmount);
+		return 0;
+	}
+
+	return -1;
 }
 
 static long long getAmount(Eft *eft, const char *title)
@@ -943,7 +954,9 @@ static long long getAmount(Eft *eft, const char *title)
 		cashbackAmount = inputamount_page("Cashback Amount", maxLen, 90000);
 		if (cashbackAmount <= 0)
 			return -1;
-		sprintf(eft->additionalAmount, "%lld", cashbackAmount);
+		
+		generateDE54(eft, cashbackAmount);
+		// sprintf(eft->additionalAmount, "%lld", cashbackAmount);
 	}
 
 	sprintf(eft->amount, "%012lld", amount);
@@ -1662,7 +1675,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 			char asc[21];
 			unsigned char bcdLen[12];
 
-			printf("Tag 84 len -> %d\n", length);
+			LOG_PRINTF("Tag 84 len -> %d", length);
 
 			tag84Tlv[0] = tag84[0];
 			bytes = 1;
@@ -1682,7 +1695,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 			for (i = 0; i < bytes; i++)
 			{
-				printf("%02X", tag84Tlv[i]);
+				LOG_PRINTF("%02X", tag84Tlv[i]);
 			}
 			puts("\r\n");
 		}
@@ -1721,7 +1734,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	strncpy(eft->cardHolderName, card_out->vChName, strlen(card_out->vChName));
 
-	printf("This is card expiry date : %s\n", card_out->exp_data);
+	LOG_PRINTF("This is card expiry date : %s", card_out->exp_data);
 
 	strcpy(card_info.amt, card_in->amt);
 	strcpy(card_info.title, card_in->title);
@@ -1752,7 +1765,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	
 	result = processPacketOnline(eft, &hostType, netParam);
 
-	printf("\nResult Before IccUpdate -> %d, Icc data len -> %d\n", result, hostType.iccDataBcdLen);
+	LOG_PRINTF("\nResult Before IccUpdate -> %d, Icc data len -> %d", result, hostType.iccDataBcdLen);
 
 	free(card_in);
 	free(card_out);
@@ -1791,7 +1804,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	if (!result && isApprovedResponse(eft->responseCode) && isBalance(eft)) {
 		displayBalance(eft->balance);
-		printf("Balance detail : %s\n", eft->balance);
+		LOG_PRINTF("Balance detail : %s", eft->balance);
 	}
 	
 	if(!eft->isVasTrans)
@@ -1801,7 +1814,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	}
 	
 
-	printf("Result After IccUpdate -> %d\n", result);
+	LOG_PRINTF("Result After IccUpdate -> %d", result);
 
 	return result;
 }

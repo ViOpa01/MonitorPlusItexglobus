@@ -116,8 +116,12 @@ int ctxToInsertMap(std::map<std::string, std::string> &trx, const Eft *eft)
 
     trx[DB_AMOUNT] = formattedAmount;
     if (eft->additionalAmount)
-    {
-        trx[DB_ADDITIONAL_AMOUNT] = eft->additionalAmount;
+    {      
+        size_t index = strlen(eft->additionalAmount)  - 12;
+        strncpy(additionalAmount, &eft->additionalAmount[index], 12);
+        trx[DB_ADDITIONAL_AMOUNT] = additionalAmount;
+
+        // trx[DB_ADDITIONAL_AMOUNT] = eft->additionalAmount;
     }
     MaskPan((char *)eft->pan, maskedPan);
     trx[DB_PAN].assign(maskedPan);

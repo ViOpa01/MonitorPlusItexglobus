@@ -20,6 +20,7 @@
 //internal
 #include "luhn.h"
 #include "paycode.h"
+#include "log.h"
 
 
 //Just for clarity, could have reused yyyymmddhhmmss in eft struct
@@ -50,12 +51,12 @@ static short BuildCardNumber(char* cardNumber, const int cardNumberSize, const c
     memcpy(&cardPan[6], payCode, payCodeLen);
 
     len = strlen(cardPan);
-    printf("Card Pan -> %s\n", cardPan);
+    LOG_PRINTF("Card Pan -> %s", cardPan);
     cardPan[18] = getLuhnDigit(cardPan, len - 1) + '0';
     result = checkLuhn(cardPan, len) ? 0 : -1;
 
     if (result) {
-        printf("Card Pan -> %s\n", cardPan);
+        LOG_PRINTF("Card Pan -> %s", cardPan);
         gui_messagebox_show(payCode, "Error Generating No!", "", "ok", 0);
         return result;
     } 
@@ -70,7 +71,7 @@ short buildCardNumber(char * cardNumber, const int cardNumberSize, const char * 
     short result = BuildCardNumber(cardNumber, cardNumberSize, ASSIGNED_BANK_BIN, payCode);
     
     if (!result) {
-        printf("PayCode -> %s\nBIN -> %s\nCard -> %s", payCode, ASSIGNED_BANK_BIN, cardNumber);
+        LOG_PRINTF("PayCode -> %s\nBIN -> %s\nCard -> %s", payCode, ASSIGNED_BANK_BIN, cardNumber);
     }
 
     return result;
@@ -81,15 +82,13 @@ static short uiGetPayCode(char * payCode, const int payCodeSize)
     int result = -1;
 
     if (payCodeSize < MAX_PAYCODE_LEN) {
-        printf("PayCode buffer size is too small!\n");
+        LOG_PRINTF("PayCode buffer size is too small!");
         return -1;
     }
 
     gui_clear_dc();
 
-    printf("Before InputText function\n");
     result = Util_InputText(GUI_LINE_TOP(0), "ENTER PAYCODE", GUI_LINE_TOP(2), payCode, MIN_PAYCODE_LEN, MAX_PAYCODE_LEN, 1, 0 ,120000);
-    printf("After input text function\n");
 
     if (result <= 0) return -3;
 

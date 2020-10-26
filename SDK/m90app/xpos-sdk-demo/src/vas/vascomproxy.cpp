@@ -251,8 +251,7 @@ VasStatus Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
     return status;
 }
 
-VasStatus
-Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const std::map<std::string, std::string>* headers, CardPurchase* cardPurchase)
+VasStatus Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, const std::map<std::string, std::string>* headers, CardPurchase* cardPurchase)
 {
     VasStatus status(CARD_STATUS_UNKNOWN);
     

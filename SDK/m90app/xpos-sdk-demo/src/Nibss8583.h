@@ -151,7 +151,7 @@ typedef struct Eft
     char aid[32];
     char pan[20];
     char amount[13];
-    char additionalAmount[13];
+    char additionalAmount[120];
     char yyyymmddhhmmss[15];
     char stan[7];
     char expiryDate[7];

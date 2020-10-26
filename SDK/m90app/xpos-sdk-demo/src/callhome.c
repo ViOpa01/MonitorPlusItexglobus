@@ -5,6 +5,7 @@
 #include <pthread.h>
 
 #include "callhome.h"
+#include "log.h"
 #include "nibss.h"
 #include "merchant.h"
 #include "libapi_xpos/inc/libapi_system.h"
@@ -106,11 +107,11 @@ void processCallHomeAsync()
 			// 2. send call home data
             pthread_create(&dialThread, NULL, preDial, &mParam.gprsSettings);
             if(sendCallHome()) {
-                printf("Callhome failed\n");
+                LOG_PRINTF("Callhome failed");
                 Util_Beep(1);   
             } else {
                 // gui_messagebox_show("Callhome", "Success", "", "", 2000);
-                printf("Callhome succesful\n");
+                LOG_PRINTF("Callhome succesful");
                 Util_Beep(2);
             }
 

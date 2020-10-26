@@ -14,6 +14,7 @@ extern "C" {
 #include "Nibss8583.h"
 #include "nibss.h"
 #include "util.h"
+#include "log.h"
 #include "logo.h"
 #include "itexFile.h"
 #include "remoteLogo.h"
@@ -401,7 +402,7 @@ static void alignBuffer(char *output, const char *input, const int expectedLen, 
 	len = strlen(input);
 	requiredSpaces = expectedLen;
 
-	// printf("Len -> %d, requireSpace -> %d\n", len, requiredSpaces);
+	// LOG_PRINTF("Len -> %d, requireSpace -> %d", len, requiredSpaces);
 
     const char * space = " ";
     if(strcmp(space, output) == 0){
@@ -798,7 +799,7 @@ short printReceipts(Eft * eft, const short isReprint)
 
 		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
 		{
-			printf("Merchant copy\n");
+			LOG_PRINTF("Merchant copy");
 
 			ret = printEftReceipt(MERCHANT_COPY, eft);
 			
@@ -819,7 +820,7 @@ short printPaycodeReceipts(Eft * eft, const short isReprint)
 
 		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
 		{
-			printf("Merchant copy\n");
+			LOG_PRINTF("Merchant copy");
 
 			ret = printPaycodeReceipt(MERCHANT_COPY, eft);
 			
@@ -900,7 +901,7 @@ void reprintByRrn(void)
 	gui_clear_dc();
 	if((result = Util_InputMethod(GUI_LINE_TOP(2), "Enter RRN", GUI_LINE_TOP(5), eft.rrn, 12, 12, 1, 1000)) != 12)
 	{
-		printf("rrn input failed ret : %d\n", result);
+		LOG_PRINTF("rrn input failed ret : %d", result);
 		return;
 	}
 

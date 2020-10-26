@@ -13,6 +13,7 @@ extern "C"{
 #include "libapi_xpos/inc/libapi_print.h"
 #include "remoteLogo.h"
 #include "util.h"
+#include "log.h"
 }
 
 
@@ -60,18 +61,18 @@ void ProcessEod::generateEodReceipt(bool isRRN)
         }
 
         strcpy(label.price,  data[index][DB_AMOUNT].c_str());
-        printf("\n%s\n", label.price);
+        LOG_PRINTF("\n%s", label.price);
 
         char dateInDB[30] = {0};
         strcpy(dateInDB, data[index][DB_DATE].c_str());
-        printf("\n%s\n", dateInDB);
+        LOG_PRINTF("\n%s", dateInDB);
 
         char  timeExtract[20] = { 0 };
         strncpy(timeExtract, &dateInDB[11], 5);
-        printf("\n%s\n",timeExtract);
+        LOG_PRINTF("\n%s",timeExtract);
 
         strcpy(label.time, timeExtract);
-        printf("\n%s\n", label.time);
+        LOG_PRINTF("\n%s", label.time);
         totalNumberOfTransactions = totalNumberOfTransactions + 1;
 
         if(data[index][DB_RESP] == "00") {

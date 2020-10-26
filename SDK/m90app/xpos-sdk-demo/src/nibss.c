@@ -31,6 +31,7 @@
 #include "appInfo.h"
 #include "remoteLogo.h"
 #include "itexFile.h"
+#include "log.h"
 
 
 
@@ -114,9 +115,9 @@ void addCallHomeData(NetworkManagement *networkMangement)
     signalLevel *=  25;
     sprintf(ss, "%d", signalLevel);
 
-    printf("IMSI : %s\n", imsi);
-    printf("Cell id : %s\n Signal level : %d\n lac : %s\n", cellId, signalLevel, lac);
-    printf("SIM Operator : %s\n", netProfile.operatorName);
+    LOG_PRINTF("IMSI : %s", imsi);
+    LOG_PRINTF("Cell id : %s\n Signal level : %d\n lac : %s", cellId, signalLevel, lac);
+    LOG_PRINTF("SIM Operator : %s", netProfile.operatorName);
 
     cJSON_AddItemToObject(cloc, "cid", cJSON_CreateString(cellId));
     cJSON_AddItemToObject(cloc, "lac", cJSON_CreateString(lac));
@@ -176,7 +177,7 @@ static const char * platformToKey(enum NetType netType)
 
     platformAutoSwitch(&netType);
 
-    printf("Current Platform id : %d\n", netType);
+    LOG_PRINTF("Current Platform id : %d\n", netType);
 
     switch (netType) {
         case NET_POSVAS_SSL: case NET_POSVAS_PLAIN:
@@ -269,7 +270,7 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
         return -2;
     }
 
-    printf("Master key response: \n%s\n", &netParam->response[2]);
+    LOG_PRINTF("Master key response: \n%s", &netParam->response[2]);
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
@@ -313,7 +314,7 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
         return -2;
     }
 
-    printf("Session key response: \n%s\n", &netParam->response[2]);
+    LOG_PRINTF("Session key response: \n%s", &netParam->response[2]);
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response/*response*/, netParam->responseSize);
 
@@ -355,7 +356,7 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
         return -2;
     }
 
-    printf("Pin key response: \n%s\n", &netParam->response[2]);
+    LOG_PRINTF("Pin key response: \n%s", &netParam->response[2]);
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
@@ -381,7 +382,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
     addGenericNetworkFields(networkMangement);
     result = createIsoNetworkPacket(packet, sizeof(packet), networkMangement);
 
-    printf("Clear Session Key -> %s\n", networkMangement->sessionKey.clearKey);
+    LOG_PRINTF("Clear Session Key -> %s", networkMangement->sessionKey.clearKey);
 
     if (result <= 0)
         return -1;
@@ -394,7 +395,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
         return -2;
     }
 
-    printf("Parameter key response: \n%s\n", &netParam->response[2]);
+    LOG_PRINTF("Parameter key response: \n%s", &netParam->response[2]);
 
     result = extractNetworkManagmentResponse(networkMangement, netParam->response, netParam->responseSize);
 
@@ -408,7 +409,7 @@ static int getParams(NetworkManagement *networkMangement, NetWorkParameters *net
 
     if (Sys_SetDateTime(networkMangement->merchantParameters.ctmsDateAndTime))
     {
-        printf("Error syncing device with Nibss time");
+        LOG_PRINTF("Error syncing device with Nibss time");
         return -3;
     }
 
@@ -451,7 +452,7 @@ int sCallHomeAsync(NetworkManagement *networkMangement, NetWorkParameters *netPa
     }
 
     if (!isApprovedResponse(networkMangement->responseCode)) {
-        printf("Call response message : %s\n", networkMangement->responseDesc);
+        LOG_PRINTF("Call response message : %s", networkMangement->responseDesc);
         return -3;
     }
 
@@ -546,7 +547,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
 	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)networkMangement->pinKey.clearKeyBcd, (char *)keyciphertext);
 	Util_Des(2, networkMangement->masterKey.clearKeyBcd, (char *)&networkMangement->pinKey.clearKeyBcd[8], (char *)keyciphertext+8);
 
-    printf("Clear pin key -> '%s'\n", networkMangement->pinKey.clearKey);
+    LOG_PRINTF("Clear pin key -> '%s'", networkMangement->pinKey.clearKey);
 
 	//Save the pin key ciphertext
 	mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, keyciphertext, kvc);
@@ -601,20 +602,20 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
 
         sprintf(buffer, "Master key check value failed: expected -> %s, actual -> %s", networkMangement->masterKey.checkValue, kvc);
         gui_messagebox_show("ERROR" , buffer, "" , "" , 30000);
-        printf("Master key check value failed.");
+        LOG_PRINTF("Master key check value failed.");
         return -1;
     }
     
     memset(kvc, 0x00, sizeof(kvc));
     mksk_save_encrypted_key(MKSK_PINENC_TYPE, gid, networkMangement->pinKey.encryptedKeyBcd, kvc);
 
-    printf("Pin Key -> %s, kcv -> %s", networkMangement->pinKey.clearKey, networkMangement->pinKey.checkValue);
+    LOG_PRINTF("Pin Key -> %s, kcv -> %s", networkMangement->pinKey.clearKey, networkMangement->pinKey.checkValue);
 
     if (memcmp(kvc, networkMangement->pinKey.checkValueBcd, networkMangement->pinKey.checkValueBcdLen))
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         gui_messagebox_show("ERROR" , "Pin key check value failed.", "" , "" , 8000);
-        printf("Pinkey key check value failed.");
+        LOG_PRINTF("Pinkey key check value failed.");
         return -2;
     }
     
@@ -625,7 +626,7 @@ static short injectKeys(const NetworkManagement *networkMangement, const int gid
     { //This will never happen.
         //TODO: Display error on Pos screen and wait for 8 seconds.
         gui_messagebox_show("ERROR" , "Session key check value failed.", "" , "" , 8000);
-        printf("Session key check value failed.");
+        LOG_PRINTF("Session key check value failed.");
         return -3;
     }
     
@@ -819,7 +820,7 @@ short uiHandshake(void)
 
     gui_messagebox_show("MESSAGE" , "Master Key Ok!", "" , "" , 1000);
 
-    //printf("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
+    //LOG_PRINTF("Clear Tmk -> '%s'\n", networkMangement.masterKey.clearKey);
     //Sys_Delay(5000);
 
     for (i = 0; i < maxRetry; i++)
