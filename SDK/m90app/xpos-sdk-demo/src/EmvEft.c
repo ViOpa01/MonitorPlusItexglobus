@@ -829,6 +829,12 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 	memset(&netParam, 0x00, sizeof(NetWorkParameters));
 	memset(&eft, 0x00, sizeof(Eft));
 
+	if(transType == EFT_TRANS_END) 
+	{
+		LOG_PRINTF("Invalid Transactipn Type");
+		return;
+	}
+	
 	readMerchantData(&mParam);
 
 	if(checkIsItexMerchant(&mParam) && subTransType == SUB_NONE)
@@ -847,13 +853,13 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 
 	if (getParameters(&merchantParameters))
 	{
-		printf("Error getting parameters\n");
+		LOG_PRINTF("Error getting parameters");
 		return;
 	}
 
 	if (getSessionKey(sessionKey))
 	{
-		printf("Error getting session key");
+		LOG_PRINTF("Error getting session key");
 		return;
 	}
 
@@ -979,7 +985,7 @@ int separatePayload(NetWorkParameters *netParam, Eft *eft)
     int auxLength = tpduToNumber(response) - primaryLength - 2;
 
     if (4 + primaryLength + auxLength != netParam->responseSize) {
-        printf("4 + primaryLength + auxLength (%d) != length (%d)", 4 + primaryLength + auxLength, netParam->responseSize);
+        LOG_PRINTF("4 + primaryLength + auxLength (%d) != length (%d)", 4 + primaryLength + auxLength, netParam->responseSize);
         return -1;
     }
 
@@ -990,7 +996,7 @@ int separatePayload(NetWorkParameters *netParam, Eft *eft)
     if (auxLength < sizeof(eft->vas.auxResponse)) {
         memcpy(eft->vas.auxResponse, response + 4 + primaryLength, auxLength);
     } else {
-        printf("Aux buffer size (%zu) not enough for received data (%d)", sizeof(eft->vas.auxResponse), auxLength);
+        LOG_PRINTF("Aux buffer size (%zu) not enough for received data (%d)", sizeof(eft->vas.auxResponse), auxLength);
         return -3;
     }
 
@@ -1053,7 +1059,7 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 	if (result = getEftOnlineResponse(hostType, eft, netParam->response, netParam->responseSize))
 	{
 		//Shouldn't happen
-		printf("Critical Error");
+		LOG_PRINTF("Critical Error");
 		if (autoReversal(eft, netParam))
 		{
 			sprintf(eft->message, "%s", "Manual Reversal Adviced(2)");
@@ -1098,7 +1104,7 @@ static int iccUpdate(const Eft *eft, const struct HostType *hostType)
 	//bcdToAsc(iccData, iccDataBcd, iccDataLen);
 	//Now asc
 
-	printf("Onine result -> %d\nIcc Data -> %s\nresponse code -> %s\n", onlineResult, iccData, eft->responseCode);
+	LOG_PRINTF("Onine result -> %d\nIcc Data -> %s\nresponse code -> %s\n", onlineResult, iccData, eft->responseCode);
 
 	result = emv_online_resp_proc(onlineResult, eft->responseCode, iccData, iccDataLen);
 
@@ -1188,7 +1194,7 @@ short getEmvTlvByTag(unsigned char *tag, const int tagSize, unsigned char *tlv)
 		memcpy(tlv, tag, tagSize);
 		bytes + tagSize;
 
-		printf("Tag 84 len -> %d\n", length);
+		LOG_PRINTF("Tag 84 len -> %d\n", length);
 
 		sprintf(asc, "%02X", length);
 		str2bcd(asc, bcdLen, 2);
@@ -1201,7 +1207,7 @@ short getEmvTlvByTag(unsigned char *tag, const int tagSize, unsigned char *tlv)
 
 		for (i = 0; i < bytes; i++)
 		{
-			printf("%02X", tlv[i]);
+			LOG_PRINTF("%02X", tlv[i]);
 		}
 		puts("\r\n");
 	}
@@ -1287,7 +1293,7 @@ short addIccTagsToEft(Eft *eft)
 	{
 		return -3;
 	}
-	printf("Pan seq asc %s\n", eft->cardSequenceNumber);
+	LOG_PRINTF("Pan seq asc %s\n", eft->cardSequenceNumber);
 
 	if (emvGetKernelData(eft->tsi, "\x9B"))
 	{
@@ -1356,7 +1362,7 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
 	int year = 0;
 
     if (title == NULL) {
-		printf("PayCode title is null\n");
+		LOG_PRINTF("PayCode title is null\n");
 		return -1;
 	}
 
@@ -1397,8 +1403,8 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
     buildPaycodeIccData(eft->iccData, transDate, eft->amount);
 	sprintf(eft->track2Data, "%sD%s", eft->pan, eft->expiryDate);
 	strncpy(eft->posDataCode, "510101561344101", 15);
-	 strncpy(eft->cardSequenceNumber, "000", sizeof(eft->cardSequenceNumber));
-	 strncpy(eft->serviceRestrictionCode, "501", sizeof(eft->serviceRestrictionCode));
+	strncpy(eft->cardSequenceNumber, "000", sizeof(eft->cardSequenceNumber));
+	strncpy(eft->serviceRestrictionCode, "501", sizeof(eft->serviceRestrictionCode));
 
 	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
 	{
@@ -1450,7 +1456,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	if (card_in->trans_type == -1)
 	{
-		printf("\nUnknow transaction type\n");
+		LOG_PRINTF("\nUnknow transaction type");
 		return -1;
 	}
 
