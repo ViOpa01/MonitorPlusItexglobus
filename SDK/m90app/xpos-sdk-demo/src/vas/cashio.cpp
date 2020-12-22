@@ -3,361 +3,206 @@
 #include <string.h>
 #include <vector>
 #include <sstream>
+#include <iomanip>
 #include <algorithm>
+#include <ctype.h>
+#include <iomanip>
 
-#include "simpio.h"
-#include "pfm.h"
+#include "platform/platform.h"
+
 #include "cashio.h"
+#include "payvice.h"
 
 ViceBanking::ViceBanking(const char* title, VasComProxy& proxy)
     : _title(title)
-    , service(SERVICE_UNKNOWN)
-    , comProxy(proxy)
+    , viewModel(title, proxy)
 {
 }
 
-VasStatus ViceBanking::beginVas()
+ViceBanking::~ViceBanking()
 {
+}
+
+VasResult ViceBanking::beginVas()
+{
+    VasResult result;
     Service services[] = {TRANSFER, WITHDRAWAL};
     std::vector<Service> serviceVector(services, services + sizeof(services) / sizeof(Service));
 
-    service = selectService(_title.c_str(), serviceVector);
-    if (service == SERVICE_UNKNOWN) {
-        return VasStatus(USER_CANCELLATION);
+    const Service service = selectService(_title.c_str(), serviceVector);
+    result = viewModel.setService(service);
+    if (result.error != NO_ERRORS) {
+        result.error = USER_CANCELLATION;
+        return result;
     }
+    
 
-    amount = getAmount(serviceToString(service));
-    if (amount <= 0) {
-        return VasStatus(USER_CANCELLATION);
+    const unsigned long amount = getVasAmount(serviceToString(service));
+    if (amount == 0) {
+        result.error = USER_CANCELLATION;
+        return result;
+    }
+    
+    result = viewModel.setAmount(amount);
+    if (result.error != NO_ERRORS) {
+        return result;
     }
 
     if (service == TRANSFER) {
-        beneficiary = beneficiaryAccount("Beneficairy Account", "Transfer");
-        if (beneficiary.empty()) {
-            return VasStatus(USER_CANCELLATION);
+        const std::string beneficiaryAccount = getBeneficiaryAccount("Beneficairy Account", "Transfer");
+        if (beneficiaryAccount.empty()) {
+            result.error = USER_CANCELLATION;
+            return result;
         }
 
-        Bank_t bankSelection = selectBank();
-        if (bankSelection == BANKUNKNOWN) {
-            return VasStatus(USER_CANCELLATION);
+        const size_t bankIndex = selectBank();
+        if (viewModel.setBeneficiary(beneficiaryAccount, bankIndex).error != NO_ERRORS) {
+            return VasResult(USER_CANCELLATION);
         }
-        Bank bank = bankCode(bankSelection);
-        vendorBankCode = bank.code;
-        vendorBankName = bank.name;
     } 
 
-    return VasStatus(NO_ERRORS);
+    result.error = NO_ERRORS;
+
+    return result;
 }
 
-VasStatus ViceBanking::lookupCheck(const VasStatus& lookupStatus)
+VasResult ViceBanking::lookup()
 {
-    iisys::JSObject data;
-    iisys::JSObject status;
+    VasResult result;
 
-    if (lookupStatus.error) {
-        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
-    }
+    if (viewModel.getService() == WITHDRAWAL) {
+        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_MCASH | PAY_WITH_CGATE));
+        if (payMethod == PAYMENT_METHOD_UNKNOWN) {
+            result.error = USER_CANCELLATION;
+            return result;
+        }
 
-    if (!data.load(lookupStatus.message)) {
-        return VasStatus(INVALID_JSON, "Invalid Response");
-    }
-
-    VasStatus errStatus = vasErrorCheck(data);
-    if (errStatus.error) {
-        return VasStatus(errStatus.error, errStatus.message.c_str());
-    }
-
-    status = data("status");
-    if (status.isNull() || status.getInt() != 1) {
-        iisys::JSObject msg =  data("message");
-        return VasStatus(STATUS_ERROR, msg.isNull() ? "Status Error" : msg.getString().c_str());
-    }
-
-    return displayLookupInfo(data);
-}
-
-VasStatus ViceBanking::lookup(const VasStatus& beginStatus)
-{
-    VasStatus response;
-    iisys::JSObject obj;
-    
-    obj("amount") = amount;
-    obj("beneficiary") = beneficiary;
-    obj("vendorBankCode") = vendorBankCode;
-    obj("type") = "default";
-
-    injectPayviceCredentials(obj);
-
-    if (service == TRANSFER) {
-        payMethod = PAY_WITH_CASH;
-        Demo_SplashScreen("Lookup In Progress", "www.payvice.com");
-        response = comProxy.lookup("/vas/vice-banking/transfer/lookup", &obj, NULL /*&customHeaders*/);
-    } else if (service == WITHDRAWAL) {
-        payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_MCASH));
-        Demo_SplashScreen("Lookup In Progress", "www.payvice.com");
-        if (payMethod == PAY_WITH_CARD) {
-            response = comProxy.lookup("/vas/vice-banking/withdrawal/lookup", &obj);
-        } else if (payMethod == PAY_WITH_MCASH) {
-            response = comProxy.lookup("/vas/mcash-banking/withdrawal/lookup", &obj);
-        } else {
-            return VasStatus(USER_CANCELLATION);
+        result = viewModel.setPaymentMethod(payMethod);
+        if (result.error) {
+            return result;
         }
     }
 
-    return lookupCheck(response);
+    Demo_SplashScreen("Lookup In Progress", "www.payvice.com");
+
+    result = viewModel.lookup();
+    if (result.error != NO_ERRORS) {
+        UI_ShowButtonMessage(30000, "Error", result.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
+    }
+
+    result = displayLookupInfo();
+
+    return result;
 }
 
-VasStatus ViceBanking::initiate(const VasStatus& lookupStatus)
+VasResult ViceBanking::initiate()
 {
-    VasStatus response;
+    VasResult response;
     
-    phoneNumber = getPhoneNumber("Phone Number", "");
+    const std::string phoneNumber = getPhoneNumber("Phone Number", "");
     if (phoneNumber.empty()) {
         response = USER_CANCELLATION;
         return response;
-    } else if (payMethod != PAY_WITH_MCASH) {
-        response = NO_ERRORS;
+    }
+
+    response = viewModel.setPhoneNumber(phoneNumber);
+    if (response.error != NO_ERRORS) {
+        UI_ShowButtonMessage(30000, "Error", response.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
         return response;
     }
 
-    iisys::JSObject json;
-    std::map<std::string, std::string> customHeaders;
+    if (viewModel.getService() == TRANSFER) {
+        std::string narration;
+        getText(narration, 0, 30000, "Narration", "", UI_DIALOG_TYPE_NONE);
+        viewModel.setNarration(narration);
+    }
 
-    response = prepareCashIORequest(json, customHeaders);
-    if (response.error) {
+    if (!viewModel.isPaymentUSSD()) {
+        response.error = NO_ERRORS;
         return response;
     }
 
+    // initiate USSD transaction 
+
+    std::string pin;
+
+    response.error = getVasPin(pin);
+    if (response.error != NO_ERRORS) {
+        return response;
+    }
+    
     Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
-    response = comProxy.initiate("/vas/mcash-banking/withdrawal/payment", &json, &customHeaders);
-
+    response = viewModel.initiate(pin);
     if (response.error) {
         return response;
     }
-
-    if (!json.load(response.message)) {
-        response.error = INVALID_JSON;
-        response.message = "Invalid Response";
-        return response;
-    }
-
-    response = vasErrorCheck(json);
 
     if (response.error == NO_ERRORS) {
-        const iisys::JSObject& productCode = json("productCode");
-        if (productCode.isNull()) {
-            return response;
+        std::string displayTitle;
+
+        if (viewModel.getPaymentMethod() == PAY_WITH_CGATE) {
+            displayTitle = "Continue on Phone";
+        } else if (viewModel.getPaymentMethod() == PAY_WITH_MCASH) {
+            displayTitle = "Check Your Phone";
         }
-        lookupResponse.productCode = productCode.getString();
-        UI_ShowButtonMessage(10 * 60 * 1000, "Check Your Phone", "Complete Transaction and Press Enter to Continue", "Check Status", UI_DIALOG_TYPE_CONFIRMATION);
+
+        UI_ShowButtonMessage(10 * 60 * 1000, displayTitle.c_str(), response.message.c_str(), "OK", UI_DIALOG_TYPE_CONFIRMATION);
     }
 
-    return response;
-}
-
-VasStatus ViceBanking::prepareCashIORequest(iisys::JSObject& json, std::map<std::string, std::string>& customHeaders)
-{
-    KeyChain keys;
-    std::string pin;
-    VasStatus response;
-
-    switch (getPin(pin, "Payvice Pin")) {
-    case EMV_CT_PIN_INPUT_ABORT:
-        response.error = INPUT_ABORT;
-        return response;
-    case EMV_CT_PIN_INPUT_TIMEOUT:
-        response = INPUT_TIMEOUT_ERROR;
-        return response;
-    case EMV_CT_PIN_INPUT_OTHER_ERR:
-        response = INPUT_ERROR;
-        return response;
-    default:
-        break;
-    }
-
-    if (getPaymentJson(json, service) < 0) {
-        response.error = VAS_ERROR;
-        response.message = "Data Error";
-        return response;
-    }
-
-    json("pin") = encryptedPin(Payvice(), pin.c_str());
-    json("pfm")("state") = getState();
-    json("clientReference") = getClientReference();
-    
-    cashIOVasToken(json.dump().c_str(), NULL, &keys);
-    customHeaders["ITEX-Nonce"] = keys.nonce;
-    customHeaders["ITEX-Signature"] = keys.signature;
-
-    response.error = NO_ERRORS;
     return response;
 }
 
 Service ViceBanking::vasServiceType()
 {
-    return service;
+    return viewModel.getService();
 }
 
-VasStatus ViceBanking::complete(const VasStatus& initiateStatus)
+VasResult ViceBanking::complete()
 {
-    VasStatus response;
-    iisys::JSObject json;
-    std::map<std::string, std::string> customHeaders;
+    VasResult response;
+    std::string pin;
 
-    if (payMethod != PAY_WITH_MCASH) {
-        response = prepareCashIORequest(json, customHeaders);
-        if (response.error) {
+    if (!viewModel.isPaymentUSSD()) {
+        response.error = getVasPin(pin);
+        if (response.error != NO_ERRORS) {
             return response;
         }
-    } else {
-        KeyChain keys;
-        json("wallet") = Payvice().object(Payvice::WALLETID);
-        json("productCode") = lookupResponse.productCode;
-
-        cashIOVasToken(json.dump().c_str(), NULL, &keys);
-        customHeaders["ITEX-Nonce"] = keys.nonce;
-        customHeaders["ITEX-Signature"] = keys.signature;
     }
-    
+
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");
-
-    if (payMethod == PAY_WITH_CARD) {
-        cardPurchase.amount = amount;
-        response = comProxy.complete(paymentPath(service), &json, NULL, &cardPurchase);
-    } else {
-        response = comProxy.complete(paymentPath(service), &json, &customHeaders);
-    }
-
-    if (response.error) {
-        return response;
-    }
-
-    if (!json.load(response.message)) {
-        response.error = INVALID_JSON;
-        response.message = "Invalid Response";
-        return response;
-    }
-
-    response = processPaymentResponse(json, service);
-
+    response = viewModel.complete(pin);
+    
     return response;
 }
 
-std::map<std::string, std::string> ViceBanking::storageMap(const VasStatus& completionStatus)
+std::map<std::string, std::string> ViceBanking::storageMap(const VasResult& completionStatus)
 {
-    std::map<std::string, std::string> record;
-    std::string serviceStr(serviceToString(service));
-    char amountStr[16] = { 0 };
-
-
-    sprintf(amountStr, "%lu", amount);
-
-    record[VASDB_PRODUCT] = serviceStr; 
-    record[VASDB_CATEGORY] = _title;
-    record[VASDB_SERVICE] = serviceStr;
-    record[VASDB_AMOUNT] = amountStr;
-
-    record[VASDB_BENEFICIARY_NAME] = lookupResponse.name;
-    record[VASDB_BENEFICIARY] = beneficiary;
-    record[VASDB_BENEFICIARY_PHONE] = phoneNumber;
-    record[VASDB_PAYMENT_METHOD] = paymentString(payMethod);
-
-    record[VASDB_REF] = paymentResponse.reference;
-    record[VASDB_DATE] = paymentResponse.date;
-    record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
-
-    if (payMethod == PAY_WITH_CARD) {
-        if(cardPurchase.primaryIndex > 0) {
-            char primaryIndex[16] = { 0 };
-            sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
-            record[VASDB_CARD_ID] = primaryIndex;
-        }
-        
-        if (!itexIsMerchant()) {
-            record[VASDB_VIRTUAL_TID] = cardPurchase.purchaseTid;;
-        }
-    }
-
-    record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
-
-    record[VASDB_STATUS_MESSAGE] = paymentResponse.message;
-
-    record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + vendorBankName + "\"}";
-
+    std::map<std::string, std::string> record = viewModel.storageMap(completionStatus);
     return record;
 }
 
-ViceBanking::Bank ViceBanking::bankCode(Bank_t bank)
-{
-    switch (bank) {
-    case GTB:
-        return Bank("GTB", "058152052");
-    case ACCESS:
-        return Bank("ACCESS BANK PLC", "044150149");
-    case CITI:
-        return Bank("CITI BANK", "023150005");
-    case DIAMOND:
-        return Bank("DIAMOND BANK PLC", "063150162");
-    case ECOBANK:
-        return Bank("ECOBANK NIGERIA", "050150311");
-    case ENTERPRISE:
-        return Bank("ENTERPRISE BANK", "084150015");
-    case ETB:
-        return Bank("ETB", "040150101");
-    case FCMB:
-        return Bank("FCMB PLC", "214150018");
-    case FIDELITY:
-        return Bank("FIDELITY BANK PLC", "070150003");
-    case FIRSTBANK:
-        return Bank("FIRST BANK PLC", "011152303");
-    case HERITAGE:
-        return Bank("HERITAGE BANK", "030159992");
-    case JAIZ:
-        return Bank("JAIZ BANK", "301080020");
-    case KEYSTONE:
-        return Bank("KEYSTONE BANK PLC", "082150017");
-    case MAINSTREET:
-        return Bank("MAIN STREET BANK", "014150030");
-    case NIB:
-        return Bank("NIB", "023150005");
-    case POLARIS:
-        return Bank("POLARIS BANK PLC", "076151006");
-    case STANBIC:
-        return Bank("STANBIC IBTC BANK", "221159522");
-    case STANDARDCHARTERED:
-        return Bank("STANDARD CHARTERED", "068150057");
-    case STERLING:
-        return Bank("STERLING BANK PLC", "232150029");
-    case UBA:
-        return Bank("UBA PLC", "033154282");
-    case UNION:
-        return Bank("UNION BANK PLC", "032156825");
-    case UNITY:
-        return Bank("UNITY BANK PLC", "215082334");
-    case WEMA:
-        return Bank("WEMA BANK PLC", "035150103");
-    case ZENITH:
-        return Bank("ZENITH BANK PLC", "057150013");
-    default:
-        return Bank("", "");
-    }
-}
 
-ViceBanking::Bank_t ViceBanking::selectBank()
+size_t ViceBanking::selectBank() const
 {
-    int selection;
     std::vector<std::string> menu;
 
-    for (size_t i = 0; i < ViceBanking::BANK_TOTAL; ++i) {
-        menu.push_back(bankCode(static_cast<Bank_t>(i)).name);
+    Demo_SplashScreen("Loading Banks...", "www.payvice.com");
+    const std::vector<ViceBankingViewModel::Bank>& banks = viewModel.banklist();
+
+    if (banks.empty()) {
+        return -1;
+    }
+    
+    for (size_t i = 0; i < banks.size(); ++i) {
+        menu.push_back(banks[i].name);
     }
 
-    selection = UI_ShowSelection(30000, "Banks", menu, 0);
+    const int selection = UI_ShowSelection(30000, "Banks", menu, 0);
 
-    return static_cast<ViceBanking::Bank_t>(selection);
+    return static_cast<size_t>(selection);
 }
 
-std::string ViceBanking::beneficiaryAccount(const char* title, const char* prompt)
+std::string ViceBanking::getBeneficiaryAccount(const char* title, const char* prompt)
 {
     char account[16] = { 0 };
 
@@ -368,138 +213,29 @@ std::string ViceBanking::beneficiaryAccount(const char* title, const char* promp
     return std::string(account);
 }
 
-const char* ViceBanking::paymentPath(Service service)
-{
-    if (service == TRANSFER) {
-        return "/vas/vice-banking/transfer/payment";
-    } else if (service == WITHDRAWAL) {
-        if (payMethod == PAY_WITH_CARD) {
-            return "/vas/mw/vice-banking/withdrawal/payment";
-        } else if (payMethod == PAY_WITH_MCASH) {
-            return "/vas/mcash-banking/withdrawal/payment";
-        }
-    }
-
-    return "";
-}
-
-VasStatus ViceBanking::processPaymentResponse(iisys::JSObject& json, Service service)
-{
-    VasStatus response = vasErrorCheck(json);
-    paymentResponse.message = response.message;
-
-    this->service = service;
-
-    iisys::JSObject ref = json("reference");
-    if (!ref.isNull()) {
-        paymentResponse.reference = ref.getString();
-    }
-
-    iisys::JSObject date = json("date");
-    if (!date.isNull()) {
-        paymentResponse.date = date.getString() + ".000";
-    }
-
-    iisys::JSObject seq = json("transactionID");
-    if (!seq.isNull()) {
-        paymentResponse.transactionSeq = seq.getString();
-    }
-
-    if (payMethod == PAY_WITH_CARD && json("reversal").isBool() && json("reversal").getBool() == true) {
-        comProxy.reverse(cardPurchase);
-    }
-
-    return response;
-}
-
-VasStatus ViceBanking::displayLookupInfo(const iisys::JSObject& data)
+VasResult ViceBanking::displayLookupInfo() const
 {
     std::ostringstream confirmationMessage;
 
-    iisys::JSObject name          = data("beneficiaryName");
-    iisys::JSObject convenience   = data("convenienceFee");
-    iisys::JSObject amountSettled = data("amountSettled");
-    iisys::JSObject amountToDebit = data("amountToDebit");
-    iisys::JSObject productCode   = data("productCode");
 
-    if (!name.isNull()) {
-        lookupResponse.name = name.getString();
-    }
-
-    if (!productCode.isNull()) {
-        lookupResponse.productCode = productCode.getString();
-    }
-
-    lookupResponse.convenience   = convenience.getInt();
-    lookupResponse.amountSettled = amountSettled.getInt();
-    lookupResponse.amountToDebit = amountToDebit.getInt();
-
-    if (service == TRANSFER) {
-        if (lookupResponse.name.empty()) {
-            return VasStatus(KEY_NOT_FOUND, "Name not found");
+    if (viewModel.getService() == TRANSFER) {
+        if (viewModel.getName().empty()) {
+            return VasResult(KEY_NOT_FOUND, "Name not found");
         }
 
-        confirmationMessage << lookupResponse.name << std::endl;
+        confirmationMessage << viewModel.getName() << std::endl;
+        confirmationMessage << "NUBAN: " << viewModel.getBeneficiaryAccount() << std::endl;
+        confirmationMessage << "Amount: " <<  std::fixed << std::setprecision(2) <<  viewModel.getAmount() / 100.0 << std::endl;
 
-        iisys::JSObject element = data("account");
-        if (!element.isNull()) {
-            confirmationMessage << "NUBAN: " << element.getString() << std::endl;
-        }
-
-        confirmationMessage << "Amount: " << amount / 100.0f << std::endl;
-        confirmationMessage << "Convenience: " << lookupResponse.convenience / 100.0f << std::endl;
-    } else if (service == WITHDRAWAL) {
-        confirmationMessage << "Amount: " << lookupResponse.amountToDebit / 100.0f << std::endl;
-        confirmationMessage << "Convenience: " << lookupResponse.convenience / 100.0f << std::endl;        
+    } else if (viewModel.getService() == WITHDRAWAL) {
+        confirmationMessage << "Amount: " <<  std::fixed << std::setprecision(2) <<  viewModel.getAmountToDebit() / 100.0 << std::endl;
+        confirmationMessage << "Settlement: " <<  std::fixed << std::setprecision(2) <<  viewModel.getAmountSettled() / 100.0 << std::endl;        
     }
 
     int i = UI_ShowOkCancelMessage(30000, "Please Confirm", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
     if (i != 0) {
-        return VasStatus(USER_CANCELLATION);
+        return VasResult(USER_CANCELLATION);
     }
 
-    return VasStatus(NO_ERRORS);
-}
-
-int ViceBanking::getPaymentJson(iisys::JSObject& json, Service service)
-{
-    Payvice payvice;
-
-    if (!loggedIn(payvice)) {
-        return -1;
-    }
-
-    std::string paymentMethodStr = paymentString(payMethod);
-    std::transform(paymentMethodStr.begin(), paymentMethodStr.end(), paymentMethodStr.begin(), ::tolower);
-
-    const std::string username = payvice.object(Payvice::USER).getString();
-    const std::string password = payvice.object(Payvice::PASS).getString();
-    const std::string walletId = payvice.object(Payvice::WALLETID).getString();
-
-
-    json("terminal") = getDeviceTerminalId();
-    json("username") = username;
-    json("password") = password;
-    json("wallet") = walletId;
-    json("paymentMethod") = paymentMethodStr;
-
-    json("type") = "default";
-    json("channel") = "POS";
-    json("amount") = amount;
-    json("service") = serviceToProductString(service);
-
-    json("phone") = phoneNumber;
-
-    if (service == TRANSFER) {
-        json("beneficiary") = beneficiary;
-        json("vendorBankCode") = vendorBankCode;
-    }
-
-    json("productCode") = lookupResponse.productCode;
-
-    if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
-    }
-
-    return 0;
+    return VasResult(NO_ERRORS);
 }

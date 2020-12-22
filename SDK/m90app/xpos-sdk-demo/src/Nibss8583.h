@@ -169,6 +169,7 @@ typedef struct Eft
     char responseDesc[256];
     char serviceRestrictionCode[4];
     char terminalId[9];
+    char returnTid[9];
     char merchantId[16];
     char merchantName[41];
     char currencyCode[5];
@@ -208,6 +209,10 @@ typedef struct Eft
 
     char dateAndTime[32];
     
+    char securityRelatedControlInformation[97]; //DE 53
+    char paymentInformation[1000];  // DE60
+    char managementData1[1000]; // DE62
+
     // Vas specific additions
     short isVasTrans;
     Vas vas;

@@ -28,7 +28,8 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 char * payCodeTypeToStr(const enum SubTransType subTransType);
 void copyMerchantParams(Eft *eft, const MerchantParameters *merchantParameters);
 short autoReversalInPlace(Eft *eft, NetWorkParameters *netParam);
-int performEft(Eft *eft, NetWorkParameters *netParam, const char *title);
+void populateEchoData(char echoData[256], const char* others);
+int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const char *title);
 
 enum TransType cardPaymentHandler();
 void paycodeHandler(void);

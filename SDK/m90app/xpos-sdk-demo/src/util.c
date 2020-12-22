@@ -644,3 +644,30 @@ int stringToHex(char* output, const size_t outputSize, const char* input, const 
 
     return 0;
 }
+
+int pad(char* inOutString, char symbol, short paddedLength, short padRight)
+{
+    char buffer[512] = { '\0' };
+    char inString[512] = { '\0' };
+    short
+
+        int len
+        = strlen(inOutString);
+
+    if (len >= paddedLength)
+        return 0;
+
+    sprintf(inString, "%s", inOutString);
+
+    memset(buffer, symbol, paddedLength - len);
+
+    memset(inOutString, '\0', strlen(inOutString));
+
+    if (padRight) {
+        sprintf(inOutString, "%s%s", inString, buffer);
+    } else {
+        sprintf(inOutString, "%s%s", buffer, inString);
+    }
+
+    return 0;
+}

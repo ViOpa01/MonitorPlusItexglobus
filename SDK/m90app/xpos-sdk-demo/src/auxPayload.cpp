@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "./vas/jsobject.h"
+#include "./vas/jsonwrapper/jsobject.h"
 #include "auxPayload.h"
 
 

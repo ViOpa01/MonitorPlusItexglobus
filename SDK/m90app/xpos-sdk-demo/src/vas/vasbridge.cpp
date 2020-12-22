@@ -1,14 +1,19 @@
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "vas.h"
+#include "payvice.h"
 #include "vasbridge.h"
 #include "virtualtid.h"
 #include "../auxPayload.h"
+#include "jsonwrapper/jsobject.h"
 
 extern "C" {
-#include "util.h"
+#include "../util.h"
+#include "libapi_xpos/inc/libapi_util.h"
 }
+
 
 int vasTransactionTypesBridge()
 {
@@ -22,7 +27,7 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
     int ret = -1;
     pthread_t thread;
 
-    trxContext->transType = EFT_PURCHASE;
+    trxContext->transType = EFT_PURCHASE;   // set to cash advance for upsl withdrawal
     trxContext->fromAccount = DEFAULT_ACCOUNT; //perform trxContext will update it if needed
     trxContext->toAccount = DEFAULT_ACCOUNT; //perform trxContext will update it if needed
     trxContext->isFallback = 0;
@@ -32,8 +37,18 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
     if (trxContext->vas.switchMerchant) {
-        if (swithMerchantToVas(trxContext) < 0)
+
+        char vtSecurity[97] = {'\0'};
+
+        if (switchMerchantToVas((void*)trxContext) < 0)
             return ret;
+
+        if (trxContext->paymentInformation[0]) {
+            if (getUpWithrawalField53(vtSecurity) < 0)
+                return -1;
+        }
+
+        strncpy(trxContext->securityRelatedControlInformation, vtSecurity, sizeof(trxContext->securityRelatedControlInformation) -1);
     } else {
         MerchantParameters merchantParameters;
         char sessionKey[32 + 1] = { 0 };
@@ -52,20 +67,20 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
         copyMerchantParams(trxContext, &merchantParameters);
     }
 
-    // populateEchoData(trxContext->echoData);  TODO: Maybe append this later
-
     strncpy(trxContext->posConditionCode, "00", sizeof(trxContext->posConditionCode));
     strncpy(trxContext->posPinCaptureCode, "04", sizeof(trxContext->posPinCaptureCode));
-    strcpy(netParam.title, transTypeToTitle(EFT_PURCHASE));
+    strcpy(netParam.title, "vas");
     pthread_create(&thread, NULL, preDial, &mParam.gprsSettings);
 
     trxContext->vas.genAuxPayload = genAuxPayloadString;
     sprintf(trxContext->amount, "%012lu", amount);
-    if((ret = performEft(trxContext, &netParam, transTypeToTitle(EFT_PURCHASE))) < 0) {
+
+    if((ret = performEft(trxContext, &netParam, (void*)&mParam, /*transTypeToTitle(EFT_PURCHASE)*/ "VAS")) < 0) {
         return ret;
     }
 
     return 0;
+
 }
 
 int requeryToContext(Eft* trxContext, const char* response) 

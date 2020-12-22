@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "vas/simpio.h"
-#include "vas/jsobject.h"
+#include "vas/platform/simpio.h"
+#include "vas/jsonwrapper/jsobject.h"
 
 #include "ussdb.h"
 #include "cgate.h"

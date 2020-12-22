@@ -14,7 +14,6 @@
 
 
 #define EMVDBLOG "EMVDB"
-// #define EMV_DB "flash/testemv.db"
 #define EMV_TABLE_USER_VERSION "2"
 #define EMV_TABLE_ROW_LIMIT "14400"  
 

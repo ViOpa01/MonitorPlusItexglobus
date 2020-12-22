@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "vas/simpio.h"
-#include "vas/jsobject.h"
+#include "vas/platform/simpio.h"
+#include "vas/jsonwrapper/jsobject.h"
 #include "EmvDBUtil.h"
 #include "Receipt.h"
 

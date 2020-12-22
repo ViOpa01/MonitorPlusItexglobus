@@ -62,6 +62,7 @@ void hmac_sha256(
     void* digest /* caller digest to be filled in */ );
 
 int stringToHex(char* output, const size_t outputSize, const char* input, const int length);
+int pad(char* inOutString, char symbol, short paddedLength, short padRight);
 
 #ifdef __cplusplus
 }

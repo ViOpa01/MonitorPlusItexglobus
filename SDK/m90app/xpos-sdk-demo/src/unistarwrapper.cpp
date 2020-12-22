@@ -17,7 +17,7 @@ extern "C"
 }
 
 #include "Receipt.h"
-#include "simpio.h"
+#include "./vas/platform/simpio.h"
 
 int apduSendToBcd(unsigned char *bcd, const size_t bcdSize, const APDU_SEND *apduSend)
 {

@@ -338,23 +338,36 @@ static enum TechMode cardTypeToTechMode(const int cardType, const int mode)
 	}
 }
 
-void populateEchoData(char echoData[256])
+void populateEchoData(char echoData[256], const char* others)
 {
 	// char de59[] = "V240m-3GPlus~346-231-236~1.0.6(Fri-Dec-20-10:50:14-2019-)~release-30812300";
-	MerchantData mParam = {'\0'};
 	char terminalSn[22] = {'\0'};
-	char de59[124] = {'\0'};
+	char de59[200] = {'\0'};
+	char temp[256] = {'\0'};
+	char buff[124] = {'\0'};
 	char dt[15] = {'\0'};
 
-	readMerchantData(&mParam);
 	getTerminalSn(terminalSn);
 	Sys_GetDateTime(dt);
 
-	if(mParam.notificationIdentifier[0])
-	{
-		sprintf(de59, "%s~%s%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", mParam.notificationIdentifier, TERMINAL_MANUFACTURER, APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
+	strncpy(temp, echoData, strlen(echoData));
+	sprintf(buff, "%s%s%s%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", 
+			temp, temp[0] ? "~" :"", 
+			TERMINAL_MANUFACTURER, 
+			APP_MODEL, 
+			terminalSn, 
+			APP_VER, 
+			&dt[0], 
+			&dt[4], 
+			&dt[6], 
+			&dt[8], 
+			&dt[10]
+	);
+
+	if (others && *(others)) {
+		sprintf(de59, "%s%s%s", others, "~", buff);
 	} else {
-		sprintf(de59, "%s%s|%s|%s(%.4s-%.2s-%.2s-%.2s:%.2s)", TERMINAL_MANUFACTURER, APP_MODEL, terminalSn, APP_VER, &dt[0], &dt[4], &dt[6], &dt[8], &dt[10]);
+		sprintf(de59, "%s", buff);
 	}
 
 	strncpy(echoData, de59, strlen(de59));
@@ -581,8 +594,6 @@ static enum AccountType getAccountType(void)
 
 static short accountTypeRequired(const enum TransType transType)
 {
-	//TODO: we might need to check device configuration to know if account is required or not.
-
 	switch (transType)
 	{
 	//case EFT_BALANCE:
@@ -895,13 +906,11 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 
 	if (subTransType == SUB_NONE) 
 	{
-		populateEchoData(eft.echoData);
 		strcpy(netParam.title, transTypeToTitle(transType));
-		performEft(&eft, &netParam, transTypeToTitle(transType));
+		performEft(&eft, &netParam, (void*)&mParam, transTypeToTitle(transType));
 	} else {
 		if (isPayCode(subTransType)) {
 			LOG_PRINTF("PayCode trans mode");
-			strncpy(eft.echoData, PTAD_CODE, strlen(PTAD_CODE));
 			strcpy(netParam.title, payCodeTypeToStr(subTransType));
 			performPayCode(&eft, &netParam, subTransType);
 		}
@@ -981,7 +990,7 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus, NetWorkPar
 		return -3;
 
 	default:
-		sprintf(eft->message, "%s", "Unknown Comms Response"); //TODO: Should not happen
+		sprintf(eft->message, "%s", "Unknown Comms Response"); 
 		return -4;
 	}
 }
@@ -996,6 +1005,7 @@ int separatePayload(NetWorkParameters *netParam, Eft *eft)
 	const char* response = netParam->response;
     int primaryLength = tpduToNumber(response + 2);
     int auxLength = tpduToNumber(response) - primaryLength - 2;
+	int sizeofAuxRespBuff = sizeof(eft->vas.auxResponse);
 
     if (4 + primaryLength + auxLength != netParam->responseSize) {
         LOG_PRINTF("4 + primaryLength + auxLength (%d) != length (%d)", 4 + primaryLength + auxLength, netParam->responseSize);
@@ -1006,7 +1016,7 @@ int separatePayload(NetWorkParameters *netParam, Eft *eft)
 	netParam->responseSize = primaryLength + 2;
 	netParam->response[netParam->responseSize] = '\0';
 
-    if (auxLength < sizeof(eft->vas.auxResponse)) {
+    if ((auxLength < sizeofAuxRespBuff) && auxLength > 0) {
         memcpy(eft->vas.auxResponse, response + 4 + primaryLength, auxLength);
     } else {
         LOG_PRINTF("Aux buffer size (%zu) not enough for received data (%d)", sizeof(eft->vas.auxResponse), auxLength);
@@ -1062,11 +1072,20 @@ static int processPacketOnline(Eft *eft, struct HostType *hostType, NetWorkParam
 	}
 
 	if (eft->isVasTrans && strncmp(netParam->response + 2, "0210", 4)) {
-		if (separatePayload(netParam, eft) < 0) {
+
+		if (strncmp(netParam->response + 4, "0210", 4)) {
+
+			gui_messagebox_show("Error", "Invalid Card Response!", "", "Ok", 0);
+			LOG_PRINTF("Invalid Card response");
+
+			return -98;
+		} else if (separatePayload(netParam, eft) < 0) {
+			LOG_PRINTF("E don happen\n");
 			// E don happen again o
 			// what do we do?
 			return -99;
 		}
+
 	}
 
 	if (result = getEftOnlineResponse(hostType, eft, netParam->response, netParam->responseSize))
@@ -1418,6 +1437,8 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
 	strncpy(eft->posDataCode, "510101561344101", 15);
 	strncpy(eft->cardSequenceNumber, "000", sizeof(eft->cardSequenceNumber));
 	strncpy(eft->serviceRestrictionCode, "501", sizeof(eft->serviceRestrictionCode));
+	strncpy(eft->echoData, PTAD_CODE, strlen(PTAD_CODE));
+
 
 	if ((result = createIsoEftPacket(packet, sizeof(packet), eft)) <= 0)
 	{
@@ -1440,7 +1461,7 @@ int performPayCode(Eft *eft, NetWorkParameters *netParam, const enum SubTransTyp
 	return result;
 }
 
-int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
+int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const char *title)
 {
 	int ret;
 	int result = -1;
@@ -1449,12 +1470,17 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	unsigned char packedIcc[256] = {'\0'};
 	char pinblock[32] = {'\0'};
 	char display[65] = {'\0'};
+	char notifId[32] = {'\0'};
 
 	st_read_card_in *card_in = 0;
 	st_read_card_out *card_out = 0;
 	st_card_info card_info = {0};
 	TERMCONFIG termconfig = {0};
 	TERMINALAPPLIST TerminalApps = {0};
+
+	MerchantData *mParam = (MerchantData*)merchantData;
+	readMerchantData(mParam);
+	strncpy(notifId, mParam->notificationIdentifier, sizeof(notifId) - 1);
 	// 	CAPUBLICKEY pkKey={0};
 
 	// strncpy(eft->responseCode, "06", 2);	// set response code to Error
@@ -1711,7 +1737,12 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 
 	if (card_out->pin_len) {
 		if (eft->vas.switchMerchant) {
-			copyVirtualPinBlock(eft, card_out->pin_block);
+			unsigned char pinDataBcd[16];
+			memset(pinDataBcd, 0x00, sizeof(pinDataBcd));
+			
+			getVirtualPinBlock(pinDataBcd, (unsigned char*)card_out->pin_block, mParam->pKey);
+			eft->pinDataBcdLen = 8;
+			memcpy(eft->pinDataBcd, pinDataBcd, eft->pinDataBcdLen);
 			
 		} else {
 			eft->pinDataBcdLen = 8;
@@ -1728,7 +1759,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	{
 		Sys_GetDateTime(eft->yyyymmddhhmmss);
 		strncpy(eft->stan, &eft->yyyymmddhhmmss[8], sizeof(eft->stan));
-		getRrn(eft->rrn);
+
+		if (!eft->isVasTrans) {
+			getRrn(eft->rrn);
+		}
 		//strncpy(eft.serviceRestrictionCode, "221", sizeof(eft.serviceRestrictionCode)); //TODO: Get this card from kernel
 	}
 
@@ -1740,9 +1774,12 @@ int performEft(Eft *eft, NetWorkParameters *netParam, const char *title)
 	strcpy(card_info.title, card_in->title);
 	strcpy(card_info.pan, card_out->pan);
 	strcpy(card_info.expdate, card_out->exp_data);
+	populateEchoData(eft->echoData, notifId);
 
-	//TODO: print receipt from DB
-	//upay_print_proc(&card_info);	//TODO:		// Printout
+	// strncpy(eft->securityRelatedControlInformation, "FFB5BFFDE4D8E2D7E3A0F28F641FF2EC0000C819BEE020F2A0B6483B27AF72B25305FFFFFFFFFFFFFFFFFFFFFFFFFFFF", sizeof(eft->securityRelatedControlInformation) - 1);
+	// strncpy(eft->paymentInformation, "upsl-direct~010085C24300148041Meter Number=12.87001001.Acct=1022643026.Phone=07038085747~upsl-withdrawal", sizeof(eft->paymentInformation) - 1);
+	// strncpy(eft->managementData1, "managementdatehere", sizeof(eft->managementData1) - 1);
+	
 
 	// getPurchaseRequest(eft);
 

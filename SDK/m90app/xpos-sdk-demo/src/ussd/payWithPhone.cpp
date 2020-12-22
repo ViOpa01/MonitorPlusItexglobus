@@ -10,8 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "vas/simpio.h"
-#include "vas/jsobject.h"
+#include "vas/platform/simpio.h"
+#include "vas/jsonwrapper/jsobject.h"
 #include "EmvDB.h"
 #include "EmvDBUtil.h"
 #include "merchant.h"
@@ -23,11 +23,11 @@
 #include "payWithPhone.h"
 
 extern "C" {
-#include "sha256.h"
-#include "cJSON.h"
-#include "util.h"
-#include "network.h"
-#include "nibss.h"
+#include "../vas/platform/sha256.h"
+#include "../cJSON.h"
+#include "../util.h"
+#include "../network.h"
+#include "../nibss.h"
 
 #include "libapi_xpos/inc/libapi_util.h"
 #include "libapi_xpos/inc/libapi_gui.h"

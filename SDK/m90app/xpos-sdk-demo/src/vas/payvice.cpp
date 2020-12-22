@@ -1,25 +1,38 @@
 #include "payvice.h"
 
 #include <sstream>
+#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
-#include "simpio.h"
+
+#include "platform/platform.h"
+#include "./platform/simpio.h"
+
+#include "expatvisitor.h"
+#include "vasbridge.h"
+#include "vascomproxy.h"
 
 extern "C" {
-#include "sha256.h"
-#include "util.h"
-#include "ezxml.h"
-#include "vasbridge.h"
-
+#include "../util.h"
+#include "../ezxml.h"
 }
 
+#ifdef _VRXEVO
+static char* strdup(const char* s)
+{
+    char* p = (char*)malloc(strlen(s) + 1);
+    if (p)
+        strcpy(p, s);
+    return p;
+}
+#endif
 
 const char* Payvice::USER = "username";
 const char* Payvice::PASS = "passsword";
 const char* Payvice::WALLETID = "walletId";
 const char* Payvice::KEY = "key";
-const char* Payvice::SESSION = "session";
+const char* Payvice::TOKEN = "token";
+const char* Payvice::TOKEN_EXP = "tokenExp";
 
 const char* Payvice::VIRTUAL = "virtual";
 const char* Payvice::TID = "tid";
@@ -37,7 +50,198 @@ struct TamsPayviceResponse {
     std::string status;
     std::string result;
 };
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+
+struct TamsResponseParser : ExpatVisitor {
+
+    explicit TamsResponseParser(TamsPayviceResponse& response)
+        : response(response)
+    {
+    }
+
+    void setTag(const char* tag)
+    {
+        (void) tag;
+        val.clear();
+    }
+
+    void endTag(const char* tag)
+    {
+        if (strcmp(tag, "message") == 0) {
+            response.message = val;
+        } else if (strcmp(tag, "status") == 0) {
+            response.status = val;
+        } else if (strcmp(tag, "result") == 0) {
+            response.result = val;
+        } else if (strcmp(tag, "macros_tid") == 0) {
+            response.macros_tid = val;
+        }
+    }
+
+    void visit(const char* start, int len)
+    {
+        val += std::string(start, len);
+    }
+
+private:
+    TamsPayviceResponse& response;
+    std::string val;
+};
+
+Payvice::Payvice()
+    : _filename(PAYVICE_CONF)
+{
+    std::ifstream file;
+    std::stringstream stream;
+    bool fileExists = isFileExists(_filename.c_str());
+
+    if (!fileExists) {
+        resetFile();
+    } else {
+        file.open(_filename.c_str());
+    }
+
+    if (!file.is_open()) {
+        err = SOME_ERROR_OCCURED;
+        return;
+    }
+
+    stream << file.rdbuf();
+    if (!object.load(stream.str().c_str())) {
+        err = SOME_ERROR_OCCURED;
+        return;
+    }
+    file.close();
+}
+
+int Payvice::resetFile()
+{
+    object(WALLETID) = "";
+    object(USER) = "";
+    object(PASS) = "";
+    object(KEY) = "";
+    object(TOKEN) = "";
+    object(TOKEN_EXP) = 0;
+
+    return save();
+}
+
+std::string Payvice::getApiToken()
+{
+    std::string apiToken;
+
+    if (object(TOKEN).getString().empty() || object(TOKEN_EXP).isNull() || time(NULL) >= (time_t)object(TOKEN_EXP).getInt()) {
+        time_t now = time(NULL) - (time_t) 60 * 5;
+        std::string tokenResponse = fetchVasToken();
+        if (tokenResponse.empty()) {
+            return apiToken;
+        }
+
+        if (extractVasToken(tokenResponse, now) != 0) {
+            return apiToken;
+        }
+        save();
+    }
+    apiToken = object(TOKEN).getString();
+    return apiToken;
+}
+
+int Payvice::error() const { return err ? 1 : 0; }
+
+bool Payvice::isFileExists(const char* filename)
+{
+    struct stat st;
+    int result = stat(filename, &st); // this approach doesn't work if we don't have read access right to the DIRECTORY CONTAINING THE FILE
+    return result == 0;
+}
+
+int Payvice::save()
+{
+    FILE* config;
+
+    if ((config = fopen(_filename.c_str(), "w+")) == NULL) {
+        err = SAVE_ERR;
+        return -1;
+    }
+    fprintf(config, "%s", object.dump().c_str());
+    fclose(config);
+    err = NOERROR;
+    return 0;
+}
+
+std::string Payvice::fetchVasToken()
+{
+    MerchantData mParam;
+    NetWorkParameters netParam;
+    std::string response;
+
+    memset(&netParam, 0x00, sizeof(NetWorkParameters));
+    memset(&mParam, 0x00, sizeof(MerchantData));
+
+    readMerchantData(&mParam);
+
+
+    strncpy((char *)netParam.host, VAS_IP, sizeof(netParam.host) - 1);
+    netParam.receiveTimeout = 60000;
+	strncpy(netParam.title, "Request", 10);
+    netParam.isHttp = 1;
+    netParam.isSsl = 0;
+    netParam.port = atoi(VAS_PORT);
+    netParam.endTag = "";
+    std::string path = "/api/vas/authenticate/me";
+    char requestBody[1024] = {'\0'};
+
+    snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itexlive\", \"terminal\": \"%s\"}", 
+        object(Payvice::WALLETID).getString().c_str(), object(Payvice::USER).getString().c_str(), object(Payvice::PASS).getString().c_str(), mParam.tid);
+
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", path.c_str());
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s\r\n", netParam.host);
+
+    if (requestBody) {
+        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Type: application/json\r\n");
+        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Length: %zu\r\n", strlen(requestBody));
+
+        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "\r\n%s", requestBody);
+
+    }
+
+    if (sendAndRecvPacket(&netParam) != SEND_RECEIVE_SUCCESSFUL) {
+        return response;
+    }
+
+    response = bodyPointer((const char*)netParam.response);
+
+    return response;
+}
+
+int Payvice::extractVasToken(const std::string& response, const time_t now)
+{
+    iisys::JSObject json;
+
+    if (!json.load(response)) {
+        return -1;
+    }
+
+    const iisys::JSObject& responseCode = json("responseCode");
+    if (!responseCode.isString()) {
+        return -1;
+    } else if (responseCode.getString() != "00") {
+        return -1;
+    }
+
+    const iisys::JSObject& data = json("data");
+    const iisys::JSObject& token = data("apiToken");
+    const iisys::JSObject& expiration = data("expiration");
+
+    if (!token.isString() || !expiration.isString()) {
+        return -1;
+    }
+
+    object(Payvice::TOKEN) = token;
+    object(Payvice::TOKEN_EXP) = now + atoi(expiration.getString().c_str()) * 60 * 60;
+
+    return 0;
+}
+
 int genericSHA256(const char* msg, const char* key, char* hash)
 {
 
@@ -54,12 +258,12 @@ int genericSHA256(const char* msg, const char* key, char* hash)
     sha256_starts(&Context);
     memset(keyBin, 0, sizeof(keyBin));
 
-    len = hex2bin(key, (char*)keyBin, strlen(key));
+    len = vasimpl::hex2bin(key, (char*)keyBin, strlen(key));
     sha256_update(&Context, keyBin, len);
     sha256_update(&Context, (unsigned char*)message, strlen(message));
     sha256_finish(&Context, digest);
 
-    bin2hex(digest, hash, 32);     
+    vasimpl::bin2hex(digest, hash, 32);
 
     free(message);
 
@@ -98,7 +302,7 @@ void parseTamsPayviceResponse(TamsPayviceResponse& payviceResponse, char* buffer
     
 }
 
-TamsPayviceResponse loginPayVice(/*CURL* curl_handle, */const char* key, Payvice& payvice)
+TamsPayviceResponse loginPayVice(const char* key, Payvice& payvice)
 {
     NetWorkParameters netParam = {'\0'};
     char encPass[128] = { 0 };
@@ -241,7 +445,6 @@ int logIn(Payvice& payvice)
 
     payvice.object(Payvice::USER) = username;
 
-    password = payvice.object(Payvice::PASS).getString();
     if (getPassword(password) < 0) {
         return -1;
     }
@@ -263,120 +466,76 @@ bool loggedIn(const Payvice& payvice)
     const iisys::JSObject& password = payvice.object(Payvice::PASS);
     const iisys::JSObject& key = payvice.object(Payvice::KEY);
 
-    if (walletId.isNull() || walletId.getString().empty()
-        || username.isNull() || username.getString().empty()
-        || password.isNull() || password.getString().empty()
-        || key.isNull() || key.getString().empty()) {
+    if (!walletId.isString() || walletId.getString().empty()
+        || !username.isString() || username.getString().empty()
+        || !password.isString() || password.getString().empty()
+        || !key.isString() || key.getString().empty()) {
         return false;
     }
-        
+
     return true;
 }
 
 std::string encryptedPassword(const Payvice& payvice)
 {
-	char encPass[128] = { 0 };
+    char encPass[128] = { 0 };
 
-	genericSHA256(payvice.object(Payvice::PASS).getString().c_str(), payvice.object(Payvice::KEY).getString().c_str(), encPass);
+    genericSHA256(payvice.object(Payvice::PASS).getString().c_str(), payvice.object(Payvice::KEY).getString().c_str(), encPass);
 
-	int i = 0;
-	while (encPass[i]) {
-		encPass[i] = tolower(encPass[i]);
-		i++;
-	}
+    int i = 0;
+    while (encPass[i]) {
+        encPass[i] = tolower(encPass[i]);
+        i++;
+    }
 
     return std::string(encPass);
 }
 
 std::string encryptedPin(const Payvice& payvice, const char* pin)
 {
-	std::string encPassword = encryptedPassword(payvice);
+    std::string encPassword = encryptedPassword(payvice);
     char encPin[128] = { 0 };
 
-	genericSHA256(pin, encPassword.c_str(), encPin);
+    genericSHA256(pin, encPassword.c_str(), encPin);
 
-	int i = 0;
-	while (encPin[i]) {
-		encPin[i] = tolower(encPin[i]);
-		i++;
-	}
+    int i = 0;
+    while (encPin[i]) {
+        encPin[i] = tolower(encPin[i]);
+        i++;
+    }
 
-	return std::string(encPin);
+    return std::string(encPin);
 }
 
-int injectPayviceCredentials(iisys::JSObject& obj)
+std::string getClientReference(std::string& customReference)
 {
-    Payvice payvice;
+    const char* modelTag = "08";
+    const char* serialTag = "09";
+    const char* referenceTag = "11";
+    const char* terminalIdTag = "12";
 
-    if (!loggedIn(payvice)) {
-        return -1;
+    const std::string reference     = customReference.empty() ? vasimpl::cardReference() : customReference;
+    const std::string deviceModel   = vasimpl::getDeviceModel();
+    const std::string terminalId    = vasimpl::getDeviceTerminalId();
+    const std::string deviceSerial  = vasimpl::getDeviceSerial();
+
+    size_t i;
+    char clientRef[1024] = { 0 };
+
+    i += sprintf(&clientRef[i], "%s%02d%s", modelTag, (int)deviceModel.length(), deviceModel.c_str());
+    i += sprintf(&clientRef[i], "%s%02d%s", serialTag, (int)deviceSerial.length(), deviceSerial.c_str());
+    i += sprintf(&clientRef[i], "%s%02d%s", terminalIdTag, (int)terminalId.length(), terminalId.c_str());
+    i += sprintf(&clientRef[i], "%s%02d%s", referenceTag, (int)reference.length(), reference.c_str());
+
+    if (customReference.empty()) {
+        customReference = reference;
     }
-    
-    obj("username") = payvice.object(Payvice::USER);
-    obj("password") = payvice.object(Payvice::PASS);
-    obj("wallet") = payvice.object(Payvice::WALLETID);
-    obj("channel")  = "POS";
 
-    return 0;
+    return std::string(clientRef);
 }
 
 std::string getClientReference()
 {
-	char randomString[16] = {0};
-	char formattedTimestamp[32] = {0};
-	char tempRef[512] = {0};
-	char *b64EncodedMsg = 0;
-    Payvice payvice;
-    std::string ref;
-	size_t i = 0;
-
-	generateRandomString(randomString, sizeof(randomString));
-	getFormattedDateTime(formattedTimestamp, sizeof(formattedTimestamp));
-
-
-	snprintf(tempRef, sizeof(tempRef), "{\"sessionKey\": \"%s\", \"timestamp\": \"%s\",\"randomString\":\"%s\"}"
-		, payvice.object(Payvice::SESSION).getString().c_str(), formattedTimestamp, randomString);
-
-	b64EncodedMsg = (char*)base64_encode((unsigned char*)tempRef, strlen(tempRef), &i);
-
-	if (!b64EncodedMsg) {
-		return ref;
-	}
-
-    ref = std::string(b64EncodedMsg, i);
-
-	free(b64EncodedMsg);
-
-	return ref;
+    std::string reference;
+    return getClientReference(reference);
 }
-
-int cashIOVasToken(const char *msg, const char *prefix, KeyChain *keys)
-{
-    char *b64EncodedMsg = 0;
-    char urlEncoded[3 * 0x1000] = {0};
-    char toHash[4 * 0x1000] = {0}; // May truncate but not likely
-    size_t i;
-    
-    int msgLen = strlen(msg);
-
-    b64EncodedMsg = (char*)base64_encode((const unsigned char*)msg, msgLen, &i);
-
-    safe_url_encode(b64EncodedMsg, urlEncoded, sizeof(urlEncoded), 0);
-
-	if (prefix) {
-		int pLen = strlen(prefix);
-		strncat(keys->nonce, prefix, sizeof(keys->nonce) - 1);
-		generateRandomString(keys->nonce + pLen, sizeof(keys->nonce) - pLen);
-	} else {
-		generateRandomString(keys->nonce, sizeof(keys->nonce));
-	}
-
-    sprintf(toHash, "%s%s%s", keys->nonce, "IL0v3Th1sAp11111111UC4NDoV4SSWITHVICEBANKING", urlEncoded);
-
-    sha512Hex(keys->signature, toHash, strlen(toHash));
-
-    free(b64EncodedMsg);
-
-    return (int)strlen(keys->signature);
-}
-

@@ -1,41 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <unistd.h>
+#include <math.h>
 #include <vector>
 #include <algorithm>
-#include <iterator>
 
-#include "simpio.h"
-#include "util.h"
+#include "jsonwrapper/jsobject.h"
 
+#include "platform/platform.h"
 
-
-#include <unistd.h>
-
-#include "jsobject.h"
-
-#include "electricity.h"
+#include "viewmodels/cashioViewModel.h"
+#include "viewmodels/electricityViewModel.h"
+#include "viewmodels/airtimeViewModel.h"
+#include "viewmodels/dataViewModel.h"
+#include "viewmodels/smileViewModel.h"
+#include "viewmodels/paytvViewModel.h"
 #include "cashio.h"
 #include "airtime.h"
 #include "data.h"
 #include "paytv.h"
 #include "smile.h"
+#include "wallet.h"
 
 #include "vas.h"
 #include "vasdb.h"
-#include "wallet.h"
 
 extern "C" {
-#include "itexFile.h"
+#include "../itexFile.h"
 }
-
-extern int formatAmount(std::string& ulAmount);
 
 #define VASADMIN "VASADMIN"
 
 int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<std::string, std::string>& values)
 {
+    // LogManager log(VASADMIN);
     std::string amountApproved;
     std::string approvedCount;
     std::string amountDeclined;
@@ -43,7 +42,7 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
     std::string totalCount;
     std::string amountStr;
 
-    std::string amountSymbol = getCurrencySymbol();
+    std::string amountSymbol = getVasCurrencySymbol();
 
     int ret = -1;
 
@@ -66,13 +65,15 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
 
     iisys::JSObject jHelp;
 
-    values[VASDB_DATE] = date;
+    // fillReceiptHeader(values);
+    // fillReceiptFooter(values);
+
+    values["date"] = date;
 
     for (size_t i = 0; i < transactions.size(); ++i) {
         std::map<std::string, std::string>& element = transactions[i];
-
+        
         const std::string& status = element[VASDB_STATUS];
-
         if (status == VasDB::trxStatusString(VasDB::APPROVED)) {
             jHelp[i]("status") = " A ";
         } else if (status == VasDB::trxStatusString(VasDB::DECLINED)) {
@@ -88,7 +89,7 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
         }
 
         amountStr = element[VASDB_AMOUNT];
-        formatAmount(amountStr);
+        vasimpl::formatAmount(amountStr);
 
         if (service.empty()) {
             jHelp[i]("preferredField") = element[VASDB_SERVICE];
@@ -100,10 +101,10 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
     }
     values["menu"] = jHelp.dump();
 
-    // printf("Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
-    formatAmount(amountApproved);
-    formatAmount(amountDeclined);
-    // printf("Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
+    // LOGF_INFO(log.handle, "Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
+    vasimpl::formatAmount(amountApproved);
+    vasimpl::formatAmount(amountDeclined);
+    // LOGF_INFO(log.handle, "Approved -> %s, Declined -> %s", amountApproved.c_str(), amountDeclined.c_str());
 
     values["approvedAmount"] = amountSymbol + " " + amountApproved;
     values["declinedAmount"] = amountSymbol + " " + amountDeclined;
@@ -123,7 +124,7 @@ int requestDateAndService(VasDB& database, std::string& date, std::string& servi
 
     database.selectUniqueDates(dates);
     if (dates.empty()) {
-        UI_ShowButtonMessage(3000, "Message", "No Records", "OK", UI_DIALOG_TYPE_CAUTION);
+        UI_ShowButtonMessage(2000, "No Records", "", "OK", UI_DIALOG_TYPE_CAUTION);
         return -1;
     }
 
@@ -164,17 +165,18 @@ int showVasTransactions(int timeout, const char* title, std::vector<std::map<std
 {
     std::string amountStr;
     std::vector<std::string> transvector;
-    std::string amountSymbol = getCurrencySymbol();
+    std::string amountSymbol = getVasCurrencySymbol();
 
     for (size_t i = 0; i < elements.size(); ++i) {
         std::map<std::string, std::string>& element = elements[i];
-        int approved = !strcmp(element[VASDB_STATUS].c_str(), VasDB::trxStatusString(VasDB::APPROVED));
+        // int approved = !strcmp(element[VASDB_STATUS].c_str(), VasDB::trxStatusString(VasDB::APPROVED));
+        const std::string& status = element[VASDB_STATUS];
         amountStr = element[VASDB_AMOUNT];
-        formatAmount(amountStr);
+        vasimpl::formatAmount(amountStr);
 
-        transvector.push_back(element[VASDB_SERVICE] + '\n'
-            + ((approved) ? " Approved, " : " Declined, ") + amountSymbol + " " + amountStr
-            + "\nTRANS SEQ: " + element[VASDB_TRANS_SEQ]);
+        transvector.push_back(element[VASDB_SERVICE] + vasimpl::menuendl()
+            + status + " " + amountSymbol + " " + amountStr
+            + vasimpl::menuendl() + "TRANS SEQ: " + element[VASDB_TRANS_SEQ]);
     }
 
     return UI_ShowSelection(timeout, title, transvector, preselect);
@@ -196,9 +198,9 @@ void vasEndofDay()
         }
 
         values["trxType"] = service.empty() ? "Services" : service;
-    
-        printVasEod(values);
-
+        // if (previewReceiptMap(values, 0, "../print/eodReceipt.html") == 0) {
+        //     checkedPrint(values, "eodReceipt.html");
+        // }
     }
 }
 
@@ -211,7 +213,7 @@ bool listVasTransactions(VasDB& db, const std::string& dateTime, const std::stri
     }
 
     if (!transactions.size()) {
-        UI_ShowButtonMessage(2000,  dateTime.c_str(), "No Transactions For Specified Date","OK", UI_DIALOG_TYPE_CAUTION);
+        UI_ShowButtonMessage(2000, "No Transactions For Specified Date", dateTime.c_str(), "OK", UI_DIALOG_TYPE_CAUTION);
         return false;
     }
 
@@ -222,10 +224,11 @@ bool listVasTransactions(VasDB& db, const std::string& dateTime, const std::stri
     }
 
     std::map<std::string, std::string>& record = transactions[selection];
-  
+    // fillReceiptHeader(record);
+    // fillReceiptFooter(record);
     record["walletId"] = Payvice().object(Payvice::WALLETID).getString();
     record["receipt_copy"] += "- Reprint -";
-    if (printVas(record) != UPRN_SUCCESS) {
+    if (printVas(record) != 0) {
         return false;
     }
 
@@ -238,7 +241,7 @@ bool vasReprintToday()
     char dateTime[32] = { 0 };
 
     Demo_SplashScreen("Loading Transactions...", "www.payvice.com");
-    getFormattedDateTime(dateTime, sizeof(dateTime));
+    vasimpl::formattedDateTime(dateTime, sizeof(dateTime));
     return listVasTransactions(db, dateTime, "", "Transactions Today");
 }
 
@@ -257,14 +260,31 @@ bool vasReprintByDate()
     return listVasTransactions(database, date, service, service.empty() ? "All Services" : service.c_str());
 }
 
-int printRequery(iisys::JSObject& transaction)
+static iisys::JSObject reconstructOriginalResponse(const iisys::JSObject& requeryData)
+{
+    // Had to reconstruct this to avoid server response inconsistencies
+    iisys::JSObject response;
+
+    const iisys::JSObject& tempResponse = requeryData("response");
+
+    if (!tempResponse.isObject()) {
+        return response;
+    }
+
+    response("responseCode") = tempResponse("responseCode");
+    response("message") = tempResponse("message");
+    response("data") = tempResponse;
+
+    return response;
+}
+
+int printRequery(const iisys::JSObject& transaction)
 {
     Postman postman;
     std::string productName;
     std::string statusMsg;
-    VasStatus status;
+    VasResult status;
     std::map<std::string, std::string> record;
-    char amountStr[16] = {'\0'};
     
     statusMsg = transaction("status").getString();
     productName = transaction("product").getString();
@@ -276,123 +296,199 @@ int printRequery(iisys::JSObject& transaction)
 
     std::transform(productName.begin(), productName.end(), productName.begin(), ::tolower);
 
-    iisys::JSObject response;
-    if (!response.load(transaction("response").getString())) {
-        return -1;
-    }
-
-
-    // VasStatus status = vasErrorCheck(response);
-    // status.message = transaction("status").getString();
-
+    const iisys::JSObject response = reconstructOriginalResponse(transaction);
 
     if (productName == "ikedc") {
-        Electricity electricity(vasMenuString(ENERGY), postman);
-        status = electricity.processPaymentResponse(response, IKEJA);
+        ElectricityViewModel electricity(vasMenuString(ENERGY), postman);
+        if (electricity.setService(IKEJA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "ekedc") {
-        Electricity electricity(vasMenuString(ENERGY), postman);
-        status = electricity.processPaymentResponse(response, EKEDC);
+        ElectricityViewModel electricity(vasMenuString(ENERGY), postman);
+        if (electricity.setService(EKEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "eedc") {
-        Electricity electricity(vasMenuString(ENERGY), postman);
-        status = electricity.processPaymentResponse(response, EEDC);
+        ElectricityViewModel electricity(vasMenuString(ENERGY), postman);
+        if (electricity.setService(EEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "ibedc") {
-        Electricity electricity(vasMenuString(ENERGY), postman);
-        status = electricity.processPaymentResponse(response, IBEDC);
+        ElectricityViewModel electricity(vasMenuString(ENERGY), postman);
+        if (electricity.setService(IBEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "phed") {
-        Electricity electricity(vasMenuString(ENERGY), postman);
-        status = electricity.processPaymentResponse(response, PHED);
+        ElectricityViewModel electricity(vasMenuString(ENERGY), postman);
+        if (electricity.setService(PHED).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "aedc") {
-        Electricity electricity(vasMenuString(ENERGY), postman);
-        status = electricity.processPaymentResponse(response, AEDC);
+        ElectricityViewModel electricity(vasMenuString(ENERGY), postman);
+        if (electricity.setService(AEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "kedco") {
-        Electricity electricity(vasMenuString(ENERGY), postman);
-        status = electricity.processPaymentResponse(response, KEDCO);
+        ElectricityViewModel electricity(vasMenuString(ENERGY), postman);
+        if (electricity.setService(KEDCO).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "withdrawal") {
-        ViceBanking viceBanking(vasMenuString(CASHIO), postman);
-        status = viceBanking.processPaymentResponse(response, WITHDRAWAL);
+        ViceBankingViewModel viceBanking(vasMenuString(CASHIO), postman);
+        viceBanking.setService(WITHDRAWAL);
+        status = viceBanking.processPaymentResponse(response);
         record = viceBanking.storageMap(status);
     } else if (productName == "transfer") {
-        ViceBanking viceBanking(vasMenuString(CASHIO), postman);
-        status = viceBanking.processPaymentResponse(response, TRANSFER);
+        ViceBankingViewModel viceBanking(vasMenuString(CASHIO), postman);
+        viceBanking.setService(TRANSFER);
+        status = viceBanking.processPaymentResponse(response);
         record = viceBanking.storageMap(status);
     } else if (productName == "gotv") {
-        PayTV payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
+        PayTVViewModel payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
+        if (payTv.setService(GOTV).error != NO_ERRORS){
+            return -1;
+        }
         status = payTv.processPaymentResponse(response, GOTV);
         record = payTv.storageMap(status);
     } else if (productName == "dstv") {
-        PayTV payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
+        PayTVViewModel payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
+        if (payTv.setService(DSTV).error != NO_ERRORS){
+            return -1;
+        }
         status = payTv.processPaymentResponse(response, DSTV);
         record = payTv.storageMap(status);
     } else if (productName == "startimes") {
-        PayTV payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
+        PayTVViewModel payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
+        if (payTv.setService(STARTIMES).error != NO_ERRORS){
+            return -1;
+        }
         status = payTv.processPaymentResponse(response, STARTIMES);
         record = payTv.storageMap(status);
-    } else if (productName == "mtnvtu") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, MTNVTU);
+    } else if (productName == "mtnvtu" || strncmp(productName.c_str(), "mtnvtu", 6) == 0) {
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(MTNVTU).error != NO_ERRORS) {
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
     } else if (productName == "glovtu") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, GLOVTU);
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(GLOVTU).error != NO_ERRORS) {
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
     } else if (productName == "airtelvtu") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, AIRTELVTU);
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(AIRTELVTU).error != NO_ERRORS) {
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
     } else if (productName == "etisalatvtu") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, ETISALATVTU);
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(ETISALATVTU).error != NO_ERRORS) {
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
     } else if (productName == "mtndata") {
-        Data data(vasMenuString(DATA), postman);
-        status = data.processPaymentResponse(response, MTNDATA);
+        DataViewModel data(vasMenuString(DATA), postman);
+        if (data.setService(MTNDATA). error != NO_ERRORS) {
+            return -1;
+        }
+        status = data.processPaymentResponse(response);
         record = data.storageMap(status);
     } else if (productName == "glodata") {
-        Data data(vasMenuString(DATA), postman);
-        status = data.processPaymentResponse(response, GLODATA);
+        DataViewModel data(vasMenuString(DATA), postman);
+        if (data.setService(GLODATA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = data.processPaymentResponse(response);
         record = data.storageMap(status);
     } else if (productName == "airteldata") {
-        Data data(vasMenuString(DATA), postman);
-        status = data.processPaymentResponse(response, AIRTELDATA);
+        DataViewModel data(vasMenuString(DATA), postman);
+        if (data.setService(AIRTELDATA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = data.processPaymentResponse(response);
         record = data.storageMap(status);
     } else if (productName == "etisalatdata") {
-        Data data(vasMenuString(DATA), postman);
-        status = data.processPaymentResponse(response, ETISALATDATA);
+        DataViewModel data(vasMenuString(DATA), postman);
+        if (data.setService(ETISALATDATA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = data.processPaymentResponse(response);
         record = data.storageMap(status);
     } else if (productName == "glovot") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, GLOVOT);
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(GLOVOT).error != NO_ERRORS){
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
     } else if (productName == "airtelvot") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, AIRTELVOT);
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(AIRTELVOT).error != NO_ERRORS) {
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
     } else if (productName == "glovos") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, GLOVOS);
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(GLOVOS).error != NO_ERRORS) {
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
     } else if (productName == "airtelvos") {
-        Airtime airtime(vasMenuString(AIRTIME), postman);
-        status = airtime.processPaymentResponse(response, AIRTELVOS);
+        AirtimeViewModel airtime(vasMenuString(AIRTIME), postman);
+        if (airtime.setService(AIRTELVOS).error != NO_ERRORS) {
+            return -1;
+        }
+        status = airtime.processPaymentResponse(response);
         record = airtime.storageMap(status);
+    } else if (productName == "smile") {
+        SmileViewModel smile(vasMenuString(SMILE), postman);
+        const iisys::JSObject& nameObj = transaction("name");
+        std::string name;
+
+        if (nameObj.isString()) {
+            name = nameObj.getString();
+        }
+
+        if (name == "Smile Bundle" && smile.setService(SMILEBUNDLE).error != NO_ERRORS) {
+            return -1;
+        } else if (name == "Smile Top Up" && smile.setService(SMILETOPUP).error != NO_ERRORS) {
+            return -1;
+        }
+        status = smile.processPaymentResponse(response);
+        record = smile.storageMap(status);
     }
 
-    iisys::JSObject& account = transaction("VASCustomerAccount");
-    iisys::JSObject& paymentMethod = transaction("paymentMethod");
-    iisys::JSObject& address = transaction("VASCustomerAddress");
-    iisys::JSObject& phone = transaction("VASCustomerPhone");
-    iisys::JSObject& name = transaction("VASCustomerName");
-    iisys::JSObject& seq = transaction("sequence");
-    iisys::JSObject& product = transaction("product");
-    iisys::JSObject& wallet = transaction("wallet");
-    iisys::JSObject& tid = transaction("terminal");
+    const iisys::JSObject& account = transaction("VASCustomerAccount");
+    const iisys::JSObject& paymentMethod = transaction("paymentMethod");
+    const iisys::JSObject& address = transaction("VASCustomerAddress");
+    const iisys::JSObject& phone = transaction("customerPhoneNumber");
+    const iisys::JSObject& name = transaction("VASCustomerName");
+    const iisys::JSObject& seq = transaction("sequence");
+    const iisys::JSObject& product = transaction("product");
+    const iisys::JSObject& wallet = transaction("wallet");
+    const iisys::JSObject& tid = transaction("terminal");
 
 
     if (name.isString()) {
@@ -423,92 +519,124 @@ int printRequery(iisys::JSObject& transaction)
         record[VASDB_TRANS_SEQ] = seq.getString();
     }
     
+    const unsigned long amount = (unsigned long) lround(transaction("amount").getNumber() * 100.0f);
+    record[VASDB_AMOUNT] = vasimpl::to_string(amount);
+    record[VASDB_DATE] = transaction("created_at").getString();
 
-    // This fix requery amount bug that comes out in exponential format
-    sprintf(amountStr, "%lu", transaction("amount").getInt());
-    record[VASDB_AMOUNT] = amountStr;
-    record[VASDB_DATE] = transaction("date").getString();
-
-    iisys::JSObject& cardName = transaction("cardName");
+    const iisys::JSObject& cardName = transaction("cardName");
     if (!cardName.isNull()) {
         record[DB_NAME] = cardName.getString();
     }
 
-    iisys::JSObject& cardPan = transaction("cardPAN");
+    const iisys::JSObject& cardPan = transaction("mPan");
     if (!cardPan.isNull()) {
         record[DB_PAN] = cardPan.getString();
     }
 
-    iisys::JSObject& cardExpiry = transaction("cardExpiry");
+    const iisys::JSObject& cardExpiry = transaction("expiry");
     if (!cardExpiry.isNull()) {
         record[DB_EXPDATE] = cardExpiry.getString();
     }
 
-    iisys::JSObject& cardStan = transaction("transactionSTAN");
+    const iisys::JSObject& cardStan = transaction("stan");
     if (!cardStan.isNull()) {
         record[DB_STAN] = cardStan.getString();
     }
 
-    iisys::JSObject& cardAuthID = transaction("transactionAuthCode");
-    if (!cardAuthID.isNull()) {
-        record[DB_AUTHID] = cardAuthID.getString();
-    }
-
-    iisys::JSObject& cardRef = transaction("transactionRRN");
+    const iisys::JSObject& cardRef = transaction("rrn");
     if (!cardRef.isNull()) {
         record[DB_RRN] = cardRef.getString();
     }
 
-    iisys::JSObject& cardRespCode = transaction("transactionResponseCode");
-    if (!cardRespCode.isNull()) {
-        record[DB_RESP] = cardRespCode.getString();
-    }
-
-    iisys::JSObject& cardTid = transaction("virtualTID");
+    const iisys::JSObject& cardTid = transaction("vTid");
     if (!cardTid.isNull()) {
         record[VASDB_VIRTUAL_TID] = cardTid.getString();
     }
 
+    const iisys::JSObject& card = transaction("card");
+    if (card.isObject()) {
+        const iisys::JSObject& cardAuthID = card("acode");
+        if (!cardAuthID.isNull()) {
+            record[DB_AUTHID] = cardAuthID.getString();
+        }
+
+        const iisys::JSObject& cardRespCode = card("resp");
+        if (!cardRespCode.isNull()) {
+            record[DB_RESP] = cardRespCode.getString();
+        }
+    }
+
+    // typedef std::vector<std::map<std::string, std::string> >::const_iterator vi;
+    // typedef std::map<std::string, std::string>::const_iterator mi;
+    // for(mi col = record.begin(); col != record.end(); ++col) 
+    //     LOGF_INFO(LogManager("TLITE").handle, "(%s) -> (%s : %s)", __FUNCTION__, col->first.c_str(), col->second.c_str());
+
+
+    // fillReceiptHeader(record);
+    // fillReceiptFooter(record);
     record["walletId"] = wallet.getString();
-    record["terminalId"] = tid.getString();
-    record["receipt_copy"] += "- Reprint -";
+    if (!tid.isNull()) {
+        record["terminalId"] = tid.getString();
+    }
+    record["receipt_copy"] += "- Requery Reprint -";
     printVas(record);
 
     return 0;
 }
 
+void vasRequery()
+{
+    iisys::JSObject transaction;
+    std::string seqNumber;
+    std::string cardRef;
+
+    const char* optionStr[] = { "Sequence", "Card Reference"};
+    std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
+
+    switch (UI_ShowSelection(30000, "Options", optionMenu, 0)) {
+    case 0:
+        seqNumber = getNumeric(0, 30000, "Sequence No", "", UI_DIALOG_TYPE_NONE);
+        if (seqNumber.empty()) {
+            return;
+        }
+        break;
+    case 1:
+        cardRef = getNumeric(0, 30000, "Card Reference", "", UI_DIALOG_TYPE_NONE);
+        if (cardRef.empty()) {
+            return;
+        }
+        break;
+    default:
+        return;
+    }
+
+    Demo_SplashScreen("Please wait...", "www.payvice.com");
+    VasError requeryErr = Postman::manualRequery(transaction, seqNumber, cardRef);
+    if (requeryErr == TXN_NOT_FOUND) {
+        UI_ShowButtonMessage(2000, "Transaction Not Found", "", "OK", UI_DIALOG_TYPE_CAUTION);
+    } else if (requeryErr == TXN_PENDING) {
+        UI_ShowButtonMessage(2000, "Transaction Pending", "", "OK", UI_DIALOG_TYPE_CAUTION);
+    } else if (requeryErr != NO_ERRORS && transaction.isNull()) {
+        UI_ShowButtonMessage(2000, "Requery Failed", "", "OK", UI_DIALOG_TYPE_CAUTION);
+    }
+
+    printRequery(transaction);
+}
+
 void vasAdmin()
 {
     Payvice payvice;
-    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Balance Enquiry", "Commission Transfer", "Log Out" };
+    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Balance Enquiry", "Commission Transfer", "Log out"};
 
-    if(!loggedIn(payvice) && logIn(payvice) < 0) {
-        return;
+    if (!loggedIn(payvice) && logIn(payvice) < 0) {
+        return;    
     }
 
     std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
     switch (UI_ShowSelection(30000, "Vas Admin", optionMenu, 0)) {
-    case 0: {
-        iisys::JSObject transaction;
-
-        std::string seqNumber = getNumeric(0, 30000, "Sequence No", "", UI_DIALOG_TYPE_NONE);
-      
-        if (seqNumber.empty()) {
-            return;
-        }
-
-        VasError requeryErr = requeryVas(transaction, NULL, seqNumber.c_str());
-        if (requeryErr == TXN_NOT_FOUND) {
-            UI_ShowButtonMessage(2000, "Transaction Not Found", "", "OK", UI_DIALOG_TYPE_CAUTION);
-        } else if (requeryErr == TXN_PENDING) {
-            UI_ShowButtonMessage(2000, "Transaction Pending", "", "OK", UI_DIALOG_TYPE_CAUTION);
-        } else if (requeryErr != NO_ERRORS && transaction.isNull()) {
-            UI_ShowButtonMessage(2000, "Requery Failed", "", "OK", UI_DIALOG_TYPE_CAUTION);
-        }
-
-        printRequery(transaction);
-
-    }   break;
+    case 0:
+        vasRequery();
+        break;
     case 1:
         vasEndofDay();
         break;
@@ -519,25 +647,20 @@ void vasAdmin()
         vasReprintByDate();
         break;
     case 4:
-        walletRequest(1);
-        break;   
+        walletBalance();
+        break;
     case 5:
-        walletRequest(2);
+        walletRequest(2);   // commission to wallet
         break;
-
     case 6:
-        if(UI_ShowOkCancelMessage(2000, "Notification", "Do you wish to log out?", UI_DIALOG_TYPE_CAUTION) == CONFIRM) {
-            // log out 
+        if (UI_ShowOkCancelMessage(10000, "Confirm Logout", "Are you sure you want to log out?", UI_DIALOG_TYPE_CAUTION) == CONFIRM) {
+        
             if (logOut(payvice) == 0) {
-                // VASDB_FILE, but it contains the directory as well, itex/vas.db
-                removeFile("vas.db");
-                VasDB::init();
+                remove(VASDB_FILE);
+                initVasTables();
             }
-  
         }
-
         break;
-
     default:
         break;
     }

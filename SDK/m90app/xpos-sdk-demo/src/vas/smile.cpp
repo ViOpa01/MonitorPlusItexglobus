@@ -4,400 +4,195 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <ctype.h>
 
+#include "platform/platform.h"
 
-#include "simpio.h"
-#include "pfm.h"
+#include "jsonwrapper/jsobject.h"
 
 #include "vasdb.h"
 
 #include "smile.h"
 
 Smile::Smile(const char* title, VasComProxy& proxy)
-    : _title(title)
-    , service(SERVICE_UNKNOWN)
-    , comProxy(proxy)
+    : viewModel(title, proxy)
 {
 }
 
-VasStatus Smile::beginVas()
+Smile::~Smile()
 {
+}
+
+VasResult Smile::beginVas()
+{
+    VasResult result;
+
     while (1) {
         Service services[] = { SMILETOPUP, SMILEBUNDLE };
         std::vector<Service> serviceVector(services, services + sizeof(services) / sizeof(Service));
 
-        service = selectService("Smile Services", serviceVector);
+        const Service service = selectService("Smile Services", serviceVector);
         if (service == SERVICE_UNKNOWN) {
-            return VasStatus(USER_CANCELLATION);
+            result = VasResult(USER_CANCELLATION);
+            return result;
+        }
+
+        result = viewModel.setService(service);
+        if (result.error != NO_ERRORS) {
+            return result;
         }
 
         const char* optionStr[] = {"Customer ID", "Phone"};
         std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
 
         int optionSelected = UI_ShowSelection(30000, "Options", optionMenu, 0);
-        if (optionSelected == 0) {
-            customerID = getNumeric(0, 30000, "Customer ID", "Smile Account No", UI_DIALOG_TYPE_NONE);
-        } else if (optionSelected == 1) {
-            phoneNumber = getPhoneNumber("Phone Number", "");
+        if (optionSelected < 0) {
+            result.error = USER_CANCELLATION;
+            return result;
+        } else if (optionSelected == 0) {
+            const std::string customerID = getNumeric(0, 30000, "Customer ID", "Smile Account No", UI_DIALOG_TYPE_NONE);
+            if (customerID.empty()) {
+                result = VasResult(USER_CANCELLATION);
+                return result;
+            }
+
+            result = viewModel.setCustomerID(customerID);
+            if(result.error != NO_ERRORS) {
+                result = VasResult(result.error, result.message.c_str());
+                return result;
+            }
+
         }
 
-        if (customerID.empty() && phoneNumber.empty()) {
-            continue;
+        const std::string phoneNumber = getPhoneNumber("Phone Number", "");
+        if (phoneNumber.empty()) {
+            result.error = USER_CANCELLATION;
+            return result;
+        }
+
+        result = viewModel.setPhoneNumber(phoneNumber);
+        if (result.error != NO_ERRORS) {
+            return result;
         }
 
         break;
     }
 
-    return VasStatus(NO_ERRORS);
+    result = VasResult(NO_ERRORS); 
+    return result;
 }
 
-VasStatus Smile::lookup(const VasStatus&)
+VasResult Smile::lookup()
 {
-    VasStatus response;
-    iisys::JSObject obj;
-    Payvice payvice;
-
-    obj("username") = payvice.object(Payvice::USER).getString();
-    obj("wallet") = payvice.object(Payvice::WALLETID).getString();
-    obj("password") = payvice.object(Payvice::PASS).getString();
-    obj("pin") = payvice.object(Payvice::PASS).getString();
-
+    VasResult response;
+    std::ostringstream confirmationMessage;   
+    
     Demo_SplashScreen("Lookup In Progress", "www.payvice.com");
 
-    if (!phoneNumber.empty()) {
-        obj("account") = phoneNumber;
-        response = comProxy.lookup("/smile/validate/phone", &obj);
-    } else if (!customerID.empty()) {
-        obj("account") = customerID;
-        response = comProxy.lookup("/smile/validate", &obj);
-    } else {
-        return VasStatus(USER_CANCELLATION);
+    response = viewModel.lookup();
+
+    if(response.error != NO_ERRORS) {
+        return response;
     }
 
-    if (response.error) {
-        return VasStatus(LOOKUP_ERROR, response.message.c_str());
+    confirmationMessage << viewModel.lookupResponse.customerName << std::endl << std::endl;
+
+    int i = UI_ShowOkCancelMessage(30000, "Confirm Info", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
+    if (i != 0) {
+        return VasResult(USER_CANCELLATION);
     }
 
-    if (!obj.load(response.message)) {
-        return VasStatus(INVALID_JSON, "Invalid Response");
-    }
-
-    return displayLookupInfo(obj);
+    return VasResult(NO_ERRORS);
 }
 
-VasStatus Smile::initiate(const VasStatus& lookupStatus)
+VasResult Smile::initiate()
 {
-    if (service == SMILETOPUP) {
-        amount = getAmount("TOP-UP");
-        if (amount <= 0) {
-            return VasStatus(USER_CANCELLATION);
+    VasResult result;
+
+    if (viewModel.getService() == SMILETOPUP) {
+        unsigned long amount = getVasAmount("TOP-UP");
+        if (!amount) {
+            result.error = USER_CANCELLATION;
+            return result;
         }
-    } else {
-        iisys::JSObject obj;
-        Payvice payvice;
 
-        obj("username") = payvice.object(Payvice::USER).getString();
-        obj("password") = payvice.object(Payvice::PASS).getString();
-        obj("wallet") = payvice.object(Payvice::WALLETID).getString();
+        result = viewModel.setAmount(amount);
+        if(result.error != NO_ERRORS) {
+            return result;
+        }
 
+    } else if (viewModel.getService() == SMILEBUNDLE) {
+       
         Demo_SplashScreen("Loading Bundles...", "www.payvice.com");
 
-        VasStatus response = comProxy.lookup("/smile/get-bundles", &obj);
-        if (response.error) {
-            return VasStatus(response.error, "Bundle lookup failed");
+        result = viewModel.initiate();
+        if (result.error != NO_ERRORS) {
+            return VasResult(result.error, "Bundle lookup failed");
         }
 
-        VasStatus check = bundleCheck(response);
-        if (check.error) {
-            return VasStatus(check.error, check.message.c_str());
+        const iisys::JSObject& data = viewModel.getBundles();
+    
+        if (data.isNull() || !data.isArray()) {
+            return VasResult(VAS_ERROR, "Data Packages not found");
         }
+
+        const size_t size = data.size();
+        std::vector<std::string> menuData;
+            for (size_t i = 0; i < size; ++i) {
+            std::string amount = data[i]("price").getString();
+            std::string validity = data[i]("validity").getString();
+
+            menuData.push_back(data[i]("name").getString() + vasimpl::menuendl() + amount + " Naira, " + validity);
+        }
+
+        int selection = UI_ShowSelection(60000, "Bundles", menuData, 0);
+
+        if (selection < 0) {
+            return VasResult(USER_CANCELLATION);
+        }
+        
+        viewModel.setSelectedPackageIndex(selection);
     }
 
-    payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
+    const PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
     if (payMethod == PAYMENT_METHOD_UNKNOWN) {
-        return VasStatus(USER_CANCELLATION);
+        return VasResult(USER_CANCELLATION);
     }
 
-    return VasStatus(NO_ERRORS);
+    result = viewModel.setPaymentMethod(payMethod);
+    if (result.error != NO_ERRORS) {
+        return result;
+    }
+
+    return VasResult(NO_ERRORS);
 }
 
-Service Smile::vasServiceType()
-{
-    return service;
-}
-
-VasStatus Smile::complete(const VasStatus& initiateStatus)
+VasResult Smile::complete()
 {
     std::string pin;
-    iisys::JSObject json;
-    VasStatus response;
+    VasResult response;
 
-    switch (getPin(pin, "Payvice Pin")) {
-    case EMV_CT_PIN_INPUT_ABORT:
-        response.error = INPUT_ABORT;
-        return response;
-    case EMV_CT_PIN_INPUT_TIMEOUT:
-        response = INPUT_TIMEOUT_ERROR;
-        return response;
-    case EMV_CT_PIN_INPUT_OTHER_ERR:
-        response = INPUT_ERROR;
-        return response;
-    default:
-        break;
-    }
-
-    if (getPaymentJson(json, service) < 0) {
-        response.error = VAS_ERROR;
-        response.message = "Data Error";
+    response.error = getVasPin(pin);
+    if (response.error != NO_ERRORS) {
         return response;
     }
 
-    json("pin") = encryptedPin(Payvice(), pin.c_str());
-    json("pfm")("state") = getState();
-    
-    json("clientReference") = getClientReference();
+    Demo_SplashScreen("Please Wait", "www.payvice.com");
 
-    Demo_SplashScreen("Payment In Progress", "www.payvice.com");
-
-    if (payMethod == PAY_WITH_CARD) {
-        cardPurchase.amount = amount;
-        response = comProxy.complete(paymentPath(service), &json, NULL, &cardPurchase);
-    } else {
-        response = comProxy.complete(paymentPath(service), &json);
-    }
-
-    if (response.error) {
-        return response;
-    }
-
-    if (!json.load(response.message)) {
-        response.error = INVALID_JSON;
-        response.message = "Invalid Response";
-        return response;
-    }
-
-    response = processPaymentResponse(json, service);
+    response = viewModel.complete(pin);
 
     return response;
 }
 
-std::map<std::string, std::string> Smile::storageMap(const VasStatus& completionStatus)
+std::map<std::string, std::string> Smile::storageMap(const VasResult& completionStatus)
 {
-    std::map<std::string, std::string> record;
-    char amountStr[16] = { 0 };
-
-
-    sprintf(amountStr, "%lu", amount);
-
-    if (service == SMILEBUNDLE) {
-        record[VASDB_PRODUCT] = lookupResponse.selectedPackage("name").getString(); 
-    } else if (service == SMILETOPUP) {
-        record[VASDB_PRODUCT] = serviceToProductString(service); 
-    }
+    std::map<std::string, std::string> record = viewModel.storageMap(completionStatus);
     
-    record[VASDB_CATEGORY] = _title;
-    record[VASDB_SERVICE] = serviceToString(service);
-    record[VASDB_AMOUNT] = amountStr;
-
-
-    record[VASDB_BENEFICIARY_NAME] = lookupResponse.name;
-    if (!customerID.empty()) {
-        record[VASDB_BENEFICIARY] = customerID;
-    }
-
-    if (!phoneNumber.empty()) {
-        record[VASDB_BENEFICIARY_PHONE] = phoneNumber;
-    }
-
-    record[VASDB_PAYMENT_METHOD] = paymentString(payMethod);
-
-    record[VASDB_REF] = paymentResponse.reference;
-    record[VASDB_DATE] = paymentResponse.date;
-    if (!paymentResponse.transactionSeq.empty()) {
-        record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
-    }
-
-    if (payMethod == PAY_WITH_CARD) {
-        if(cardPurchase.primaryIndex > 0) {
-            char primaryIndex[16] = { 0 };
-            sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
-            record[VASDB_CARD_ID] = primaryIndex;
-        }
-        
-        if (!itexIsMerchant()) {
-            record[VASDB_VIRTUAL_TID] = cardPurchase.purchaseTid;;
-        }
-    }
-
-    record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
-
-    record[VASDB_STATUS_MESSAGE] = paymentResponse.message;
 
     return record;
 }
 
-VasStatus Smile::displayLookupInfo(const iisys::JSObject& data)
+Service Smile::vasServiceType()
 {
-    iisys::JSObject name = data("customerName");
-
-    iisys::JSObject status = data("status");
-    if (status.isNull() || status.getInt() != 1) {
-        iisys::JSObject msg =  data("message");
-        return VasStatus(STATUS_ERROR, msg.isNull() ? "Status Error" : msg.getString().c_str());
-    } else if (name.isNull()) {
-        return VasStatus(KEY_NOT_FOUND, "Customer Name Not Found");
-    }
-
-    lookupResponse.name = name.getString();
-
-    int i = UI_ShowOkCancelMessage(30000, "Please Confirm", lookupResponse.name.c_str(), UI_DIALOG_TYPE_CONFIRMATION);
-    if (i != 0) {
-        return VasStatus(USER_CANCELLATION);
-    }
-
-    return VasStatus(NO_ERRORS);
+    return viewModel.getService();
 }
-
-VasStatus Smile::bundleCheck(const VasStatus& bundleCheck)
-{
-    iisys::JSObject lookupData;
-    if (!lookupData.load(bundleCheck.message)) {
-        return VasStatus(INVALID_JSON, "Invalid Response");
-    }
-
-    const iisys::JSObject& data = lookupData("bundles");
-    
-    if (data.isNull() || !data.isArray()) {
-        return VasStatus(VAS_ERROR, "Bundles not found");
-    }
-
-    const size_t size = data.size();
-    std::vector<std::string> menuData;
-    for (size_t i = 0; i < size; ++i) {
-        std::string amount = data[i]("price").getString();
-        std::string validity = data[i]("validity").getString();
-
-        formatAmount(amount);
-        menuData.push_back(data[i]("name").getString() + menuendl() + amount + " Naira, " + validity);
-    }
-
-    int selection = UI_ShowSelection(60000, "Bundles", menuData, 0);
-
-    if (selection < 0) {
-        return VasStatus(USER_CANCELLATION);
-    }
-
-    lookupResponse.selectedPackage = data[selection];
-    amount = lookupResponse.selectedPackage("price").getInt();
-    
-    return VasStatus(NO_ERRORS);
-}
-
-int Smile::getPaymentJson(iisys::JSObject& json, Service service)
-{
-    Payvice payvice;
-
-    if (!loggedIn(payvice)) {
-        return -1;
-    }
-
-    std::string paymentMethodStr = paymentString(payMethod);
-    std::transform(paymentMethodStr.begin(), paymentMethodStr.end(), paymentMethodStr.begin(), ::tolower);
-
-    const std::string username = payvice.object(Payvice::USER).getString();
-    const std::string password = payvice.object(Payvice::PASS).getString();
-    const std::string walletId = payvice.object(Payvice::WALLETID).getString();
-
-    if (!phoneNumber.empty()) {
-        json("account") = phoneNumber;
-    } else if (!customerID.empty()) {
-        json("account") = customerID;
-    }
-
-    json("code") = lookupResponse.selectedPackage("code").getString();
-    if (service == SMILEBUNDLE) {
-        json("price") = lookupResponse.selectedPackage("price").getString();
-    } else if (service == SMILETOPUP) {
-        char amountStr[16] = { 0 };
-
-        snprintf(amountStr, sizeof(amountStr), "%lu", amount);
-        
-        printf("amountStr : %s ===== amount : %lu\n", amountStr, amount);
-
-        json("amount") = amountStr;
-    }
-
-    json("username") = username;
-    json("password") = password;
-    json("wallet") = walletId;
-    json("method") = paymentMethodStr;
-
-    json("channel") = "POS";
-
-    json("phone") = phoneNumber;
-
-    if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID); 
-    }
-
-    return 0;
-}
-
-VasStatus Smile::processPaymentResponse(iisys::JSObject& json, Service service)
-{
-    VasStatus response;
-    iisys::JSObject status = json("status");
-    iisys::JSObject msg =  json("message");
-
-    this->service = service;
-
-
-    if (status.isNull() || status.getInt() != 1) {
-        response = VasStatus(STATUS_ERROR, msg.isNull() ? "Status Error" : msg.getString().c_str());
-        // return response;
-    } else {
-        response.error = NO_ERRORS;
-    }
-
-    if (!msg.isNull()) {
-        paymentResponse.message = msg.getString();
-        response.message = msg.getString();
-    }
-
-    iisys::JSObject ref = json("reference");
-    if (!ref.isNull()) {
-        paymentResponse.reference = ref.getString();
-    }
-
-    iisys::JSObject date = json("date");
-    if (!date.isNull()) {
-        paymentResponse.date = date.getString() + ".000";
-    }
-
-    iisys::JSObject seq = json("transactionID");
-    if (!seq.isNull()) {
-        paymentResponse.transactionSeq = seq.getString();
-    }
-
-    if (payMethod == PAY_WITH_CARD && json("reversal").isBool() && json("reversal").getBool() == true) {
-        comProxy.reverse(cardPurchase);
-    }
-
-    return response;
-}
-
-const char* Smile::paymentPath(Service service)
-{
-    if (service == SMILEBUNDLE) {
-        return "/smile/buy-bundle";
-    } else if (service == SMILETOPUP) {
-        if (!phoneNumber.empty()) {
-            return "/smile/top-up/phone";
-        } else if (!customerID.empty()) {
-            return "/smile/top-up";
-        }
-    }
-
-    return "";
-}
-

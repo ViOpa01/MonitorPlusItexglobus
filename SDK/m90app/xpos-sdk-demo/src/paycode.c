@@ -88,12 +88,12 @@ static short uiGetPayCode(char * payCode, const int payCodeSize)
 
     gui_clear_dc();
 
-    result = Util_InputText(GUI_LINE_TOP(0), "ENTER PAYCODE", GUI_LINE_TOP(2), payCode, MIN_PAYCODE_LEN, MAX_PAYCODE_LEN, 1, 0 ,120000);
+    result = Util_InputTextEx(GUI_LINE_TOP(0), "ENTER PAYCODE", GUI_LINE_TOP(2), payCode, MIN_PAYCODE_LEN, MAX_PAYCODE_LEN, 1, 0 ,120000, "");
 
     if (result <= 0) return -3;
 
     if (!(result >= MIN_PAYCODE_LEN && result <= MAX_PAYCODE_LEN)) {
-        //TODO: display -> error invalid paycode len
+        gui_messagebox_show("ERROR", "Invalid code", "", "Ok", 0);
         return -3;
     }
 

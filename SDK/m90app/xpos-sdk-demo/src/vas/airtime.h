@@ -5,7 +5,7 @@
 #include "vascomproxy.h"
 #include "vasflow.h"
 
-#include "jsobject.h"
+#include "viewmodels/airtimeViewModel.h"
 
 
 struct Airtime : FlowDelegate {
@@ -18,44 +18,23 @@ struct Airtime : FlowDelegate {
     } Network;
 
     Airtime(const char* title, VasComProxy& proxy);
+    virtual ~Airtime();
 
-    VasStatus beginVas();
-    VasStatus lookup(const VasStatus&);
-    VasStatus initiate(const VasStatus&);
-    VasStatus complete(const VasStatus&);
+    VasResult beginVas();
+    VasResult lookup();
+    VasResult initiate();
+    VasResult complete();
 
     Service vasServiceType();
-    std::map<std::string, std::string> storageMap(const VasStatus& completionStatus);
-    
-    VasStatus processPaymentResponse(iisys::JSObject& json, Service service);
+    std::map<std::string, std::string> storageMap(const VasResult& completionStatus);
 
-protected:
+
+private:
     std::string _title;
-    Service service;
-    VasComProxy& comProxy;
 
-    std::string phoneNumber;
-    PaymentMethod payMethod;
-    unsigned long amount;
-
-    CardPurchase cardPurchase;
-
-    struct {
-        std::string message;
-        std::string reference;
-        std::string transactionSeq;
-        std::string date;
-        std::string serviceData;
-    } paymentResponse;
-
-    Service getAirtimeService(Network network);
-    std::string networkString(Network network);
-
-    int getPaymentJson(iisys::JSObject& json, Service service);
-
-
-    const char* paymentPath(Service service);
-
+    AirtimeViewModel viewModel;
+    Service getAirtimeService(Network network) const;
+    std::string networkString(Network network) const;
 };
 
 #endif

@@ -29,8 +29,8 @@ enum CommsStatus {
 
 typedef struct NetWorkParameters
 {
-    unsigned char packet[4096];
-    unsigned char response[4096 * 2];
+    unsigned char packet[4096 * 3];
+    unsigned char response[4096 * 6];
     int packetSize;  
     int responseSize;
     unsigned char host[64];

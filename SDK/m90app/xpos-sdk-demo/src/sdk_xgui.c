@@ -804,13 +804,19 @@ void standby_pagepaint()
 	gui_begin_batch_paint();
 	gui_clear_dc();
 
-	char msg[] = "DEVICE NOT READY";
+	char msg[32] = {'\0'};
+	char sn[16] = {'\0'};
 
+
+	strcpy(msg, "DEVICE NOT READY");
+	gui_text_out((gui_get_width() - gui_get_text_width(msg)) / 2, GUI_LINE_TOP(0), msg);
+
+	getTerminalSn(sn);
+	memset(msg, 0x00, sizeof(msg));
+	sprintf(msg, "SN : %s", sn);
+	gui_text_out((gui_get_width() - gui_get_text_width(msg)) / 2, GUI_LINE_TOP(2), msg);
 
 	get_yyyymmdd_str(data);
-
-	gui_text_out((gui_get_width() - gui_get_text_width(msg)) / 2, GUI_LINE_TOP(1), msg);
-
 	data[10] = ' ';
 	data[11] = ' ';
 	get_hhmmss_str(&data[12]);

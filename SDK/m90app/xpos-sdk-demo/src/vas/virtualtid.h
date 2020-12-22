@@ -1,14 +1,12 @@
 #ifndef VAS_VIRTUALTID_H
 #define VAS_VIRTUALTID_H
 
-#include "EmvEft.h"
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int copyVirtualPinBlock(Eft *pTrxContext, const char* pinBlock);
+int getVirtualPinBlock(unsigned char* virtualPinBlock, const unsigned char* actualPinBlock, const char* pinkey);
 
 #ifdef __cplusplus
 }
@@ -21,7 +19,10 @@ typedef int bool;
 bool virtualConfigurationIsSet();
 int  resetVirtualConfiguration();
 void resetVirtualConfigurationAsync();
+
 int itexIsMerchant();
-int swithMerchantToVas(Eft* trxContext);
+int switchMerchantToVas(void* merchant);
+// short getUpWithrawalField53(/*char vtSecurity[97]*/char (&vtSecurity)[97]);
+short getUpWithrawalField53(char vtSecurity[97]);
 
 #endif

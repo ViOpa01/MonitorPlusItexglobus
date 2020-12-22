@@ -5,61 +5,29 @@
 #include "vascomproxy.h"
 #include "vasflow.h"
 
-#include "jsobject.h"
+#include "viewmodels/paytvViewModel.h"
 
+#include "jsonwrapper/jsobject.h"
 
 struct PayTV : FlowDelegate {
 
     PayTV(const char* title, VasComProxy& proxy);
 
-    VasStatus beginVas();
-    VasStatus lookup(const VasStatus&);
-    VasStatus initiate(const VasStatus&);
-    VasStatus complete(const VasStatus&);
-
-    Service vasServiceType();
-    std::map<std::string, std::string> storageMap(const VasStatus& completionStatus);
-
-    VasStatus processPaymentResponse(iisys::JSObject& json, Service service);
+    VasResult beginVas();
+    VasResult lookup();
+    VasResult initiate();
+    VasResult complete();
+    std::map<std::string, std::string> storageMap(const VasResult& completionStatus);
     
-protected:
-    std::string _title;
-    Service service;
-    VasComProxy& comProxy;
+    Service vasServiceType();
 
-    std::string phoneNumber;
-    std::string iuc;
-    PaymentMethod payMethod;
-    unsigned long amount;
+    PayTVViewModel::StartimesType getStartimesType(const char* title);
 
-    CardPurchase cardPurchase;
+    virtual ~PayTV();
 
-    struct {
-        std::string name;
-        std::string unit;
-        iisys::JSObject selectedPackage;
-    } multichoice;
-
-    struct {
-        std::string name;
-        std::string bouquet;
-        std::string balance;
-        std::string productCode;
-    } startimes;
-
-    struct {
-        std::string message;
-        std::string reference;
-        std::string transactionSeq;
-        std::string date;
-    } paymentResponse;
-
-    VasStatus startimesLookupCheck(const VasStatus& lookupStatus);
-    VasStatus multichoiceLookupCheck(const VasStatus& lookupStatus);
-    int getPaymentJson(iisys::JSObject& json, Service service);
-
-
-    const char* paymentPath(Service service);
+    private:
+    PayTVViewModel viewModel;
+    VasResult displayLookupInfo();
 
 };
 

@@ -109,11 +109,13 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		// 196.6.103.18 5014  nibss posvas port and ip live environment
 		// 196.6.103.73 5043  nibss epms port and ip live environment
 
+		strncpy(netParam->host, "197.253.19.78", strlen(mParam.nibss_ip));
+		netParam->port = 5003;
 		// strncpy(netParam->host, "196.6.103.73", strlen(mParam.nibss_ip));
 		// netParam->port = 5043;
 
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		netParam->port = mParam.nibss_ssl_port;
+		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		// netParam->port = mParam.nibss_ssl_port;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;
@@ -488,7 +490,8 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 	while(Sys_TimerCheck(tick1) > 0){
 		int ret;
 		int num;
-		unsigned char buffer[2048 * 4] = { '\0' };
+		unsigned char buffer[4096 * 6];
+		memset(buffer, 0x00, sizeof(buffer));
 
 		if(!netParam->async)
 		{
@@ -510,12 +513,10 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 
 
 		if(netParam->isSsl == 1){
-			nret = comm_ssl_recv( netParam->socketFd, (unsigned char *)buffer/*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen*/);
+			nret = comm_ssl_recv( netParam->socketFd, (unsigned char *)buffer/*(netParam->response + curRecvLen)*/, sizeof(buffer) - 1/*maxLen - curRecvLen*/);
 		}else{
-			nret = comm_sock_recv( netParam->socketFd, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer)/*maxLen - curRecvLen */, 5000);
+			nret = comm_sock_recv( netParam->socketFd, (unsigned char *)buffer /*(netParam->response + curRecvLen)*/, sizeof(buffer) -1/*maxLen - curRecvLen */, 5000);
 		}
-
-		//printf("nret is : %d\n", nret);
 
 		if (nret >0){
 			tick2 = Sys_TimerOpen(1000);
@@ -580,7 +581,7 @@ static short receivePacket(NetWorkParameters *netParam)
 		return -1;
 	}
 
-	printf("\nrecv result -> %d\n", netParam->responseSize);
+	printf("\nrecv result -> %d, \n", netParam->responseSize);
 
 	return bytes > 0 ? 0 : -1;
 	

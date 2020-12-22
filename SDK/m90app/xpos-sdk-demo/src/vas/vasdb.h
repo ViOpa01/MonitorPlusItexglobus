@@ -3,17 +3,15 @@
 #define VASDB_DATABASE_H
 
 #include <stdlib.h>
-#include <sqlite3.h>
 #include <string>
 #include <vector>
 #include <map>
-
+#include <sqlite3.h>
 
 #include "vas.h"
 
 #define VASDB_FILE                 "itex/vas.db"
-
-#define VASDB_CARD_TABLE           "CardTransactions"
+#define VASDB_CARD_TABLE           "vascard"
 #define VASDB_CARD_TABLE_ID        "id"
 
 #define VASDB_ID                   "vas_id"
@@ -73,6 +71,7 @@ struct VasDB {
 
     static const char * trxStatusString(TrxStatus status);
     static TrxStatus vasErrToTrxStatus(VasError error);
+
     static long saveVasTransaction(std::map<std::string, std::string>& record);
     static int init();    // Use only during startup
     static int countAllTransactions();

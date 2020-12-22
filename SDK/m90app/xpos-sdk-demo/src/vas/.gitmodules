@@ -1,0 +1,6 @@
+[submodule "jsonwrapper"]
+	path = jsonwrapper
+	url = https://gitlab.com/itex-pos-dev/jsonwrapper.git
+[submodule "unistar-smartcard"]
+	path = unistar-smartcard
+	url = https://gitlab.com/itex-pos-dev/unistar-smartcard.git

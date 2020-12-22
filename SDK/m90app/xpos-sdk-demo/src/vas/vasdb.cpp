@@ -9,7 +9,6 @@
 
 #include "vasdb.h"
 
-
 #define VASDBLOG                    "VASDB"
 #define VASDB_TABLE                 "vas"
 #define VASDB_TABLE_ROW_LIMIT       "14400"  
@@ -25,7 +24,6 @@ VasDB::VasDB()
     rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
     if (rc != SQLITE_OK) {
-        printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         db = 0;
         return;
@@ -107,63 +105,9 @@ VasDB::TrxStatus VasDB::vasErrToTrxStatus(VasError error)
     case INPUT_ERROR:
     case TXN_NOT_FOUND:
     case NOT_LOGGED_IN:
+    default:
         return VasDB::STATUS_UNKNOWN;
     }
-}
-
-long VasDB::saveVasTransaction(std::map<std::string, std::string>& record)
-{
-    sqlite3_stmt* res;
-    int step;
-    int ret = -1;
-    int idx;
-    int rc;
-    sqlite3* db;
-
-    using namespace std;
-    string sql;
-    string query;
-
-    rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READWRITE, NULL);
-    if (rc != SQLITE_OK) {
-        printf("Can't open database: %s\n", sqlite3_errmsg(db));
-        return -1;
-    }
-
-    if (prepareMapInsert(query, record)) {
-        printf("Failed To Create Query String");
-        return -1;
-    }
-
-    sql = string("INSERT INTO ") + query;
-
-    rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &res, 0);
-
-    if (rc != SQLITE_OK) {
-        printf("Can't prepare statement: %s\n", sqlite3_errmsg(db));
-        return ret;
-    }
-
-    for (map<string, string>::const_iterator begin = record.begin(); begin != record.end(); ++begin) {
-        std::string iStr = string("@") +  begin->first;
-        idx = sqlite3_bind_parameter_index(res, iStr.c_str());
-        sqlite3_bind_text(res, idx, begin->second.c_str(), -1, SQLITE_STATIC);
-    }
-
-    step = sqlite3_step(res);
-    if (step != SQLITE_DONE) {
-        printf("Step statement failed: %s\n", sqlite3_errmsg(db));
-        sqlite3_finalize(res);
-        sqlite3_close_v2(db);
-        return ret;
-    }
-
-    sqlite3_finalize(res);
-
-    long rowid = (long)sqlite3_last_insert_rowid(db);
-    sqlite3_close_v2(db);
-
-    return rowid;
 }
 
 int VasDB::select(std::map<std::string, std::string>& record, unsigned long atIndex)
@@ -211,6 +155,56 @@ int VasDB::select(std::map<std::string, std::string>& record, const std::string&
     return 0;
 }
 
+long VasDB::saveVasTransaction(std::map<std::string, std::string>& record)
+{
+    sqlite3_stmt* res;
+    int step;
+    int ret = -1;
+    int rc;
+    sqlite3* db;
+
+    using namespace std;
+    string sql;
+    string query;
+
+    rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READWRITE, NULL);
+    if (rc != SQLITE_OK) {
+        return ret;
+    }
+
+    if (prepareMapInsert(query, record)) {
+        return ret;
+    }
+
+    sql = string("INSERT INTO ") + query;
+
+    rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &res, 0);
+
+    if (rc != SQLITE_OK) {
+        return ret;
+    }
+
+    for (map<string, string>::const_iterator begin = record.begin(); begin != record.end(); ++begin) {
+        std::string iStr = string("@") +  begin->first;
+        int idx = sqlite3_bind_parameter_index(res, iStr.c_str());
+        sqlite3_bind_text(res, idx, begin->second.c_str(), -1, SQLITE_STATIC);
+    }
+
+    step = sqlite3_step(res);
+    if (step != SQLITE_DONE) {
+        sqlite3_finalize(res);
+        sqlite3_close_v2(db);
+        return ret;
+    }
+
+    sqlite3_finalize(res);
+
+    long rowid = (long)sqlite3_last_insert_rowid(db);
+    sqlite3_close_v2(db);
+
+    return rowid;
+}
+
 int VasDB::selectUniqueServices(std::vector<std::string>& services, std::string date)
 {
     int ret = -1;
@@ -224,11 +218,10 @@ int VasDB::selectUniqueServices(std::vector<std::string>& services, std::string 
         selectQuery = "SELECT DISTINCT " VASDB_SERVICE " FROM " VASDB_TABLE " WHERE strftime('%Y-%m-%d', " VASDB_DATE ") = '" + date.substr(0, 10) + "' ORDER BY " VASDB_DATE " DESC";
     }
 
-    // printf("%s -> %s\n", __FUNCTION__, selectQuery.c_str());
+    // LOGF_INFO(log.handle, "%s -> %s\n", __FUNCTION__, selectQuery.c_str());
 
     rc = sqlite3_prepare_v2(db, selectQuery.c_str(), -1, &stmt, NULL); 
     if (rc != SQLITE_OK) {
-        printf("%s prepare statement failed (%s): %s\n", __FUNCTION__, selectQuery.c_str(), sqlite3_errmsg(db));
         return -1;
     }
 
@@ -258,7 +251,6 @@ int VasDB::selectUniqueDates(std::vector<std::string>& dates, std::string servic
 
     rc = sqlite3_prepare_v2(db, selectQuery.c_str(), -1, &stmt, NULL); 
     if (rc != SQLITE_OK) {
-        printf("%s prepare statement failed (%s): %s\n", __FUNCTION__, selectQuery.c_str(), sqlite3_errmsg(db));
         return -1;
     }
 
@@ -278,6 +270,7 @@ int VasDB::selectTransactions(std::vector<std::map<std::string, std::string> >& 
     return 0;
 }
 
+
 int VasDB::selectTransactionsOnDate(std::vector<std::map<std::string, std::string> >& transactions, const char *date, const std::string& service)
 {
     char sql[256] = {0};
@@ -286,16 +279,17 @@ int VasDB::selectTransactionsOnDate(std::vector<std::map<std::string, std::strin
     char dateTrim[16] = {0};
 
     if (service.empty()) {
-        sprintf(sql, "SELECT * FROM " VASDB_TABLE LEFT_JOIN_CARD " WHERE strftime('%%Y-%%m-%%d', " VASDB_DATE ") = '%s' ORDER BY " VASDB_DATE " ASC"
+        sprintf(sql, "SELECT * FROM " VASDB_TABLE LEFT_JOIN_CARD " WHERE strftime('%%Y-%%m-%%d', " VASDB_TABLE"." VASDB_DATE ") = '%s' ORDER BY " VASDB_TABLE"." VASDB_DATE " ASC"
         , strncpy(dateTrim, date, 10));
     } else {
-        sprintf(sql, "SELECT * FROM " VASDB_TABLE LEFT_JOIN_CARD " WHERE strftime('%%Y-%%m-%%d', " VASDB_DATE ") = '%s' and " VASDB_SERVICE " = '%s' ORDER BY " VASDB_DATE " ASC"
+        sprintf(sql, "SELECT * FROM " VASDB_TABLE LEFT_JOIN_CARD " WHERE strftime('%%Y-%%m-%%d', " VASDB_TABLE"." VASDB_DATE ") = '%s' and " VASDB_TABLE"." VASDB_SERVICE " = '%s' ORDER BY " VASDB_TABLE"." VASDB_DATE " ASC"
         , strncpy(dateTrim, date, 10), service.c_str());
     }
 
+    // LOGF_INFO(log.handle, "%s\n", sql);
+
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return -1;
     }
 
@@ -348,10 +342,9 @@ int VasDB::sumTransactionsInDateRange(std::string& amount, const char *minDate, 
 
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return -1;
     }
-    // printf("%s - Prepared: %s\n", __FUNCTION__, sql);
+    // LOGF_INFO(log.handle, "%s - Prepared: %s\n", __FUNCTION__, sql);
 
     rc = -1;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -395,10 +388,9 @@ int VasDB::countTransactionsInDateRange(std::string& count, const char *minDate,
 
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         return -1;
     }
-    // printf("%s - Prepared: %s\n", __FUNCTION__, sql);
+    // LOGF_INFO(log.handle, "%s - Prepared: %s\n", __FUNCTION__, sql);
 
     rc = -1;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -424,42 +416,6 @@ int VasDB::countTransactionsOnDate(std::string& count, const char *date, TrxStat
     return countTransactionsInDateRange(count, date, date, status, service);
 }
 
-// unsigned long  VasDB::sumTransactions(TrxStatus status, std::string service)
-// {
-//     std::string amount;
-//     std::vector<std::string> dates;
-
-//     if (selectUniqueDates(dates, service) != 0) {
-//         return 0;
-//     }
-
-//     // selectUniqueDates is currently in descending mode, but if that fails try ascending mode
-//     if (sumTransactionsInDateRange(amount, dates.rbegin()->c_str(), dates.begin()->c_str(), status, service) 
-//     && sumTransactionsInDateRange(amount, dates.begin()->c_str(), dates.rbegin()->c_str(), status, service)) {
-//         return 0;
-//     }
-
-//     // I assume strtoul will never fail because sqlite select sum() will not sum non-numeric values
-//     return strtoul(amount.c_str(), NULL, 10);
-// }
-
-// int  VasDB::countTransactions(TrxStatus status, Service service)
-// {
-//     std::string count;
-//     std::vector<std::string> dates;
-
-//     if (selectUniqueDates(dates, service) != 0) {
-//         return 0;
-//     }
-
-//     if (countTransactionsInDateRange(count, dates.rbegin()->c_str(), dates.begin()->c_str(), status, service) 
-//     && countTransactionsInDateRange(count, dates.begin()->c_str(), dates.rbegin()->c_str(), status, service)) {
-//         return 0;
-//     }
-
-//     return strtoul(count.c_str(), NULL, 10);
-// }
-
 int  VasDB::countAllTransactions()
 {
     char sql[] = "SELECT count(*) from "  VASDB_TABLE;
@@ -469,14 +425,12 @@ int  VasDB::countAllTransactions()
 
     rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READONLY, NULL);
     if (rc != SQLITE_OK) {
-        printf("Can't open database: %s\n", sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         return -1;
     }
 
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        printf("%s prepare statement failed: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         return -1;
     } else if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -503,7 +457,6 @@ int  VasDB::init()
     rc = sqlite3_open_v2(VASDB_FILE, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
     if (rc != SQLITE_OK) {
-        printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
         sqlite3_close_v2(db);
         return -1;
     }
@@ -516,7 +469,7 @@ int  VasDB::init()
           VASDB_DATE              " TEXT NOT NULL, "
           VASDB_REF               " TEXT, "
           VASDB_BENEFICIARY       " TEXT, "
-          VASDB_BENEFICIARY_NAME   " TEXT, "
+          VASDB_BENEFICIARY_NAME  " TEXT, "
           VASDB_BENEFICIARY_ADDR  " TEXT, "
           VASDB_BENEFICIARY_PHONE " TEXT, "
           VASDB_PRODUCT           " TEXT, "
@@ -527,20 +480,18 @@ int  VasDB::init()
           VASDB_PAYMENT_METHOD    " TEXT, "
           VASDB_STATUS            " TEXT, "
           VASDB_STATUS_MESSAGE    " TEXT, "
-          VASDB_CARD_ID           " INTEGER REFERENCES "VASDB_CARD_TABLE"("VASDB_CARD_TABLE_ID") ON UPDATE CASCADE ON DELETE CASCADE, "
+          VASDB_CARD_ID           " INTEGER REFERENCES " VASDB_CARD_TABLE "(" VASDB_CARD_TABLE_ID ") ON UPDATE CASCADE ON DELETE CASCADE, "
           VASDB_SERVICE_DATA      " TEXT  "
           "); "
           "VACUUM;";
 
     rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
-        printf("%s -> exec failed: %s\n", __FUNCTION__, errMsg);
         sqlite3_free(errMsg);
         sqlite3_close_v2(db);
         return -1;
     }
 
-    printf("%s -> Ok\n", __FUNCTION__);
     sqlite3_close_v2(db);
     return 0;
 }

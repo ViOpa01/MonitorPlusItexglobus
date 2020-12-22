@@ -4,408 +4,245 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <ctype.h>
 
-#include "simpio.h"
-#include "pfm.h"
+#include "platform/platform.h"
 
 #include "vasdb.h"
 
 #include "paytv.h"
 
 PayTV::PayTV(const char* title, VasComProxy& proxy)
-    : _title(title)
-    , service(SERVICE_UNKNOWN)
-    , comProxy(proxy)
+    : viewModel(title, proxy)
 {
 }
 
-VasStatus PayTV::beginVas()
+PayTV::~PayTV()
+{
+}
+
+VasResult PayTV::beginVas()
 {
     Service services[] = { DSTV, GOTV, STARTIMES };
     std::vector<Service> serviceVector(services, services + sizeof(services) / sizeof(Service));
 
     while (1) {
-        service = selectService("Services", serviceVector);
+        const Service service = selectService("Services", serviceVector);
         if (service == SERVICE_UNKNOWN) {
-            return VasStatus(USER_CANCELLATION);
+            return VasResult(USER_CANCELLATION);
+        } else if (viewModel.setService(service).error != NO_ERRORS) {
+            return VasResult(VAS_ERROR);
         }
 
-        iuc = getNumeric(0, 60000, "IUC Number", serviceToString(service), UI_DIALOG_TYPE_NONE);
+        if (service == STARTIMES) {
+            PayTVViewModel::StartimesType type = getStartimesType("Startimes Type");
 
-        if (!iuc.empty()) {
-            break;
+            if(type == PayTVViewModel::UNKNOWN_TYPE) {
+                return VasResult(USER_CANCELLATION);
+            } else if(viewModel.setStartimesType(type).error != NO_ERRORS) {
+                return VasResult(VAS_ERROR);
+            } else if (type == PayTVViewModel::STARTIMES_TOPUP) {
+                unsigned long amount = getVasAmount(serviceToString(viewModel.getService()));
+
+                if (!amount) {
+                    return VasResult(USER_CANCELLATION);;
+                } else if (viewModel.setAmount(amount).error != NO_ERRORS) {
+                    return VasResult(VAS_ERROR);
+                }
+
+            }
         }
+
+        std::string iuc = getNumeric(0, 60000, "IUC Number", serviceToString(service), UI_DIALOG_TYPE_NONE);
+
+        if (iuc.empty()) {
+            return VasResult(USER_CANCELLATION);
+        } else if (viewModel.setIUC(iuc).error != NO_ERRORS){
+            return VasResult(VAS_ERROR);
+        }
+        
+        break;
+
     }
 
-
-    return VasStatus(NO_ERRORS);
+    return VasResult(NO_ERRORS);
 }
 
-VasStatus PayTV::lookup(const VasStatus&)
+VasResult PayTV::lookup()
 {
-    VasStatus response;
+    VasResult response;
     iisys::JSObject obj;
 
     Demo_SplashScreen("Lookup In Progress", "www.payvice.com");
 
-    if (service == DSTV || service == GOTV) {
-        obj("iuc") = iuc;
-        obj("unit") = serviceToProductString(service);
-        response = comProxy.lookup("/vas/multichoice/lookup", &obj);
-        return multichoiceLookupCheck(response);
-    } else if (service == STARTIMES) {
-        Payvice payvice;
+    response = viewModel.lookup();
 
-        obj("username") = payvice.object(Payvice::USER).getString();
-        obj("wallet") = payvice.object(Payvice::WALLETID).getString();
-        obj("type") = "default";
-        obj("channel") = "POS";
-        obj("smartCardCode") = iuc;
-        response = comProxy.lookup("/vas/startimes/validation", &obj);
-        return startimesLookupCheck(response);
+    if(response.error != NO_ERRORS) {
+        return response;
     }
     
-    return VasStatus(VAS_ERROR);
+    return displayLookupInfo();
 }
 
-VasStatus PayTV::initiate(const VasStatus& lookupStatus)
+VasResult PayTV::initiate()
 {
-
     while (1) {
+        VasResult result;
 
-        payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
+        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
         if (payMethod == PAYMENT_METHOD_UNKNOWN) {
-            return VasStatus(USER_CANCELLATION);
+            return VasResult(USER_CANCELLATION);
+        } 
+
+        result = viewModel.setPaymentMethod(payMethod);
+        if (result.error != NO_ERRORS) {
+            return result;
+        } 
+
+        std::string phoneNumber = getPhoneNumber("Phone Number", "");
+        if (phoneNumber.empty()) {
+            return VasResult(USER_CANCELLATION);
         }
 
-        phoneNumber = getPhoneNumber("Phone Number", "");
-        if (!phoneNumber.empty()) {
-            break;
+        result = viewModel.setPhoneNumber(phoneNumber);
+        if (result.error != NO_ERRORS) {
+            return result;
         }
-    }
 
-    return VasStatus(NO_ERRORS);
-}
-
-Service PayTV::vasServiceType()
-{
-    return service;
-}
-
-VasStatus PayTV::complete(const VasStatus& initiateStatus)
-{
-    std::string pin;
-    iisys::JSObject json;
-    VasStatus response;
-
-    switch (getPin(pin, "Payvice Pin")) {
-    case EMV_CT_PIN_INPUT_ABORT:
-        response.error = INPUT_ABORT;
-        return response;
-    case EMV_CT_PIN_INPUT_TIMEOUT:
-        response = INPUT_TIMEOUT_ERROR;
-        return response;
-    case EMV_CT_PIN_INPUT_OTHER_ERR:
-        response = INPUT_ERROR;
-        return response;
-    default:
         break;
     }
 
-    if (getPaymentJson(json, service) < 0) {
-        response.error = VAS_ERROR;
-        response.message = "Data Error";
+    return VasResult(NO_ERRORS);
+}
+
+VasResult PayTV::complete()
+{
+    std::string pin;
+    VasResult response;
+
+    response.error = getVasPin(pin);
+    if(response.error != NO_ERRORS) {
         return response;
     }
-
-    json("pin") = encryptedPin(Payvice(), pin.c_str());
-    json("pfm")("state") = getState();
-    
-    json("clientReference") = getClientReference();
 
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");
 
-    if (payMethod == PAY_WITH_CARD) {
-        cardPurchase.amount = amount;
-        response = comProxy.complete(paymentPath(service), &json, NULL, &cardPurchase);
-    } else {
-        response = comProxy.complete(paymentPath(service), &json);
-    }
-
-    if (response.error) {
-        return response;
-    }
-
-    if (!json.load(response.message)) {
-        response.error = INVALID_JSON;
-        response.message = "Invalid Response";
-        return response;
-    }
-
-    response = processPaymentResponse(json, service);
+    response = viewModel.complete(pin);
 
     return response;
 }
 
-std::map<std::string, std::string> PayTV::storageMap(const VasStatus& completionStatus)
+std::map<std::string, std::string> PayTV::storageMap(const VasResult& completionStatus)
 {
-    std::map<std::string, std::string> record;
-    char amountStr[16] = { 0 };
-
-
-    sprintf(amountStr, "%lu", amount);
-
-    if (service == DSTV || service == GOTV) {
-        record[VASDB_PRODUCT] = multichoice.selectedPackage("name").getString(); 
-        record[VASDB_BENEFICIARY_NAME] = multichoice.name;
-    } else if (service == STARTIMES) {
-        record[VASDB_PRODUCT] = startimes.bouquet; 
-        record[VASDB_BENEFICIARY_NAME] = startimes.name;
-    }
-    record[VASDB_CATEGORY] = _title;
-    record[VASDB_SERVICE] = serviceToString(service);
-    record[VASDB_AMOUNT] = amountStr;
-
-    record[VASDB_BENEFICIARY] = iuc;
-    record[VASDB_BENEFICIARY_PHONE] = phoneNumber;
-    record[VASDB_PAYMENT_METHOD] = paymentString(payMethod);
-
-    record[VASDB_REF] = paymentResponse.reference;
-    record[VASDB_DATE] = paymentResponse.date;
-    if (!paymentResponse.transactionSeq.empty()) {
-        record[VASDB_TRANS_SEQ] = paymentResponse.transactionSeq;
-    }
-
-    if (payMethod == PAY_WITH_CARD) {
-        if(cardPurchase.primaryIndex > 0) {
-            char primaryIndex[16] = { 0 };
-            sprintf(primaryIndex, "%lu", cardPurchase.primaryIndex);
-            record[VASDB_CARD_ID] = primaryIndex;
-        }
-        
-        if (!itexIsMerchant()) {
-            record[VASDB_VIRTUAL_TID] = cardPurchase.purchaseTid;;
-        }
-    }
-
-    record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
-
-    record[VASDB_STATUS_MESSAGE] = paymentResponse.message;
+    std::map<std::string, std::string> record = viewModel.storageMap(completionStatus);
 
     return record;
 }
 
-VasStatus PayTV::startimesLookupCheck(const VasStatus& lookupStatus)
+Service PayTV::vasServiceType()
 {
-    iisys::JSObject name, balance, bouquet, productCode;
+    return DSTV;
+}
+
+
+VasResult PayTV::displayLookupInfo()
+{
     std::ostringstream confirmationMessage;
 
-    iisys::JSObject lookupData;
+    confirmationMessage << viewModel.lookupResponse.name << std::endl;
+    const std::string& accountNo = viewModel.lookupResponse.accountNo;
+    if (!accountNo.empty() && viewModel.getIUC() != accountNo) {
+        return VasResult(VAS_ERROR, "Account mismatch");
+    }
+    confirmationMessage << "Accnt: " << viewModel.getIUC() << std::endl;
 
-    if (lookupStatus.error) {
-        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
+    if (!viewModel.lookupResponse.bouquet.empty()) {
+        confirmationMessage << "Bouquet: " << viewModel.lookupResponse.bouquet << std::endl;
     }
 
-    if (!lookupData.load(lookupStatus.message)) {
-        return VasStatus(INVALID_JSON, "Invalid Response");
+    if (!viewModel.lookupResponse.balance.empty()) {
+        confirmationMessage << "Balance: " << viewModel.lookupResponse.balance << std::endl;
     }
 
-    VasStatus status = vasErrorCheck(lookupData);
-    if (status.error) {
-        return status;
+    int cancelConfirmation = UI_ShowOkCancelMessage(30000, "Confirm Info", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
+    if (cancelConfirmation) {
+        return VasResult(USER_CANCELLATION);
+    } else if (viewModel.getService() == STARTIMES && viewModel.getStartimesTypes() == PayTVViewModel::STARTIMES_TOPUP) {
+        return VasResult(NO_ERRORS);
     }
 
-    name = lookupData("name");
-    bouquet = lookupData("bouquet");
-    balance = lookupData("balance");
-    productCode = lookupData("productCode");
-
-    if (name.isNull() || bouquet.isNull()) {
-        return VasStatus(KEY_NOT_FOUND, "Name or Bouquet not found");
-    }
-
-    startimes.name = name.getString();
-    startimes.balance = balance.getString();
-    startimes.bouquet = bouquet.getString();
-    startimes.productCode = productCode.getString();
-
-    confirmationMessage << startimes.name << std::endl << std::endl;
-    confirmationMessage << "Bouquet: " << bouquet.getString() << std::endl;
-    confirmationMessage << "Balance: " << balance.getString() << std::endl;
+    const iisys::JSObject& bouquets = viewModel.getBouquets();
     
-    while (1) {
-        int i = UI_ShowOkCancelMessage(30000, "Confirm Info", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
-        if (i != 0) {
-            return VasStatus(USER_CANCELLATION);
+    if (bouquets.isNull() || !bouquets.isArray()) {
+        return VasResult(VAS_ERROR, "Bouquets not found");
+    }
+
+    const size_t size = bouquets.size();
+    std::vector<std::string> menuData;
+    std::string cycle;
+    int index;
+    if (viewModel.getService() == DSTV || viewModel.getService() == GOTV) {
+        for (size_t i = 0; i < size; ++i) {
+            menuData.push_back(bouquets[i]("name").getString() + vasimpl::menuendl() + bouquets[i]("amount").getString() + " Naira");
         }
 
-        amount = getAmount("Startimes");
+        index = UI_ShowSelection(60000, "Bouquets", menuData, 0);
+    } else {
+        while (1) {
+            menuData.clear();
+            for (size_t i = 0; i < size; ++i) {
+                menuData.push_back(bouquets[i]("name").getString());
+            }
 
-        if(amount <= 0) {
-            return VasStatus(USER_CANCELLATION);
-        }
-        
-        if (amount) {
+            index = UI_ShowSelection(60000, "Bouquets", menuData, 0);
+            if (index < 0) {
+                return VasResult(USER_CANCELLATION);
+            }
+
+            const iisys::JSObject& bouquet = bouquets[index];
+            const iisys::JSObject& cycles = bouquet("cycles");
+
+            menuData.clear();
+            std::vector<std::string> cyclesVec;
+            for (iisys::JSObject::const_iterator it = cycles.begin(); it != cycles.end(); ++it) {
+                cyclesVec.push_back(it->first);
+                menuData.push_back(it->first + vasimpl::menuendl() + it->second.getString() + " Naira");
+            }
+
+            int cycleIndex = UI_ShowSelection(60000, "Cycles", menuData, 0);
+            if (cycleIndex < 0) {
+                continue;
+            }
+            cycle = cyclesVec[cycleIndex];
             break;
         }
+
     }
 
-    return VasStatus(NO_ERRORS);
+    if (index < 0) {
+        return VasResult(USER_CANCELLATION);
+    } else if (viewModel.setSelectedPackage(index, cycle).error != NO_ERRORS) {
+        return VasResult(VAS_ERROR);
+    }
+
+    return VasResult(NO_ERRORS);
 }
 
-VasStatus PayTV::multichoiceLookupCheck(const VasStatus& lookupStatus)
+PayTVViewModel::StartimesType PayTV::getStartimesType(const char* title)
 {
-    iisys::JSObject lookupData;
+    int selection;
+    const char* startimesType[] = { "Bundle", "Topup" };
+    std::vector<std::string> menu(startimesType, startimesType + sizeof(startimesType) / sizeof(char*));
 
-    if (lookupStatus.error) {
-        return VasStatus(LOOKUP_ERROR, lookupStatus.message.c_str());
+    selection = UI_ShowSelection(30000, title, menu, 0);
+    switch (selection) {
+    case 0:
+        return PayTVViewModel::STARTIMES_BUNDLE;
+    case 1:
+        return PayTVViewModel::STARTIMES_TOPUP;
+    default:
+        return PayTVViewModel::UNKNOWN_TYPE;
     }
-    
-    if (!lookupData.load(lookupStatus.message)) {
-        return VasStatus(INVALID_JSON, "Invalid Response");
-    }
-
-    VasStatus status = vasErrorCheck(lookupData);
-    if (status.error) {
-        return status;
-    }
-
-    iisys::JSObject name, account;
-    std::ostringstream confirmationMessage;
-
-    name = lookupData("name");
-    account = lookupData("account");
-
-    if (name.isNull()) {
-        return VasStatus(KEY_NOT_FOUND, "Name not found");
-    }
-
-    multichoice.name = name.getString();
-
-    confirmationMessage << multichoice.name << std::endl;
-    if (!account.isNull() && iuc != account.getString()) {
-        return VasStatus(VAS_ERROR, "Account mismatch");
-    }
-
-    confirmationMessage << "Account: " << std::endl << iuc;
-    
-    int i = UI_ShowOkCancelMessage(30000, "Confirm Info", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
-    if (i != 0) {
-        return VasStatus(USER_CANCELLATION);
-    }
-
-    const iisys::JSObject& data = lookupData("data");
-    
-    if (data.isNull() || !data.isArray()) {
-        return VasStatus(VAS_ERROR, "Data Packages not found");
-    }
-
-    const size_t size = data.size();
-    std::vector<std::string> menuData;
-    for (i = 0; i < size; ++i) {
-        menuData.push_back(data[i]("name").getString() + menuendl() + data[i]("amount").getString() + " Naira");
-    }
-
-    int selection = UI_ShowSelection(60000, "Data Packages", menuData, 0);
-
-    if (selection < 0) {
-        return VasStatus(USER_CANCELLATION);
-    }
-
-    multichoice.selectedPackage = data[selection];
-    multichoice.unit = lookupData("unit").getString();
-    amount = multichoice.selectedPackage("amount").getInt() * 100;
-    
-    return VasStatus(NO_ERRORS);
 }
 
-int PayTV::getPaymentJson(iisys::JSObject& json, Service service)
-{
-    Payvice payvice;
 
-    if (!loggedIn(payvice)) {
-        return -1;
-    }
-
-    const std::string username = payvice.object(Payvice::USER).getString();
-    const std::string password = payvice.object(Payvice::PASS).getString();
-    const std::string walletId = payvice.object(Payvice::WALLETID).getString();
-
-
-    if (service == DSTV || service == GOTV) {
-        json("tid") = getDeviceTerminalId();
-        json("user_id") = username;
-        json("terminal_id") = walletId;
-
-        json("iuc") = iuc;
-        json("unit") = multichoice.unit;
-        json("product_code") = multichoice.selectedPackage("product_code").getString();
-
-    } else if (service == STARTIMES) {
-        std::string paymentMethodStr = paymentString(payMethod);
-        std::transform(paymentMethodStr.begin(), paymentMethodStr.end(), paymentMethodStr.begin(), ::tolower);
-
-        json("wallet") = walletId;
-        json("username") = username;
-        json("password") = password;
-        json("type") = "default";
-        json("smartCardCode") = iuc;
-        json("customerName") = startimes.name;
-        json("productCode") = startimes.productCode;
-        json("bouquet") = startimes.bouquet;
-        json("amount") = amount;
-        json("paymentMethod") = paymentMethodStr;
-    }
-
-    json("channel") = "POS";
-    json("phone") = phoneNumber;
-
-    if (payMethod == PAY_WITH_CARD && !itexIsMerchant()) {
-        json("virtualTID") = payvice.object(Payvice::VIRTUAL)(Payvice::TID);
-    }
-    
-    return 0;
-}
-
-VasStatus PayTV::processPaymentResponse(iisys::JSObject& json, Service service)
-{
-    VasStatus response = vasErrorCheck(json);
-    paymentResponse.message = response.message;
-
-    this->service = service;
-
-    iisys::JSObject ref = json("reference");
-    if (!ref.isNull()) {
-        paymentResponse.reference = ref.getString();
-    }
-
-    iisys::JSObject date = json("date");
-    if (!date.isNull()) {
-        paymentResponse.date = date.getString() + ".000";
-    }
-
-    iisys::JSObject seq = json("transactionID");
-    if (!seq.isNull()) {
-        paymentResponse.transactionSeq = seq.getString();
-    }
-
-    if (payMethod == PAY_WITH_CARD && json("reversal").isBool() && json("reversal").getBool() == true) {
-        comProxy.reverse(cardPurchase);
-    }
-
-    return response;
-}
-
-const char* PayTV::paymentPath(Service service)
-{
-    if (service == DSTV || service == GOTV) {
-        if (payMethod == PAY_WITH_CARD) {
-            return "/vas/card/multichoice/pay";
-        } else if (payMethod == PAY_WITH_CASH) {
-            return "/vas/multichoice/pay";
-        }
-    } else if (service == STARTIMES) {
-        return "/vas/startimes/payment";
-    }
-    return "";
-}

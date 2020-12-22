@@ -6,10 +6,9 @@
 
 #include "simpio.h"
 
-
 extern "C" {
 #include "util.h"
-#include "../pages/inputamount_page.h"
+#include "../../pages/inputamount_page.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 #include "libapi_xpos/inc/libapi_util.h"
 }
@@ -266,9 +265,3 @@ void Demo_SplashScreen(const char *text, const char *text_additional)
 {
     gui_messagebox_show((char *)text , (char *)text_additional, "" , "" , 1);
 }
-
-
-
-
-
-

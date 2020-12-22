@@ -64,7 +64,6 @@ static void addGenericNetworkFields(NetworkManagement *networkMangement)
 
 void addCallHomeData(NetworkManagement *networkMangement)
 {
-    //TODO: get the values at runtime, the hardcoded data will still work
     MerchantParameters parameter = {'\0'};
     MerchantData mParam = {'\0'};
     Network netProfile = {'\0'};
@@ -260,8 +259,6 @@ static int getTmk(NetworkManagement *networkMangement, NetWorkParameters *netPar
     if (result <= 0)
         return -1;
 
-    //TODO: Send packet to host,  get response, return negative number on error.
-
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
 
@@ -305,8 +302,6 @@ static int getTsk(NetworkManagement *networkMangement, NetWorkParameters *netPar
     if (result <= 0)
         return -1;
 
-    //TODO: Send packet to host,  get response, return negative number on error.
-
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
     strcpy(netParam->title, "SESSION KEY");
@@ -345,8 +340,6 @@ static int getTpk(NetworkManagement *networkMangement, NetWorkParameters *netPar
 
     if (result <= 0)
         return -1;
-
-    //TODO: Send packet to host,  get response, return negative number on error.
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
@@ -473,8 +466,6 @@ static int sCallHome(NetworkManagement *networkMangement, NetWorkParameters *net
         fprintf(stderr, "Callhome -> Error creating packet....\n");
         return -1;
     }
-
-    //TODO: Send packet to host,  get response, return negative number on error.
 
     netParam->packetSize = result;
     memcpy(netParam->packet, packet, result);
@@ -665,7 +656,6 @@ short uiGetParameters(void)
 
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
-    //TODO: Get device serial number at runtime
     getTerminalSn(terminalSerialNumber);
     strncpy(networkMangement.serialNumber, terminalSerialNumber/*"346-231-236"*/, sizeof(networkMangement.serialNumber));
     getSessionKey(sessionKey);
@@ -761,7 +751,7 @@ static short getTid(char tid[9])
 	}
 	gui_clear_dc();
 	
-	result = Util_InputText(GUI_LINE_TOP(0), msgPrompt, GUI_LINE_TOP(2), tid, tidSize, tidSize, 1, 1 ,18000);
+	result = Util_InputTextEx(GUI_LINE_TOP(0), msgPrompt, GUI_LINE_TOP(2), tid, tidSize, tidSize, 1, 1 ,18000, "");
 
     return result == tidSize ? 0 : -1;
 }
@@ -846,7 +836,6 @@ short uiHandshake(void)
     
     gui_messagebox_show("MESSAGE" , "PIN KEY OK", "" , "" , 1000);
 
-    //TODO: Get device serial number at runtime
     getTerminalSn(terminalSerialNumber);
     strncpy(networkMangement.serialNumber, terminalSerialNumber, sizeof(networkMangement.serialNumber));
 
@@ -895,7 +884,6 @@ short uiHandshake(void)
 
     for (i = 0; i < maxRetry; i++)
     {
-        //TODO: make network lib tread save and put this on a thread.
         if (!downloadRemoteLogo(mParam.tid))
             break;
     }
@@ -911,11 +899,19 @@ short uiHandshake(void)
 
 short checkToPrepOnDownload()
 {
+    int ret = -1;
+    MerchantData merchant;
     char fileName[] = "toPrep.ini";    // empty file
-    int ret = UFile_Check(fileName, FILE_PRIVATE);
+
+    memset(&merchant, 0x00, sizeof(MerchantData));
+    readMerchantData(&merchant);
+    ret = UFile_Check(fileName, FILE_PRIVATE);
+    printf("ret : %d -> Ufile_Check\n", ret);
 
     if(ret) return 0;
 
+    merchant.is_prepped = 0;
+    saveMerchantData(&merchant);
     uiHandshake();
     return UFile_Remove(fileName, FILE_PRIVATE);
     

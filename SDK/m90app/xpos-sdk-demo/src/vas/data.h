@@ -5,51 +5,28 @@
 #include "vascomproxy.h"
 #include "vasflow.h"
 
-#include "jsobject.h"
+#include "jsonwrapper/jsobject.h"
+
+#include "viewmodels/dataViewModel.h"
 
 
 struct Data : FlowDelegate {
 
     Data(const char* title, VasComProxy& proxy);
 
-    VasStatus beginVas();
-    VasStatus lookup(const VasStatus&);
-    VasStatus initiate(const VasStatus&);
-    VasStatus complete(const VasStatus&);
+    VasResult beginVas();
+    VasResult lookup();
+    VasResult initiate();
+    VasResult complete();
 
     Service vasServiceType();
-    std::map<std::string, std::string> storageMap(const VasStatus& completionStatus);
 
-    VasStatus processPaymentResponse(iisys::JSObject& json, Service service);
+    std::map<std::string, std::string> storageMap(const VasResult& completionStatus);
+
+    virtual ~Data();
     
 protected:
-    std::string _title;
-    Service service;
-    VasComProxy& comProxy;
-
-    std::string phoneNumber;
-    PaymentMethod payMethod;
-    unsigned long amount;
-
-    CardPurchase cardPurchase;
-
-    struct {
-        iisys::JSObject selectedPackage;
-    } lookupResponse;
-
-    struct {
-        std::string message;
-        std::string reference;
-        std::string transactionSeq;
-        std::string date;
-    } paymentResponse;
-
-    VasStatus lookupCheck(const VasStatus& lookupStatus);
-    int getPaymentJson(iisys::JSObject& json, Service service);
-
-
-    const char* paymentPath(Service service);
-
+    DataViewModel viewModel;
 };
 
 #endif

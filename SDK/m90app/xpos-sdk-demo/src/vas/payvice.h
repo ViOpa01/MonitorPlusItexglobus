@@ -1,39 +1,36 @@
 #ifndef VAS_PAYVICE_H
 #define VAS_PAYVICE_H
 
-#include <openssl/sha.h>
-#include "filejson.h"
+#include <fstream>
+#include <string>
+#include <sys/stat.h>
+
+#include "jsonwrapper/jsobject.h"
+#include "vascomproxy.h"
+
+#define PAYVICE_CONF "itex/payvice.json"
+#define SHA512_DIGEST_LENGTH 64
+
+#define rot13(word)                                                        \
+    {                                                                      \
+        size_t i = strlen(word);                                           \
+        while (i--) {                                                      \
+            char c = word[i];                                              \
+            if ((c >= 'A' && c <= 'M') || (c >= 'a' && c <= 'm')) {        \
+                word[i] += '\r';                                           \
+            } else if ((c >= 'N' && c <= 'Z') || (c >= 'n' && c <= 'z')) { \
+                word[i] -= '\r';                                           \
+            }                                                              \
+        }                                                                  \
+    }
 
 
-#define PAYVICE_CONF "itex/payvice.json"    // To be in sync with private directory
-
-extern int formatAmount(std::string& ulAmount);
-
-#define rot13(word)                                                                 \
-{                                                                                   \
-    size_t i = strlen(word);                                                        \
-    while (i--) {                                                                   \
-        char c = word[i];                                                           \
-        if ((c >= 'A' && c <= 'M') || (c >= 'a' && c <= 'm')) {                     \
-            word[i] += '\r';                                                        \
-        } else if ((c >= 'N' && c <= 'Z') || (c >= 'n' && c <= 'z')) {              \
-            word[i] -= '\r';                                                        \
-        }                                                                           \
-    }                                                                               \
-}                                                                                   \
-
-typedef struct {
-    char nonce[33];
-    char signature[SHA512_DIGEST_LENGTH * 2 + 1];
-} KeyChain;
-
-struct Payvice : public FileJson {
+struct Payvice {
 
     static const char* USER;
     static const char* PASS;
     static const char* WALLETID;
     static const char* KEY;
-    static const char* SESSION;
 
     static const char* VIRTUAL;
     static const char* TID;
@@ -45,30 +42,35 @@ struct Payvice : public FileJson {
     static const char* COUNTRYCODE;
     static const char* MCC;
 
-    Payvice()
-        : FileJson(PAYVICE_CONF)
-    {
-        if (!error() || err != FILE_NOT_EXIST) {
-            return;
-        }
+    typedef enum {
+        NOERROR,
+        SOME_ERROR_OCCURED,
+        FILE_NOT_EXIST,
+        SAVE_ERR
+    } FileErr;
 
-        // File doesn't exist
-        resetFile();
-    }
+    iisys::JSObject object;
 
-    int resetFile()
-    {
-        object(WALLETID) = "";
-        object(USER) = "";
-        object(PASS) = "";
-        object(KEY) = "";
-        object(SESSION) = "";
+    Payvice();
 
-        return save();
-    }
+    int resetFile();
+
+    std::string getApiToken();
+
+    int error() const;
+
+    bool isFileExists(const char* filename);
+
+    int save();
 
 private:
+    FileErr err;
     std::string _filename;
+    static const char* TOKEN;
+    static const char* TOKEN_EXP;
+
+    std::string fetchVasToken();
+    int extractVasToken(const std::string& response, const time_t now);
 };
 
 int logIn(Payvice& payvice);
@@ -78,12 +80,9 @@ bool loggedIn(const Payvice& payvice);
 std::string encryptedPassword(const Payvice& payvice);
 std::string encryptedPin(const Payvice& payvice, const char* pin);
 
-int injectPayviceCredentials(iisys::JSObject& obj);
-
+std::string getClientReference(std::string& customReference);
 std::string getClientReference();
 
-int cashIOVasToken(const char *msg, const char *prefix, KeyChain *keys);
-
-
+int beginLoginSequence(Payvice& payvice);
 
 #endif
