@@ -138,5 +138,6 @@ std::string vasApplicationVersion();
 
 const char* vasChannel();
 std::string getRefCode(const std::string& vasCategory, const std::string& vasProduct = "");
+void printVasFooter();
 
 #endif

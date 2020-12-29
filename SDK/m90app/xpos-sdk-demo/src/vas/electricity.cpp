@@ -74,12 +74,12 @@ VasResult Electricity::beginVas()
 ElectricityViewModel::EnergyType Electricity::getEnergyType(Service service, const char* title)
 {
     int selection;
-    const char* energyTypes[] = { "Token", "Postpaid", "SmartCard" };
+    const char* energyTypes[] = { "Token", "Postpaid"};
     std::vector<std::string> menu(energyTypes, energyTypes + sizeof(energyTypes) / sizeof(char*));
 
     (void) service;     // Will later need this for IE smartcard
-    if (service == EKEDC) {
-        return ElectricityViewModel::GENERIC_ENERGY;
+    if (service == IKEJA) {
+        menu.push_back("SmartCard");
     }
 
     selection = UI_ShowSelection(30000, title, menu, 0);

@@ -681,6 +681,8 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 		return RECEIVING_FAILED;
 	}
 
+	// LOG_PRINTF("Response : %s", &netParam->response[4]);
+
 	puts("Receive Successful!\n");
 	isIdleState = 1;
 	netParam->isSsl ? comm_ssl_close(netParam->socketFd) : comm_sock_close(netParam->socketFd);

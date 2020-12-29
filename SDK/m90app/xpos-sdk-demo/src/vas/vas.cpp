@@ -653,7 +653,7 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
         UPrint_StrBold(buff, 1, 4, 1);
 
         printDottedLine();
-        printFooter();
+        printVasFooter();
 
         ret = UPrint_Start();
         if(getPrinterStatus(ret) < 0 ) {
@@ -744,7 +744,7 @@ int printVasEod(std::map<std::string, std::string> &records)
 
         }
 
-        printFooter();
+        printVasFooter();
 
         ret = UPrint_Start();
         if(getPrinterStatus(ret) < 0) {
@@ -943,4 +943,18 @@ std::string getRefCode(const std::string& vasCategory, const std::string& vasPro
     );
 
     return std::string(refCode);
+}
+
+void printVasFooter()
+{
+	char buff[64] = {'\0'};
+
+	sprintf(buff, "%s %s", APP_NAME, APP_VER);
+    UPrint_StrBold(buff, 1, 4, 1);
+	UPrint_StrBold(POWERED_BY, 1, 4, 1);
+	UPrint_StrBold("0906 277 4420, 0907 031 4511", 1, 4, 1);
+	UPrint_StrBold("0907 031 4443", 1, 4, 1);
+	UPrint_StrBold("vassupport@iisysgroup.com", 1, 4, 1);
+	UPrint_StrBold("agencybanking@iisysgroup.com", 1, 4, 1);
+	UPrint_Feed(108);
 }
