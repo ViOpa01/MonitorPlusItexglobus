@@ -31,25 +31,18 @@ extern "C" {
 
 std::string vasApiKey();
 
+bool isValidVasTransactionType(const CardData& cardData);
 int vasPayloadGenerator(void* jsobject, void* data, const void *eft);
 
-Postman::Postman(const std::string& hostaddr, const std::string& port) : txnHost("")
+Postman::Postman(const std::string& hostaddr, const std::string& port)
+    : txnHost(hostaddr)
+    , portValue(port)
 {
-    /*
-    if (port.empty()) {
-        txnHost = hostaddr;
-    } else {
-        txnHost = hostaddr + ":" + port;
-    }
-*/
-    txnHost = hostaddr;
-    portValue = port;
 }
 
 Postman::~Postman()
 {
 }
-
 
 VasResult Postman::lookup(const char* url, const iisys::JSObject* json)
 {
@@ -138,6 +131,12 @@ VasResult Postman::sendVasCashRequest(const char* url, const iisys::JSObject* js
     netParam.port = atol(portValue.c_str());   // staging 8028, live 80, test 8018
     netParam.endTag = "";  // I might need to comment it out later
 
+    const std::string apiToken = payvice.getApiToken();
+    if (apiToken.empty()) {
+        result.error = VAS_ERROR;
+        result.message = "Token unavailable";
+        return result;
+    }
 
     if (json) {
         body = json->dump();
@@ -148,7 +147,7 @@ VasResult Postman::sendVasCashRequest(const char* url, const iisys::JSObject* js
 
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d\r\n", netParam.host, netParam.port);
 
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "token: %s\r\n", payvice.getApiToken().c_str());
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "token: %s\r\n", apiToken.c_str());
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "signature: %s\r\n", generateRequestAuthorization(body).c_str());
     
 
@@ -200,30 +199,6 @@ VasResult Postman::sendVasCashRequest(const char* url, const iisys::JSObject* js
         return result;
     }
 
-    /*
-    iisys::JSObject transaction;
-    VasError requeryErr =  requeryVas(transaction, (*json)("clientReference").getString().c_str());
-
-    if (requeryErr == TXN_NOT_FOUND || requeryErr == TXN_PENDING) {
-        result.message = std::string();     // If there is a http library provived error message
-        result.error = requeryErr;
-        return result;
-    } else if (requeryErr != NO_ERRORS || transaction.isNull()) {
-        result.message = std::string();     // If there is a http library provived error message
-        return result;
-    }
-
-    // enum('status', ['initialized', 'debited', 'pending', 'successful', 'failed', 'declined'])->default('initialized');
-    std::string statusMsg = transaction("status").getString();
-    if (statusMsg == "successful" || statusMsg == "failed" || statusMsg == "declined") {
-        result.error = NO_ERRORS;
-        result.message = transaction("response").getString();
-        return result;
-    } else if (statusMsg == "initialized" || statusMsg == "pending" || statusMsg == "debited") {
-        result.error = TXN_PENDING;
-        return result;
-    }
-    */
 
     return result;
 }
@@ -236,16 +211,24 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
     std::string body;
     Payvice payvice;
 
-/*
-    // For refcode to be captured for card Transaction
-    strncpy(cardData->trxContext.rrn, cardData->reference.c_str(), strlen(cardData->reference.c_str()));
-*/
+    if (cardData->reference.empty()) {
+        result.error = VAS_ERROR;
+        return result;
+    }
+
+    const std::string apiToken = payvice.getApiToken();
+    if (apiToken.empty()) {
+        result.error = VAS_ERROR;
+        result.message = "Token unavailable";
+        return result;
+    }
+
 
     memset((void*)&cardData->trxContext, 0, sizeof(Eft));
     cardData->trxContext.vas.switchMerchant = itexIsMerchant() ? 0 : 1;
    
     strcpy(cardData->trxContext.dbName, VASDB_FILE);
-    strcpy(cardData->trxContext.tableName, VASCARDTABLENAME);
+    strcpy(cardData->trxContext.tableName, VASDB_CARD_TABLE);
     
 
     if (json) {
@@ -261,7 +244,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
     jsonReq("host") = std::string("http://") +  txnHost + ":" + portValue + url;
 
 
-    jsonReq("headers")("token") = payvice.getApiToken();
+    jsonReq("headers")("token") = apiToken;
     jsonReq("headers")("signature") = generateRequestAuthorization(body);
 
     jsonReq("terminalId") = vasimpl::getDeviceTerminalId();
@@ -272,7 +255,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
     
     strncpy(cardData->trxContext.echoData, cardData->refcode.c_str(), sizeof(cardData->trxContext.echoData) - 1);
     strncpy(cardData->trxContext.rrn, cardData->reference.c_str(), strlen(cardData->reference.c_str()));
-    strcpy(cardData->trxContext.paymentInformation, cardData->upWithdrawal.field60.c_str());
+    strcpy(cardData->trxContext.paymentInformation, cardData->upWithdrawal.field60.c_str()); // TODO enable for upsl withdrawal
 
     if (doVasCardTransaction(&cardData->trxContext, cardData->amount) < 0) {
         return result;  // We weren't able to initiate transaction
@@ -283,69 +266,50 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
 
     if (cardData->trxContext.vas.auxResponse[0]) {
         // Extra check to assert that card tranaction was successful?
-        if (!strcmp(cardData->trxContext.responseCode, "00") && cardData->trxContext.transType == EFT_PURCHASE) {
+        if (!strcmp(cardData->trxContext.responseCode, "00") && isValidVasTransactionType(*cardData)) {
             result.error = NO_ERRORS;
         }
         result.message = cardData->trxContext.vas.auxResponse;
         return result;
     }
     
-    if (!cardData->trxContext.responseCode[0]) {
-
-        if (requeryMiddleware(&cardData->trxContext, cardData->transactionTid.c_str()) < 0) {
-            result.error = CARD_STATUS_UNKNOWN;
-            return result;
-        }
-        
+    if (!cardData->trxContext.responseCode[0] && requeryMiddleware(&cardData->trxContext, cardData->transactionTid.c_str()) < 0) {
+        result.error = CARD_STATUS_UNKNOWN;
+        return result;
     }
     
-    if (strcmp(cardData->trxContext.responseCode, "00")) {
+    if (strcmp(cardData->trxContext.responseCode, "00") != 0) {
         result.error = CARD_PAYMENT_DECLINED;
         result.message = responseCodeToStr(cardData->trxContext.responseCode);
-    } else if (cardData->trxContext.transType == EFT_PURCHASE) {
+    } else if (isValidVasTransactionType(*cardData)) {
         // So card approved and we didn't get vas response
 
         const iisys::JSObject& clientRef = (*json)("clientReference");
         const iisys::JSObject& walletId = payvice.object(Payvice::WALLETID);
-        VasResult requeryResult =  requeryVas(clientRef.getString().c_str(), walletId.getString().c_str(), payvice.getApiToken().c_str());
 
-        
-        if (requeryResult.error == NO_ERRORS) {
-            result.error = NO_ERRORS;
-            result.message = requeryResult.message;
-            return result;
-        } else {
-            result.error = CASH_STATUS_UNKNOWN;
-            result.message = requeryResult.message;
+        // So card approved and we didn't get vas response
+        result.error = CARD_APPROVED;
+        result.message = "";
+
+        if (clientRef.isNull() || clientRef.getString().empty()) {
             return result;
         }
 
-            /*
-            iisys::JSObject transaction;
+        VasResult requeryResult =  requeryVas(clientRef.getString().c_str(), walletId.getString().c_str(), payvice.getApiToken().c_str());
 
-            VasError requeryErr =  requeryVas(transaction, (*json)("clientReference").getString().c_str());
-            // Could it be that the middleware is still processing the vas leg?
-            // For card approved transactions, could there be an endpoint for proactively notifying customer care?
-            if (requeryErr == TXN_NOT_FOUND || requeryErr == TXN_PENDING) {
-                status.error = CARD_APPROVED;
-                return status;
-            } else if (requeryErr != NO_ERRORS || transaction.isNull()) {
-                status.error = CARD_APPROVED;
-                return status;
+        if (requeryResult.error == NO_ERRORS) {
+            iisys::JSObject requeryJson;
+
+            if (!requeryJson.load(requeryResult.message)) {
+                return result;
+            } else if (vasResponseCheck(requeryJson).error == TXN_NOT_FOUND) {
+                return result;
             }
 
-            // enum('status', ['initialized', 'debited', 'pending', 'successful', 'failed', 'declined'])->default('initialized');
-            std::string statusMsg = transaction("status").getString();
-            if (statusMsg == "successful" || statusMsg == "failed" || statusMsg == "declined") {
-                status.error = NO_ERRORS;
-                status.message = transaction("response").getString();
-            } else if (statusMsg == "initialized" || statusMsg == "pending" || statusMsg == "debited")  {
-                // pending
-                status.error = TXN_PENDING;
-                return status;
-            }
+            result.error = NO_ERRORS;
+            result.message = requeryResult.message;
+        }
 
-            */
     }
     
     return result;
@@ -425,6 +389,13 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json)
     netParam.port = atol(portValue.c_str());
     netParam.endTag = ""; 
 
+    const std::string apiToken = payvice.getApiToken();
+    if (apiToken.empty()) {
+        result.error = VAS_ERROR;
+        result.message = "Token unavailable";
+        return result;
+    }
+
     if (json) {
         body = json->dump();
         netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", url);
@@ -433,7 +404,7 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json)
     }
 
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d\r\n", netParam.host, netParam.port);
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "token: %s\r\n", payvice.getApiToken().c_str());
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "token: %s\r\n", apiToken.c_str());
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "signature: %s\r\n", generateRequestAuthorization(body).c_str());
 
     if (json) {
@@ -498,8 +469,8 @@ VasError Postman::manualRequery(iisys::JSObject& transaction, const std::string&
     const std::string body = json.getString();
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", path);
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d\r\n", netParam.host, netParam.port);
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "token: %s\r\n", payvice.getApiToken().c_str());
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "signature: %s\r\n", generateRequestAuthorization(body).c_str());
+    // netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "token: %s\r\n", payvice.getApiToken().c_str());
+    // netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "signature: %s\r\n", generateRequestAuthorization(body).c_str());
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Type: application/json\r\n");
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Length: %zu\r\n", body.length());
 
@@ -523,6 +494,16 @@ VasError Postman::manualRequery(iisys::JSObject& transaction, const std::string&
     transaction = json("data");
 
     return NO_ERRORS;
+}
+
+bool isValidVasTransactionType(const CardData& cardData)
+{
+
+    if (cardData.trxContext.transType == EFT_PURCHASE || cardData.trxContext.transType == EFT_CASHADVANCE) {
+        return true;
+    }
+
+    return false;
 }
 
 

@@ -26,8 +26,11 @@ extern "C" {
 std::string dateTimeRef()
 {
     char dateTime[32] = {0};
-    time_t now = time(NULL);
-    strftime(dateTime, sizeof(dateTime), "%Y%m%d%H%M%S", localtime(&now));
+
+    // time_t now = time(NULL);
+    // strftime(dateTime, sizeof(dateTime), "%Y%m%d%H%M%S", localtime(&now));
+
+    getDateAndTime(dateTime);
     return std::string(dateTime + 2);
 }
 

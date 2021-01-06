@@ -17,6 +17,7 @@
 
 extern "C" {
 #include "libapi_xpos/inc/libapi_print.h"
+#include "../util.h"
 }
 
 struct FlowDelegate {
@@ -89,8 +90,13 @@ struct VasFlow {
         std::map<std::string, std::string> record = delegate->storageMap(completeStatus);
         if (record.find(VASDB_DATE) == record.end() || record[VASDB_DATE].empty()) {
             char dateTime[32] = { 0 };
-            time_t now = time(NULL);
-            strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S.000", localtime(&now));
+            char yyyymmddhhmmss[15] = {'\0'};
+
+            // time_t now = time(NULL);
+            // strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S.000", localtime(&now));
+
+            getDateAndTime(yyyymmddhhmmss);
+            beautifyDateTime(dateTime, 31, yyyymmddhhmmss);
             record[VASDB_DATE] = dateTime;
         }
         long index = VasDB::saveVasTransaction(record);

@@ -374,7 +374,6 @@ VasResult ViceBankingViewModel::processPaymentResponse(const iisys::JSObject& js
     }
 
     getVasTransactionDateTime(paymentResponse.date, responseData);
-    getVasTransactionMessage(response.message, responseData);
     getVasTransactionReference(paymentResponse.reference, responseData);
     getVasTransactionSequence(paymentResponse.transactionSeq, responseData);
 

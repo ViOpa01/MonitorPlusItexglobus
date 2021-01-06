@@ -69,7 +69,6 @@ VasResult AirtimeViewModel::processPaymentResponse(const iisys::JSObject& json)
     }
 
     getVasTransactionDateTime(paymentResponse.date, responseData);
-    getVasTransactionMessage(response.message, responseData);
     getVasTransactionReference(paymentResponse.reference, responseData);
     getVasTransactionSequence(paymentResponse.transactionSeq, responseData);
 

@@ -109,13 +109,13 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		// 196.6.103.18 5014  nibss posvas port and ip live environment
 		// 196.6.103.73 5043  nibss epms port and ip live environment
 
-		strncpy(netParam->host, "197.253.19.78", strlen(mParam.nibss_ip));
-		netParam->port = 5003;
+		// strncpy(netParam->host, "197.253.19.78", strlen(mParam.nibss_ip));
+		// netParam->port = 5003;
 		// strncpy(netParam->host, "196.6.103.73", strlen(mParam.nibss_ip));
 		// netParam->port = 5043;
 
-		// strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		// netParam->port = mParam.nibss_ssl_port;
+		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		netParam->port = mParam.nibss_ssl_port;
 
 		strncpy(netParam->title, "Nibss", 10);
 		netParam->isSsl = 1;

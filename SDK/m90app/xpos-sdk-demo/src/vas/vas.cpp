@@ -275,7 +275,7 @@ const char* apiPaymentMethodString(PaymentMethod method)
 
 int initVasTables()
 {
-    // EmvDB::init(VASDB_CARD_TABLE, VASDB_FILE);
+    (void) EmvDB(VASDB_CARD_TABLE, VASDB_FILE);
     VasDB::init();
     return 0;
 }

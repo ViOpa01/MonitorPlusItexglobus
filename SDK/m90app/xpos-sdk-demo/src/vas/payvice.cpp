@@ -428,6 +428,42 @@ int beginLoginSequence(Payvice& payvice)
     return 0;
 }
 
+int isPayvicePasswordValid(const char* password)
+{
+	size_t i;
+	size_t state = 0;
+	const size_t UPPER_CASE_PRESENT		= 1 << 0;
+	const size_t ALPHABET_PRESENT   	= 1 << 1;
+	const size_t NUMBER_PRESENT		 	= 1 << 2;
+
+	if (!password) {
+		return 0;
+	}
+
+	i = 0;
+	while (password[i]) {
+		if (isupper(password[i])) {
+			state |= UPPER_CASE_PRESENT;
+		}
+
+		if (isalpha(password[i])) {
+			state |= ALPHABET_PRESENT;
+		}
+
+		if (isdigit(password[i])) {
+			state |= NUMBER_PRESENT;
+		}
+
+		++i;
+	}
+
+	if (i >= 8 && state == (UPPER_CASE_PRESENT | ALPHABET_PRESENT | NUMBER_PRESENT)) {
+		return 1;
+	}
+
+	return 0;
+}
+
 int logIn(Payvice& payvice)
 {
     std::string username;
@@ -446,6 +482,9 @@ int logIn(Payvice& payvice)
     payvice.object(Payvice::USER) = username;
 
     if (getPassword(password) < 0) {
+        return -1;
+    } else if (isPayvicePasswordValid(password.c_str()) == 0) {
+        UI_ShowButtonMessage(60000,  "Error", "Password must contain an uppercase, lowercase, a number and should be at least 8 characters long", "OK", UI_DIALOG_TYPE_CAUTION);
         return -1;
     }
 
@@ -519,7 +558,7 @@ std::string getClientReference(std::string& customReference)
     const std::string terminalId    = vasimpl::getDeviceTerminalId();
     const std::string deviceSerial  = vasimpl::getDeviceSerial();
 
-    size_t i;
+    size_t i = 0;
     char clientRef[1024] = { 0 };
 
     i += sprintf(&clientRef[i], "%s%02d%s", modelTag, (int)deviceModel.length(), deviceModel.c_str());

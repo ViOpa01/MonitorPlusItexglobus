@@ -160,8 +160,13 @@ VasResult Electricity::complete()
 
     if(viewModel.getEnergyType() == ElectricityViewModel::PREPAID_SMARTCARD) {
 
-        std::string title = response.error == SMART_CARD_DETECT_ERROR ? "Card Error" : "Update Error";
-        UI_ShowOkCancelMessage(30000, title.c_str(), response.message.c_str(), UI_DIALOG_TYPE_NONE);
+        if (response.error == NO_ERRORS) {
+            UI_ShowOkCancelMessage(2000, "SMART CARD", "APPROVED", UI_DIALOG_TYPE_NONE);
+        } else {
+            std::string title = response.error == SMART_CARD_DETECT_ERROR ? "Card Error" : "Update Error";
+            UI_ShowOkCancelMessage(30000, title.c_str(), response.message.c_str(), UI_DIALOG_TYPE_NONE);
+        }
+
         removeCard("SMART CARD", "REMOVE CARD!");
     }
     

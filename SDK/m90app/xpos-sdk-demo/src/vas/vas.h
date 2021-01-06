@@ -116,7 +116,6 @@ VasResult vasResponseCheck(const iisys::JSObject& response);
 void getVasTransactionReference(std::string& reference, const iisys::JSObject& responseData);
 void getVasTransactionSequence(std::string& sequence, const iisys::JSObject& responseData);
 void getVasTransactionDateTime(std::string& dateTime, const iisys::JSObject& responseData);
-void getVasTransactionMessage(std::string& message, const iisys::JSObject& responseData);
 
 VasError requeryVas(iisys::JSObject& transaction, const char * sequence);
 

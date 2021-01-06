@@ -36,19 +36,28 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
     readMerchantData(&mParam);
     getNetParams(&netParam, CURRENT_PLATFORM, 0);
 
+    if (trxContext->paymentInformation[0]) {
+        trxContext->transType = EFT_CASHADVANCE;
+    }
+
     if (trxContext->vas.switchMerchant) {
 
         char vtSecurity[97] = {'\0'};
 
-        if (switchMerchantToVas((void*)trxContext) < 0)
+        if (switchMerchantToVas((void*)trxContext) < 0) {
             return ret;
+        }
 
+        //TODO enable this section of code for upsl withdrawal
         if (trxContext->paymentInformation[0]) {
-            if (getUpWithrawalField53(vtSecurity) < 0)
+            if (getUpWithrawalField53(vtSecurity) < 0) {
                 return -1;
+            }
+
         }
 
         strncpy(trxContext->securityRelatedControlInformation, vtSecurity, sizeof(trxContext->securityRelatedControlInformation) -1);
+
     } else {
         MerchantParameters merchantParameters;
         char sessionKey[32 + 1] = { 0 };

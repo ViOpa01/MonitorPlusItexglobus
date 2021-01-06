@@ -189,7 +189,13 @@ short getUpWithrawalField53(char vtSecurity[97])
 
     if (Util_Des(2, mwDESKeyBcd, vPinKeyBcd, encPinKeyBcd) ) {
         return -1;
-    } else if (Util_Des(2, mwDESKeyBcd, vSessionKeyBcd, encSessionKeyBcd)) {
+    } else if (Util_Des(2, mwDESKeyBcd, vPinKeyBcd+8, encPinKeyBcd+8)) {
+        return -1;
+    }
+
+    if (Util_Des(2, mwDESKeyBcd, vSessionKeyBcd, encSessionKeyBcd) ) {
+        return -1;
+    } else if (Util_Des(2, mwDESKeyBcd, vSessionKeyBcd+8, encSessionKeyBcd+8)) {
         return -1;
     }
 

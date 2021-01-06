@@ -11,8 +11,10 @@ extern "C" {
 
 void vasimpl::formattedDateTime(char* dateTime, size_t len)
 {
-    time_t now = time(NULL);
-    strftime(dateTime, len, "%Y-%m-%d %H:%M:%S", localtime(&now));
+    // time_t now = time(NULL);
+    // strftime(dateTime, len, "%Y-%m-%d %H:%M:%S", localtime(&now));
+
+    getFormattedDateTime(dateTime, len);
 }
 
 iisys::JSObject vasimpl::getState()

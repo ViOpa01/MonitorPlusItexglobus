@@ -198,9 +198,9 @@ void vasEndofDay()
         }
 
         values["trxType"] = service.empty() ? "Services" : service;
-        // if (previewReceiptMap(values, 0, "../print/eodReceipt.html") == 0) {
-        //     checkedPrint(values, "eodReceipt.html");
-        // }
+        
+        printVasEod(values);
+
     }
 }
 
@@ -650,7 +650,7 @@ void vasAdmin()
         walletBalance();
         break;
     case 5:
-        walletRequest(2);   // commission to wallet
+        walletTransfer();
         break;
     case 6:
         if (UI_ShowOkCancelMessage(10000, "Confirm Logout", "Are you sure you want to log out?", UI_DIALOG_TYPE_CAUTION) == CONFIRM) {

@@ -34,8 +34,6 @@
 #define VASDB_STATUS_MESSAGE       "vas_message"
 #define VASDB_SERVICE_DATA         "vas_serviceData"
 
-extern const char* VASCARDTABLENAME;
-
 struct VasDB {
 
     typedef enum {

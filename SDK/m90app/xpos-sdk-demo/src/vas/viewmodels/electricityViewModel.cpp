@@ -132,7 +132,9 @@ VasResult ElectricityViewModel::complete(const std::string& pin)
     response = processPaymentResponse(json);
 
     if (energyType == PREPAID_SMARTCARD && response.error == NO_ERRORS) {
-        const iisys::JSObject& unitValue = json("unit_value");
+
+        const iisys::JSObject& responseData = json("data");
+        const iisys::JSObject& unitValue = responseData("unit_value");
         if (!unitValue.isNull()) {
             userCardInfo.CM_Purchase_Power = unitValue.getNumber();
             
@@ -361,7 +363,6 @@ VasResult ElectricityViewModel::processPaymentResponse(const iisys::JSObject& js
     }
 
     getVasTransactionDateTime(paymentResponse.date, responseData);
-    getVasTransactionMessage(response.message, responseData);
     getVasTransactionReference(paymentResponse.reference, responseData);
     getVasTransactionSequence(paymentResponse.transactionSeq, responseData);
 
@@ -491,13 +492,11 @@ VasResult ElectricityViewModel::updateSmartCard(La_Card_info * userCardInfo)
     int ret = updateUserCard(psamBalance, userCardInfo, &smartCardInFunc);
 
     if (ret) {
-        // UI_ShowOkCancelMessage(30000, "Update Error", unistarErrorToString(result), UI_DIALOG_TYPE_NONE);
         result.error = SMART_CARD_UPDATE_ERROR;
         result.message = unistarErrorToString(ret);
         return result;
     }
 
-    // smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
 
     //TODO: persist psamBalance
 

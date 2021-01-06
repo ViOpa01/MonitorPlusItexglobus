@@ -215,6 +215,7 @@ short getPayWithPhoneData(PayWithPhone* payPhone)
 
     time_t now;
     struct tm* now_tm;
+    char yyyymmddhhmmss[15] = {'\0'};
 
     memset(&mParam, 0x00, sizeof(MerchantData));
     memset(&parameter, 0x00, sizeof(MerchantParameters));
@@ -264,10 +265,13 @@ short getPayWithPhoneData(PayWithPhone* payPhone)
     getRrn(payPhone->rrn);
     strncpy(payPhone->requestId, payPhone->rrn + 6, 5); 
 
-    time(&now);
-    now_tm = localtime(&now);
+    // time(&now);
+    // now_tm = localtime(&now);
+    // sprintf(payPhone->date, "%02d/%02d/20%02d", now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_year - 100);
+
     getFormattedDateTime(payPhone->formattedTimestamp, sizeof(payPhone->formattedTimestamp));
-    sprintf(payPhone->date, "%02d/%02d/20%02d", now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_year - 100);
+    getDateAndTime(yyyymmddhhmmss);
+    sprintf(payPhone->date, "%.2s/%.2s/%.4s", &yyyymmddhhmmss[4], &yyyymmddhhmmss[6], yyyymmddhhmmss);
     payPhone->fee = PAY_WITH_PHONE_FEE;
 
     printf("Pay phone confirmed -> %s", payPhone->rrn);

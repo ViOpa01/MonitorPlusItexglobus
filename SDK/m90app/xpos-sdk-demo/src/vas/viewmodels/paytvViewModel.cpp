@@ -361,7 +361,6 @@ VasResult PayTVViewModel::processPaymentResponse(const iisys::JSObject& json, Se
     }
 
     getVasTransactionDateTime(paymentResponse.date, responseData);
-    getVasTransactionMessage(response.message, responseData);
     getVasTransactionReference(paymentResponse.reference, responseData);
     getVasTransactionSequence(paymentResponse.transactionSeq, responseData);
 
