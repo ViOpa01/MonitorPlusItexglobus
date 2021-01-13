@@ -28,6 +28,7 @@ extern "C" {
 #include "../util.h"
 }
 
+static const char* TOKEN_UNAVAILABLE_STR = "Token Unavailable";
 
 std::string vasApiKey();
 
@@ -133,8 +134,8 @@ VasResult Postman::sendVasCashRequest(const char* url, const iisys::JSObject* js
 
     const std::string apiToken = payvice.getApiToken();
     if (apiToken.empty()) {
-        result.error = VAS_ERROR;
-        result.message = "Token unavailable";
+        result.error = TOKEN_UNAVAILABLE;
+        result.message = TOKEN_UNAVAILABLE_STR;
         return result;
     }
 
@@ -218,8 +219,8 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
 
     const std::string apiToken = payvice.getApiToken();
     if (apiToken.empty()) {
-        result.error = VAS_ERROR;
-        result.message = "Token unavailable";
+        result.error = TOKEN_UNAVAILABLE;
+        result.message = TOKEN_UNAVAILABLE_STR;
         return result;
     }
 
@@ -391,8 +392,8 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json)
 
     const std::string apiToken = payvice.getApiToken();
     if (apiToken.empty()) {
-        result.error = VAS_ERROR;
-        result.message = "Token unavailable";
+        result.error = TOKEN_UNAVAILABLE;
+        result.message = TOKEN_UNAVAILABLE_STR;
         return result;
     }
 

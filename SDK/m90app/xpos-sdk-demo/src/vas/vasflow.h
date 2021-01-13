@@ -39,12 +39,13 @@ struct VasFlow {
     {
         Payvice payvice;
 
-        if (!loggedIn(payvice) && logIn(payvice) < 0) {
-            return -1;
+        if (!loggedIn(payvice)) {
+            logIn(payvice);
+            return -2;
         }
 
         if (!itexIsMerchant() && !virtualConfigurationIsSet()) {
-            Demo_SplashScreen("Configuration...", "www.payvice.com");
+            Demo_SplashScreen("Configuring...", "www.payvice.com");
             if (resetVirtualConfiguration() < 0) {
                 return -1;
             }
@@ -53,6 +54,7 @@ struct VasFlow {
         return this->startImplementation(delegate);
     }
 
+private:
     int startImplementation(FlowDelegate* delegate)
     {
         int printStatus = -1;
@@ -125,11 +127,5 @@ struct VasFlow {
         return 0;
     }
 };
-
-template <typename T>
-void startVas(T& flow, FlowDelegate* delegate)
-{
-    flow.start(delegate);
-}
 
 #endif

@@ -284,11 +284,17 @@ int vasTransactionTypes()
 {
     static int once_flag = initVasTables();
     std::vector<std::string> menu;
-    VAS_Menu_T menuOptions[] = { ENERGY, AIRTIME, TV_SUBSCRIPTIONS, DATA, SMILE, CASHIO };
+    VAS_Menu_T allOptions[] = { ENERGY, AIRTIME, TV_SUBSCRIPTIONS, DATA, SMILE };
+    std::vector<VAS_Menu_T> menuOptions(allOptions, allOptions + sizeof(allOptions) / sizeof(allOptions[0]));
 
     (void)once_flag;
 
-    for (size_t i = 0; i < sizeof(menuOptions) / sizeof(VAS_Menu_T); ++i) {
+    const iisys::JSObject& isAgent = Payvice().object(Payvice::IS_AGENT);
+    if (isAgent.isBool() && isAgent.getBool() == true) {
+        menuOptions.push_back(CASHIO);
+    }
+
+    for (size_t i = 0; i < menuOptions.size(); ++i) {
         menu.push_back(vasMenuString(menuOptions[i]));
     }
     menu.push_back("Vas Admin");
@@ -299,9 +305,13 @@ int vasTransactionTypes()
         if (selection < 0) {
             return -1;
         } else if (menu.size() - 1 == (size_t)selection) {
-            vasAdmin();
+            if (vasAdmin() != 0) {
+                return 0;
+            }
         } else {
-            doVasTransaction(menuOptions[selection]);
+            if (doVasTransaction(menuOptions[selection]) == -2) {
+                return 0;
+            }
         }
     }
 
@@ -317,33 +327,27 @@ int doVasTransaction(VAS_Menu_T menu)
     switch (menu) {
     case ENERGY: {
         Electricity electricity(title, postman);
-        startVas(flow, &electricity);
-        break;
+        return flow.start(&electricity);
     }
     case AIRTIME: {
         Airtime airtime(title, postman);
-        startVas(flow, &airtime);
-        break;
+        return flow.start(&airtime);
     }
     case TV_SUBSCRIPTIONS: {
         PayTV televisionSub(title, postman);
-        startVas(flow, &televisionSub);
-        break;
+        return flow.start(&televisionSub);
     }
     case DATA: {
         Data data(title, postman);
-        startVas(flow, &data);
-        break;
+        return flow.start(&data);
     }
     case SMILE: {
         Smile smile(title, postman);
-        startVas(flow, &smile);
-        break;
+        return flow.start(&smile);
     }
     case CASHIO: {
         ViceBanking cashIO(title, postman);
-        startVas(flow, &cashIO);
-        break;
+        return flow.start(&cashIO);
     }
     default:
         break;

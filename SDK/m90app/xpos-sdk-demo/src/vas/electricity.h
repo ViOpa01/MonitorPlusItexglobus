@@ -9,7 +9,6 @@
 
 #include "viewmodels/electricityViewModel.h"
 
-int electricity(const char* title);
 
 struct Electricity : FlowDelegate {
 

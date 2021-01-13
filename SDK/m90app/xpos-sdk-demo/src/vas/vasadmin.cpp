@@ -623,13 +623,14 @@ void vasRequery()
     printRequery(transaction);
 }
 
-void vasAdmin()
+int vasAdmin()
 {
     Payvice payvice;
     const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Balance Enquiry", "Commission Transfer", "Log out"};
 
-    if (!loggedIn(payvice) && logIn(payvice) < 0) {
-        return;    
+    if (!loggedIn(payvice)) {
+        logIn(payvice);
+        return -1;
     }
 
     std::vector<std::string> optionMenu(optionStr, optionStr + sizeof(optionStr) / sizeof(char*));
@@ -660,8 +661,10 @@ void vasAdmin()
                 initVasTables();
             }
         }
-        break;
+        return -1;
     default:
         break;
     }
+
+    return 0;
 }

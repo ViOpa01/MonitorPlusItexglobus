@@ -7,6 +7,7 @@
 #include "merchant.h"
 #include "EftDbImpl.h"
 #include "vas/virtualtid.h"
+#include "vas/payvice.h"
 
 extern "C" {
 #include "log.h"
@@ -592,6 +593,7 @@ int getMerchantData()
         return ret;
     }
 
+    Payvice::resetApiToken();
     resetVirtualConfiguration();
 
     return ret;

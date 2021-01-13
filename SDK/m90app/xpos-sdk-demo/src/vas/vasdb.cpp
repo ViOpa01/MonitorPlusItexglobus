@@ -103,6 +103,7 @@ VasDB::TrxStatus VasDB::vasErrToTrxStatus(VasError error)
     case INPUT_ERROR:
     case TXN_NOT_FOUND:
     case NOT_LOGGED_IN:
+    case TOKEN_UNAVAILABLE:
     default:
         return VasDB::STATUS_UNKNOWN;
     }

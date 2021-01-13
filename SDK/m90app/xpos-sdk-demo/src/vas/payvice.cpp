@@ -1,6 +1,8 @@
 #include "payvice.h"
 
 #include <sstream>
+#include <algorithm>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,11 +46,14 @@ const char* Payvice::CUR_CODE = "currencyCode";
 const char* Payvice::COUNTRYCODE = "countryCode";
 const char* Payvice::MCC = "mcc";
 
+const char* Payvice::IS_AGENT = "isAgent";
+
 struct TamsPayviceResponse {
     std::string message;
     std::string macros_tid;
     std::string status;
     std::string result;
+    std::string agentType;
 };
 
 struct TamsResponseParser : ExpatVisitor {
@@ -74,6 +79,8 @@ struct TamsResponseParser : ExpatVisitor {
             response.result = val;
         } else if (strcmp(tag, "macros_tid") == 0) {
             response.macros_tid = val;
+        } else if (strcmp(tag, "AgentType") == 0) {
+            response.agentType = val;
         }
     }
 
@@ -121,8 +128,19 @@ int Payvice::resetFile()
     object(KEY) = "";
     object(TOKEN) = "";
     object(TOKEN_EXP) = 0;
+    object(IS_AGENT) = false;
 
     return save();
+}
+
+int Payvice::resetApiToken()
+{
+    Payvice payvice;
+
+    payvice.object(TOKEN) = "";
+    payvice.object(TOKEN_EXP) = 0;
+
+    return payvice.save();
 }
 
 std::string Payvice::getApiToken()
@@ -130,7 +148,7 @@ std::string Payvice::getApiToken()
     std::string apiToken;
 
     if (object(TOKEN).getString().empty() || object(TOKEN_EXP).isNull() || time(NULL) >= (time_t)object(TOKEN_EXP).getInt()) {
-        time_t now = time(NULL) - (time_t) 60 * 5;
+        time_t now = time(NULL) - (time_t) 60 * 10;
         std::string tokenResponse = fetchVasToken();
         if (tokenResponse.empty()) {
             return apiToken;
@@ -238,6 +256,7 @@ int Payvice::extractVasToken(const std::string& response, const time_t now)
 
     object(Payvice::TOKEN) = token;
     object(Payvice::TOKEN_EXP) = now + atoi(expiration.getString().c_str()) * 60 * 60;
+    printf("============TOKEN EXPIRED TIME : %d(s), NOW : %d ============\n",  object(Payvice::TOKEN_EXP).getInt(), now);
 
     return 0;
 }
@@ -302,7 +321,7 @@ void parseTamsPayviceResponse(TamsPayviceResponse& payviceResponse, char* buffer
     
 }
 
-TamsPayviceResponse loginPayVice(const char* key, Payvice& payvice)
+TamsPayviceResponse loginPayVice(void* userData, const char* key, Payvice& payvice)
 {
     NetWorkParameters netParam = {'\0'};
     char encPass[128] = { 0 };
@@ -364,7 +383,7 @@ int extractPayViceKey(char* plainKey, const char* encryptedKey, const char* wall
     return 0;
 }
 
-TamsPayviceResponse getPayviceKeys(Payvice& payvice)
+TamsPayviceResponse getPayviceKeys(void* userData, Payvice& payvice)
 {
     NetWorkParameters netParam = {'\0'};
     char  encodedUrl[128];
@@ -392,11 +411,10 @@ int beginLoginSequence(Payvice& payvice)
 {
     char key[128] = { 0 };
     TamsPayviceResponse payviceResponse;
-    
+
     Demo_SplashScreen("www.payvice.com", "Please wait...");
-    payviceResponse = getPayviceKeys(payvice);
+    payviceResponse = getPayviceKeys(NULL, payvice);
     if (payviceResponse.status != "1" || payviceResponse.result != "0") {
-        UI_ShowButtonMessage(10000, "Error", payviceResponse.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
         return -1;
     } else if (payviceResponse.macros_tid.empty()) {
         return -1;
@@ -415,10 +433,17 @@ int beginLoginSequence(Payvice& payvice)
     payvice.object(Payvice::WALLETID) = payviceResponse.macros_tid;
     payvice.object(Payvice::KEY) = key;
 
-    payviceResponse = loginPayVice(key, payvice);
+    payviceResponse = loginPayVice(NULL, key, payvice);
     if (payviceResponse.result != "0" || payviceResponse.status != "0") {
-        UI_ShowButtonMessage(10000, "Error", payviceResponse.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
+        UI_ShowButtonMessage(2000, "Error", payviceResponse.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
         return -1;
+    }
+
+    std::transform(payviceResponse.agentType.begin(), payviceResponse.agentType.end(), payviceResponse.agentType.begin(), ::tolower);
+    if (payviceResponse.agentType == "staff" || payviceResponse.agentType == "agent") {
+        payvice.object(Payvice::IS_AGENT) = true;
+    } else {
+        payvice.object(Payvice::IS_AGENT) = false;
     }
 
     payvice.save();

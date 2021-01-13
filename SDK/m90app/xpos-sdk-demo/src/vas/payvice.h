@@ -42,6 +42,8 @@ struct Payvice {
     static const char* COUNTRYCODE;
     static const char* MCC;
 
+    static const char* IS_AGENT;
+
     typedef enum {
         NOERROR,
         SOME_ERROR_OCCURED,
@@ -54,6 +56,7 @@ struct Payvice {
     Payvice();
 
     int resetFile();
+    static int resetApiToken();
 
     std::string getApiToken();
 
