@@ -32,7 +32,7 @@ ProcessEod::ProcessEod(const std::vector<std::map<std::string, std::string> > &r
 
 }
 
-void ProcessEod::generateEodReceipt(bool isRRN)
+void ProcessEod::generateEodReceipt(const bool isRRN, const char* eodDate)
 {
     EmvDB db(dbFile, dbName);
     std::string filename = "xxxx\\"; 
@@ -104,7 +104,7 @@ void ProcessEod::generateEodReceipt(bool isRRN)
         }
 
         printReceiptLogo(filename.c_str());
-        generateEodHeader();
+        generateEodHeader(eodDate);
         UPrint_SetFont(7, 2, 2);
         UPrint_StrBold("EOD SUMMARY", 1, 0,1 );
         UPrint_SetFont(8, 2, 2);
@@ -157,19 +157,16 @@ void ProcessEod::generateEodReceipt(bool isRRN)
     return;
 }
 
-void ProcessEod::generateEodHeader()
+void ProcessEod::generateEodHeader(const char* eodDate)
 {
     MerchantData merchantdata = { 0 };
     readMerchantData(&merchantdata);
-    
-    char date[50] = {0};
-    getDate(date);
     
     UPrint_Feed(8);
     UPrint_SetFont(8, 2, 2);
     UPrint_StrBold(merchantdata.name, 1, 0, 1);
     UPrint_StrBold(merchantdata.address, 1, 0, 1);
-    printLine(merchantdata.tid, date);
+    printLine(merchantdata.tid, eodDate);
 
     UPrint_Feed(8);
 }

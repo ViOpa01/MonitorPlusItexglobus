@@ -222,10 +222,10 @@ void eodSubMenuHandler(int selected, const char** dateList, TrxType txtype)
     int selectedOption = gui_select_page_ex("Print By?", menu, 2, 10000, 0);
 
     if(selectedOption == 0){
-        eods.generateEodReceipt(true);
+        eods.generateEodReceipt(true, dateList[selected]);
     }
     else if(selectedOption == 1 ){
-        eods.generateEodReceipt(false);
+        eods.generateEodReceipt(false, dateList[selected]);
         return;
     }
     else

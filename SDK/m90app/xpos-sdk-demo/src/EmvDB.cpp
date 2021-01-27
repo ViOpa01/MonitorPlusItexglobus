@@ -26,7 +26,7 @@ EmvDB::EmvDB(const std::string& tableName, const std::string& file)
         dbFile(file)
 {
 
-    if (initializationMap[tableName] == 0 && init(tableName) == 0) {
+    if (initializationMap[tableName] == 0 && EmvDB::init(tableName, file) == 0) {
         initializationMap[tableName] = 1;
     }
 
@@ -34,7 +34,7 @@ EmvDB::EmvDB(const std::string& tableName, const std::string& file)
     int rc = sqlite3_open_v2(dbFile.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
     if (rc != SQLITE_OK) {
         printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));
-        printf("Database open failed\n");
+        printf("Database open failed, %s : %s\n", dbFile.c_str(), table.c_str());
         sqlite3_close_v2(db);
         db = 0;
         return;
@@ -766,7 +766,7 @@ int EmvDB::getUserVersion(sqlite3* db)
     return databaseVersion;
 }
 
-int EmvDB::init(const std::string& tableName)
+int EmvDB::init(const std::string& tableName, const std::string& file)
 {
     int rc;
     sqlite3* db;
@@ -775,7 +775,7 @@ int EmvDB::init(const std::string& tableName)
     
     int version, configuredVersion;
 
-    rc = sqlite3_open_v2(dbFile.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    rc = sqlite3_open_v2(file.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
     if (rc != SQLITE_OK) {
         printf("%s -> Can't open database: %s\n", __FUNCTION__, sqlite3_errmsg(db));

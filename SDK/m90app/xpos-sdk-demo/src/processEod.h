@@ -8,7 +8,7 @@
 struct ProcessEod {
 
     ProcessEod(const std::vector<std::map<std::string, std::string> > &record, const std::string &db, const std::string &file);
-    void generateEodReceipt(bool isRRN);
+    void generateEodReceipt(const bool isRRN, const char* eodDate);
     
 private:
 
@@ -29,7 +29,7 @@ private:
     std::vector<std::map<std::string, std::string> > data;
     std::vector<EodLabel> labelList;
 
-    void generateEodHeader();
+    void generateEodHeader(const char* eodDate);
   
 };
 

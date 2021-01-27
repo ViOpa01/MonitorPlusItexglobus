@@ -318,6 +318,10 @@ void parseTamsPayviceResponse(TamsPayviceResponse& payviceResponse, char* buffer
     if (ezxml_child(tran, "result") != NULL) {
         payviceResponse.result = ezxml_child(tran, "result")->txt;
     }
+
+    if (ezxml_child(tran, "AgentType") != NULL) {
+        payviceResponse.agentType = ezxml_child(tran, "AgentType")->txt;
+    }
     
 }
 

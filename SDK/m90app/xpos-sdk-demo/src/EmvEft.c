@@ -848,14 +848,14 @@ void eftTrans(const enum TransType transType, const enum SubTransType subTransTy
 
 	readMerchantData(&mParam);
 
-	if(checkIsItexMerchant(&mParam) && subTransType == SUB_NONE)
-	{
-		char msg[64] = {'\0'};
-		sprintf(msg, "%s is dissabled", transTypeToTitle(transType));
-        gui_messagebox_show("MESSAGE", msg, "", "", 0);
+	// if(checkIsItexMerchant(&mParam) && subTransType == SUB_NONE)
+	// {
+	// 	char msg[64] = {'\0'};
+	// 	sprintf(msg, "%s is dissabled", transTypeToTitle(transType));
+    //     gui_messagebox_show("MESSAGE", msg, "", "", 0);
 
-		return;
-	}
+	// 	return;
+	// }
 
 	eft.transType = transType;
 	eft.fromAccount = DEFAULT_ACCOUNT; //perform eft will update it if needed
@@ -1787,6 +1787,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	{
 		free(card_in);
 		free(card_out);
+		fprintf(stderr, "Error creating iso packet\n");
 		return -3;
 	}
 

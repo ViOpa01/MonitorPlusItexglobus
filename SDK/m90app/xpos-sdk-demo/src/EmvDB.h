@@ -87,8 +87,9 @@ struct EmvDB
     int getStan(char *stanString, size_t size);
     static const char *trxTypeToPS(TrxType type);
 
-    int getUserVersion(sqlite3 *db);
-    int tableExists(sqlite3 *db, const char *tableName);
+    static int getUserVersion(sqlite3 *db);
+    static int tableExists(sqlite3 *db, const char *tableName);
+    static int init(const std::string& tableName, const std::string& file);
 
 private:
     sqlite3 *db;
@@ -98,7 +99,6 @@ private:
     
     int prepareMap(std::string &columns, std::string &params, const std::map<std::string, std::string> &record);
     std::string updateQuery(const std::map<std::string, std::string> &record);
-    int init(const std::string &tableName);
 };
 
 #endif

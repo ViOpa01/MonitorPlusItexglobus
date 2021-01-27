@@ -68,7 +68,7 @@ int vasEodMap(VasDB& db, const char* date, const std::string& service, std::map<
     // fillReceiptHeader(values);
     // fillReceiptFooter(values);
 
-    values["date"] = date;
+    values[VASDB_DATE] = date;
 
     for (size_t i = 0; i < transactions.size(); ++i) {
         std::map<std::string, std::string>& element = transactions[i];
