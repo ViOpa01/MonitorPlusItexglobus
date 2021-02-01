@@ -284,6 +284,7 @@ VasResult ViceBankingViewModel::complete(const std::string& pin)
             cardData.upWithdrawal.field60 =
             "upsl-direct~010085C24300148041Meter Number=12." + serviceCode + ".Acct=" + accountNo + ".Phone=" + phoneNumber + "~upsl-withdrawal";
         }
+
         response = comProxy.complete(paymentPath(service), &json, &cardData);
     } else {
         response = comProxy.complete(paymentPath(service), &json);

@@ -72,6 +72,11 @@ VasResult AirtimeViewModel::processPaymentResponse(const iisys::JSObject& json)
     getVasTransactionReference(paymentResponse.reference, responseData);
     getVasTransactionSequence(paymentResponse.transactionSeq, responseData);
 
+    const iisys::JSObject& pinData = responseData("pin_data");
+    if (pinData.isObject()) {
+        paymentResponse.serviceData = pinData.getString();
+    }
+
     if (payMethod == PAY_WITH_CARD && responseData("reversal").isBool() && responseData("reversal").getBool() == true) {
         comProxy.reverse(cardData);
     }
