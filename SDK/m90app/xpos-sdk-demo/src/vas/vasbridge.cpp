@@ -94,40 +94,45 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
 
 int requeryToContext(Eft* trxContext, const char* response) 
 {
-    // {
-    //     "error": false,
-    //     "message": "success",
-    //     "data": {
-    //         "MTI": "0200",
-    //         "processingCode": "001000",
-    //         "amount": 100,
-    //         "terminalId": "2070HE88",
-    //         "statusCode": "92",
-    //         "maskedPan": "541333XXXXXX0011",
-    //         "rrn": "191204084500",
-    //         "STAN": "084509",
-    //         "transactionTime": "2019-12-04T07:46:34.514Z",
-    //         "handlerResponseTime": "2019-12-04T07:46:37.023Z",
-    //         "merchantId": "FBP205600444741",
-    //         "merchantAddress": "KD LANG",
-    //         "merchantCategoryCode": "5621",
-    //         "messageReason": "Routing error",
-    //         "responseCode": "92",
-    //         "notified": "",
-    //         "customerRef": "paga~07038085747~PAX|32645884|7.8.17PG"
-    //     }
-    // }
+    /*
+    {
+        "error": false,
+        "message": "success",
+        "data": {
+            "MTI": "0200",
+            "processingCode": "001000",
+            "amount": 5000,
+            "terminalId": "2033GP25",
+            "statusCode": "54",
+            "maskedPan": "539983XXXXXX3775",
+            "rrn": "210202113106",
+            "STAN": "113118",
+            "transactionTime": "2021-02-02T10:31:23.899Z",
+            "handlerResponseTime": "2021-02-02T10:31:24.786Z",
+            "merchantId": "203315000006045",
+            "merchantAddress": "LA           LANG",
+            "merchantCategoryCode": "8061",
+            "messageReason": "Expired card",
+            "responseCode": "54",
+            "notified": "",
+            "customerRef": "27613263~MTNVTU~2033GP25~MorefunH9|91200609000171|0.0.7(2021-02-02-11:31)"
+        }
+    }
+    */
     iisys::JSObject json;
 
     if (!json.load(response)) {
+        printf("hey 1\n");
         return -1;
     } else if (!json("error").isBool() || json("error").getBool() == true) {
+        printf("Hey 2\n");
         return -1;
     }
 
     iisys::JSObject& data = json("data");
 
     if(data.isNull()) {
+        printf("Hey 3\n");
         return -1;
     }
 
@@ -142,6 +147,7 @@ int requeryMiddleware(Eft* trxContext, const char* tid)
     char path[256] = { 0 };
     char host[] = "ims.itexapp.com";
     char authorization[256] = "Authorization: ";
+    int i = 0;
   
     strncpy((char*)netParam.host, host, strlen(host));
     netParam.receiveTimeout = 60000;
@@ -157,12 +163,20 @@ int requeryMiddleware(Eft* trxContext, const char* tid)
         panObj.replace(panObj.begin() + 6, panObj.end() - 4, std::string(panObj.length() - 10, 'X'));
     }
 
-    snprintf(path, sizeof(path), "/api/v1/transactions/transaction-callback?tid=%s&reference=%s&pan=%s&amount=%lu"
+    snprintf(path, sizeof(path), "/api/v1/transactions/transaction-callback?tid=%s&reference=%s&pan=%s&amount=%s"
     , tid, trxContext->rrn, panObj.c_str(), trxContext->amount);
 
     {
+        char signature[128 + 1] = { 0 };
+
         std::string plainAuth = std::string(tid) + ":" + trxContext->rrn + ":" + "t9u4*&jEsLNdKo&M1A0Cp>Mco`?h.Dz<S`}L:[)UW+w)U^oz!*ROB82|6pyJ,l8";
-        sha512Hex(authorization + strlen(authorization), plainAuth.c_str(), plainAuth.length());
+        sha512Hex(signature, plainAuth.c_str(), plainAuth.length());
+
+        i = (int)strlen(signature);
+        while (i--) {
+            signature[i] = tolower(signature[i]);
+        }
+        strcat(authorization, signature);
     }
 
     netParam.packetSize += sprintf((char*)(&netParam.packet[netParam.packetSize]), "GET %s HTTP/1.1\r\n", path);
@@ -173,8 +187,12 @@ int requeryMiddleware(Eft* trxContext, const char* tid)
         return -1;
     }
 
+    std::string response = strchr((const char*)netParam.response, '{');
+    if (response.empty()) {
+        return -1;
+    }
 
-    return requeryToContext(trxContext, (char *)netParam.response);
+    return requeryToContext(trxContext, response.c_str());
 }
 
 

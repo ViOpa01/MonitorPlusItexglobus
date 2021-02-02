@@ -278,7 +278,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
         result.error = CARD_STATUS_UNKNOWN;
         return result;
     }
-    
+
     if (strcmp(cardData->trxContext.responseCode, "00") != 0) {
         result.error = CARD_PAYMENT_DECLINED;
         result.message = responseCodeToStr(cardData->trxContext.responseCode);
