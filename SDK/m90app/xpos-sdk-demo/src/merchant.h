@@ -47,6 +47,7 @@ typedef struct MerchantData
 int readMerchantData(MerchantData* merchant);
 int saveMerchantData(const MerchantData* merchant);
 int getMerchantData();
+int logoutAndResetVasDb();
 
 
 #ifdef __cplusplus

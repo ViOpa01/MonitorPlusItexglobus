@@ -8,6 +8,7 @@
 #include "EftDbImpl.h"
 #include "vas/virtualtid.h"
 #include "vas/payvice.h"
+#include "vas/vasdb.h"
 
 extern "C" {
 #include "log.h"
@@ -597,6 +598,17 @@ int getMerchantData()
     resetVirtualConfiguration();
 
     return ret;
+}
+
+int logoutAndResetVasDb()
+{
+    Payvice payvice;
+    if (logOut(payvice) == 0) {
+        remove(VASDB_FILE);
+        initVasTables();
+    }
+
+    return 0;
 }
 
 

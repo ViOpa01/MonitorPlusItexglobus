@@ -912,6 +912,7 @@ short checkToPrepOnDownload()
 
     merchant.is_prepped = 0;
     saveMerchantData(&merchant);
+    logoutAndResetVasDb();
     uiHandshake();
     return UFile_Remove(fileName, FILE_PRIVATE);
     
