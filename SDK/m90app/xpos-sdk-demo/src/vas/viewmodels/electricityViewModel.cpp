@@ -300,6 +300,12 @@ int ElectricityViewModel::getPaymentJson(iisys::JSObject& json, Service service)
 	json("service") = apiServiceString(service);
 	json("customerPhoneNumber") = phoneNumber;
 
+    // purchase times
+    if (energyType == PREPAID_SMARTCARD) {
+	    json("purchaseTimes") = purchaseTimes;
+	    // json("psamBalance") = psamBalance;   // add psamBalance here 
+    }
+
     return 0;
 }
 
@@ -454,6 +460,7 @@ int ElectricityViewModel::readSmartCard(La_Card_info * userCardInfo)
 {
     unsigned char inData[512] = { 0 };
     unsigned char outData[512] = { 0 };
+    int ret = -1;
 
     memset(&smartCardInFunc, 0x00, sizeof(SmartCardInFunc));
     bindSmartCardApi(&smartCardInFunc);
@@ -467,7 +474,13 @@ int ElectricityViewModel::readSmartCard(La_Card_info * userCardInfo)
 
     memset(userCardInfo, 0x00, sizeof(La_Card_info));    
 
-    return readUserCard(userCardInfo, outData, inData, &smartCardInFunc);;
+    ret = readUserCard(userCardInfo, outData, inData, &smartCardInFunc);
+    if (ret == 0) {
+        purchaseTimes = userCardInfo->CM_Purchase_Times;
+    }
+
+    return ret;
+    
 }
 
 VasResult ElectricityViewModel::updateSmartCard(La_Card_info * userCardInfo)

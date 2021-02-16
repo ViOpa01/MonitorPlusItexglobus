@@ -140,4 +140,6 @@ const char* vasChannel();
 std::string getRefCode(const std::string& vasCategory, const std::string& vasProduct = "");
 void printVasFooter();
 
+short revalidateSmartCard(const iisys::JSObject& data);
+
 #endif

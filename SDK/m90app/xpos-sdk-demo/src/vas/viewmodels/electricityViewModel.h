@@ -89,6 +89,7 @@ private:
 
     SmartCardInFunc smartCardInFunc;
     La_Card_info userCardInfo;
+    int purchaseTimes;
 
 };
 

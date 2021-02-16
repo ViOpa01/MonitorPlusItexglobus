@@ -493,6 +493,7 @@ VasError Postman::manualRequery(iisys::JSObject& transaction, const std::string&
     }
 
     transaction = json("data");
+    revalidateSmartCard(transaction);
 
     return NO_ERRORS;
 }
