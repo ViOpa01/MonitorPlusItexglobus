@@ -620,6 +620,11 @@ void vasRequery()
         UI_ShowButtonMessage(2000, "Requery Failed", "", "OK", UI_DIALOG_TYPE_CAUTION);
     }
 
+    VasResult revalidate = ElectricityViewModel::revalidateSmartCard(transaction);
+    if (revalidate.error != NO_ERRORS) {
+        UI_ShowButtonMessage(2000, "Error", revalidate.message.c_str(), "OK", UI_DIALOG_TYPE_CAUTION);
+    }
+
     printRequery(transaction);
 }
 

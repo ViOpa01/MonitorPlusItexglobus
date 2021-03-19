@@ -33,6 +33,7 @@ struct ElectricityViewModel {
     VasResult setEnergyType(EnergyType energyType);
     VasResult setMeterNo(const std::string& meterNo);
 
+    static VasResult revalidateSmartCard(const iisys::JSObject& data);
 
 
     Service getService() const;

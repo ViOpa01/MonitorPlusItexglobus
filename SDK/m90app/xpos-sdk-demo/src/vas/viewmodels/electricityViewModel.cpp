@@ -532,3 +532,63 @@ const unsigned char* ElectricityViewModel::getUserCardNo() const
     return this->userCardInfo.CM_UserNo;
 }
 
+VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
+{
+    VasResult result;
+
+    const iisys::JSObject& response = data("response");
+
+    std::string product = data("product").getString();
+    std::string vasAccountType = data("VASAccountType").getString();
+    const std::string vasCustomerAccount = data("VASCustomerAccount").getString();
+    const int purchaseTimes = data("purchaseTimes").getNumber();
+
+
+    std::transform(product.begin(), product.end(), product.begin(), ::tolower);
+    std::transform(vasAccountType.begin(), vasAccountType.end(), vasAccountType.begin(), ::tolower);
+
+    if (product != "ikedc" || vasAccountType != "smartcard") {
+        result = NO_ERRORS;
+        return result;
+    }
+    
+    unsigned char inData[512] = "0004 ";
+    unsigned char outData[512] = {'\0'};
+
+    La_Card_info userCardInfo;
+    SmartCardInFunc smartCardInFunc;
+
+    memset(&smartCardInFunc, 0x00, sizeof(SmartCardInFunc));
+    memset(&userCardInfo, 0x00, sizeof(La_Card_info));
+
+    bindSmartCardApi(&smartCardInFunc);
+
+    smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
+
+    if (smartCardInFunc.detectSmartCardCb("UPDATE CARD", "INSERT CUSTOMER CARD", 3 * 60 * 1000)) {
+        result.message = "Detect Card Error";
+        return result;
+    }
+
+    if (readUserCard(&userCardInfo, outData, inData, &smartCardInFunc) != 0) {
+        return result;
+    }
+
+    if (userCardInfo.CM_Purchase_Times == purchaseTimes && strcmp((char*)userCardInfo.CM_UserNo, vasCustomerAccount.c_str()) == 0) {
+        unsigned char psamBalance[16] = { 0 };
+
+        userCardInfo.CM_Purchase_Power = response("unit_value").getNumber();
+        userCardInfo.CM_Purchase_Times += 1;
+
+        int ret = updateUserCard(psamBalance, &userCardInfo, &smartCardInFunc);
+        if (ret) {
+            result.message = unistarErrorToString(ret);
+            return result;
+        }
+        result.error = NO_ERRORS;
+    } else {
+        result.message = "Write Unauthorized";
+    }
+    
+    return result;
+}
