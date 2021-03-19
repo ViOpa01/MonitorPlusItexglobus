@@ -208,8 +208,8 @@ std::string Payvice::fetchVasToken()
     std::string path = "/api/vas/authenticate/me";
     char requestBody[1024] = {'\0'};
 
-    snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itexlive\", \"terminal\": \"%s\"}", 
-        object(Payvice::WALLETID).getString().c_str(), object(Payvice::USER).getString().c_str(), object(Payvice::PASS).getString().c_str(), mParam.tid);
+    snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itexlive\", \"terminal\": \"%s\", \"channel\": \"%s\", \"version\": \"%s\"}", 
+        object(Payvice::WALLETID).getString().c_str(), object(Payvice::USER).getString().c_str(), object(Payvice::PASS).getString().c_str(), mParam.tid, vasChannel(), vasApplicationVersion().c_str());
 
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", path.c_str());
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s\r\n", netParam.host);

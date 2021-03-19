@@ -54,6 +54,7 @@ int AirtimeViewModel::getPaymentJson(iisys::JSObject& json) const
     json("amount") = majorDenomination(this->amount);
     json("paymentMethod") = paymentMethodStr;
 	json("channel") = vasChannel();
+	json("version") = vasApplicationVersion();
 	json("service") = apiServiceString(this->service);
 
     return 0;

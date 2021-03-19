@@ -214,6 +214,7 @@ int PayTVViewModel::getLookupJson(iisys::JSObject& json, Service service) const
     }
     json("type") = apiServiceType(service);
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
     json("service") = apiServiceString(service);
 
     return 0;
@@ -237,6 +238,7 @@ int PayTVViewModel::getPaymentJson(iisys::JSObject& json, Service service) const
     
     json("productCode") = lookupResponse.productCode;
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
     json("phone") = phoneNumber;
     json("service") = apiServiceString(service);
     json("paymentMethod") = apiPaymentMethodString(payMethod);

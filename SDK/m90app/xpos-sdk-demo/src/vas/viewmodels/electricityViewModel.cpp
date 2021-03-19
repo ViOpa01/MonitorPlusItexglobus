@@ -285,6 +285,7 @@ int ElectricityViewModel::getLookupJson(iisys::JSObject& json, Service service) 
     json("service") = apiServiceString(service);
     json("amount") = majorDenomination(amount);
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
 
     return 0;
 }

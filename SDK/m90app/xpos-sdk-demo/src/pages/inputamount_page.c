@@ -3,13 +3,18 @@
 #include "libapi_xpos/inc/libapi_system.h"
 #include <string.h>
 
+#include "./Receipt.h"
+
 
 static void _setAmount(int amount)
 {
 	char buf[32] = {0};
-    double famt;
-    famt = amount / 100.00;
-	sprintf(buf, "%0.2f", famt);
+    // double famt;
+    // famt = amount / 100.00;
+	// sprintf(buf, "%0.2f", famt);
+
+	sprintf(buf, "%d", amount);
+	formatAmountEx(buf);
 	gui_text_out(0, GUI_LINE_TOP(3), buf);
 }
 

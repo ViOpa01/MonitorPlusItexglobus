@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,6 +87,7 @@ int SmileViewModel::getLookupJson(iisys::JSObject& json, Service service) const
     json.clear();
     json("service") = apiServiceString(service);
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
     json("type") = recipientTypeString(this->recipientType);
 
     if (recipientType == PHONE_NO) {
@@ -181,11 +181,10 @@ VasResult SmileViewModel::complete(const std::string& pin)
 int SmileViewModel::getPaymentJson(iisys::JSObject& json, Service service)
 {
     std::string paymentMethodStr = paymentString(this->payMethod);
-    std::stringstream ss;
     std::transform(paymentMethodStr.begin(), paymentMethodStr.end(), paymentMethodStr.begin(), ::tolower);
-    ss << amount;
 
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
     json("type") = apiCompleteServiceType(service);
     json("account") = customerID;
     json("phone") = phoneNumber;

@@ -447,8 +447,8 @@ void printAirtime(std::map<std::string, std::string> &record)
 
 void printCashio(std::map<std::string, std::string> &record)
 {
-    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, "recBank"};
-    const char* labels[] = {"WALLET", "TID","RECIPIENT", "ACC NAME ", "BANK "};
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, "recBank", "narration"};
+    const char* labels[] = {"WALLET", "TID","RECIPIENT", "ACC NAME ", "BANK ", "NARRATION "};
 
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {
@@ -915,18 +915,9 @@ VasError getVasPin(std::string& pin, const char* message)
 
 std::string vasApplicationVersion()
 {
-    std::string appName;
+    std::string appVersion(APP_VER);
 
-    // if (manifest.error()) {
-    //     return appName;
-    // }
-
-    // appName = manifest.object(config::APP)(config::NAME).getString();
-    // appName += " v(" + manifest.object(config::APP)(config::VERSION).getString() + ") " + manifest.date();
-
-    appName = APP_VER;
-
-    return appName;
+    return appVersion;
 }
 
 const char* vasChannel()

@@ -88,6 +88,7 @@ int DataViewModel::getLookupJson(iisys::JSObject& json, Service service) const
 
     json("service") = apiServiceString(service);
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
 
     return 0;
 }

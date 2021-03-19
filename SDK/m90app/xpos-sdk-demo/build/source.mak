@@ -13,7 +13,7 @@ QL_LIB=ql_at ql_common_api ql_peripheral ql_qcmap_client
 		
 #���ӿ�
 APP_LIB=apppub atc vcps rupay quics paypass dpas amex emv emvpub entry emvapi api_xpos net power producttest pub rpc switchcheck tms ucosii xgui \
-    pthread  mf_driver mbedtls wifi json sqlite nibss8583 crypto ssl expat m\
+    pthread  mf_driver mbedtls wifi json sqlite nibss8583 unistar crypto ssl expat m\
 	stdc++
     
 LINK_LIB= $(APP_LIB) $(QL_LIB) $(STD_LIB)

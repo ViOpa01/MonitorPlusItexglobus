@@ -336,6 +336,7 @@ VasResult Postman::requeryVas(const char* clientRef, const char* walletId, const
     json("wallet") = walletId;
     json("clientReference") = clientRef;
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
 
 
     const std::string body = json.getString();

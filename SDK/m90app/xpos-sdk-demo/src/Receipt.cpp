@@ -102,11 +102,16 @@ int getPrinterStatus(const int status)
 	}
 	else if (status == UPRN_OUTOF_PAPER)
 	{
+		/*
 		if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
 			return -1;
 		} else {
 			return 0;
 		}
+		*/
+
+		gui_messagebox_show("Print", "No paper \nPlease reload the Paper?", "", "", 3000);
+		return -1;
 	}
 	else if (status == UPRN_FILE_FAIL)
 	{
@@ -214,6 +219,18 @@ int formatAmount(std::string& ulAmount)
     }
 
     return 0;
+}
+
+int formatAmountEx(char* ulAmount)
+{
+	std::string amount(ulAmount);
+	int ret = -1;
+
+	ret = formatAmount(amount);
+
+	strncpy(ulAmount, amount.c_str(), amount.length());
+
+	return ret;
 }
 
 const char *responseCodeToStr(const char responseCode[3])
@@ -590,9 +607,15 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 
 		if (ret == UPRN_OUTOF_PAPER)
 		{
+			/*
 			if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
 				break;
 			}
+			*/
+
+			gui_messagebox_show("Print", "No paper \nPlease reload the Paper?", "", "", 3000);
+
+			break;
 		}
 
 		UPrint_SetDensity(3); //Set print density to 3 normal

@@ -30,7 +30,9 @@ void reprintByRrn(void);
 void reprintLastTrans(void);
 int getPrinterStatus(const int status);
 
+int formatAmountEx(char* ulAmount);
 const char *responseCodeToStr(const char responseCode[3]);
+
 
 
 
