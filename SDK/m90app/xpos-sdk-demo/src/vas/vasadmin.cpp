@@ -16,15 +16,13 @@
 #include "viewmodels/dataViewModel.h"
 #include "viewmodels/smileViewModel.h"
 #include "viewmodels/paytvViewModel.h"
-#include "cashio.h"
-#include "airtime.h"
-#include "data.h"
-#include "paytv.h"
-#include "smile.h"
-#include "wallet.h"
 
+#include "payvice.h"
 #include "vas.h"
 #include "vasdb.h"
+#include "vasmenu.h"
+#include "wallet.h"
+#include "vasadmin.h"
 
 extern "C" {
 #include "../itexFile.h"

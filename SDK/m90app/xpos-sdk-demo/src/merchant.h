@@ -39,6 +39,8 @@ typedef struct MerchantData
     int  callhome_time;
 
     char pKey[33];
+
+    char app_type[16];
     
     Network gprsSettings;
 } MerchantData;

@@ -55,6 +55,7 @@ typedef struct __st_gui_menu_key_def{
 	unsigned int uKey;
 }st_gui_key_menu;
 
+static st_gui_key_menu _main_menu_def_n[4] = {'\0'};
 
 // Define the menu array, the first parameter is the name of the parent menu,
 // the second parameter is the name of the current menu,
@@ -653,6 +654,10 @@ static int _menu_proc(char *pid)
 	else if(!operatorHandler(pid))
 	{
 		return 0;
+	} else if(!strcmp(pid, UI_CASHIN_CASHOUT))
+	{
+		doCashInCashOut();
+		return 0;
 	}
 	else if (strcmp(pid, "Sales") == 0)
 	{
@@ -836,13 +841,137 @@ void standby_pagepaint()
 	gui_end_batch_paint();
 }
 
-static const st_gui_key_menu _main_menu_def_n[] = 
+// static const st_gui_key_menu _main_menu_def_n[] = 
+// {
+// 	{UI_CARD_PAYMENT,		"",	GUI_KEY_1},
+// 	{UI_CARDLESS_PAYMENT,	"",	GUI_KEY_2},
+// 	{UI_VAS,				"",	GUI_KEY_3},
+// 	// {SMART_CARD_TEST,		"",	GUI_KEY_4},
+// };
+
+void display_menu(void)
 {
-	{UI_CARD_PAYMENT,		"",	GUI_KEY_1},
-	{UI_CARDLESS_PAYMENT,	"",	GUI_KEY_2},
-	{UI_VAS,				"",	GUI_KEY_3},
-	// {SMART_CARD_TEST,		"",	GUI_KEY_4},
-};
+	MerchantData merchant;
+
+	memset(&merchant, 0x00, sizeof(MerchantData));
+
+	readMerchantData(&merchant);
+
+	if (strcmp(merchant.app_type, "AGENCY") == 0) {
+		//TODO present 3 menus, 
+		// CASH IN CASH OUT
+		// CARDLESS
+		// VAS
+
+		if (isAgent()) {
+
+			_main_menu_def_n[0].name = UI_CASHIN_CASHOUT;
+			_main_menu_def_n[0].id = NULL;
+			_main_menu_def_n[0].uKey = GUI_KEY_1;
+
+			_main_menu_def_n[1].name = UI_CARDLESS_PAYMENT;
+			_main_menu_def_n[1].id = NULL;
+			_main_menu_def_n[1].uKey = GUI_KEY_2;
+
+			_main_menu_def_n[2].name = UI_VAS;
+			_main_menu_def_n[2].id = NULL;
+			_main_menu_def_n[2].uKey = GUI_KEY_3;
+
+			_main_menu_def_n[3].name = NULL;
+			_main_menu_def_n[3].id = NULL;
+			_main_menu_def_n[3].uKey = NULL;
+
+		} else {
+
+			_main_menu_def_n[0].name = UI_CARDLESS_PAYMENT;
+			_main_menu_def_n[0].id = NULL;
+			_main_menu_def_n[0].uKey = GUI_KEY_1;
+
+			_main_menu_def_n[1].name = UI_VAS;
+			_main_menu_def_n[1].id = NULL;
+			_main_menu_def_n[1].uKey = GUI_KEY_2;
+
+			_main_menu_def_n[2].name = NULL;
+			_main_menu_def_n[2].id = NULL;
+			_main_menu_def_n[2].uKey = NULL;
+
+			_main_menu_def_n[3].name = NULL;
+			_main_menu_def_n[3].id = NULL;
+			_main_menu_def_n[3].uKey = NULL;
+		}
+
+
+
+	} else if (strcmp(merchant.app_type, "CONVERTED") == 0) {
+		//TODO present 4 menus, 
+		// CASH IN CASH OUT
+		// CARD PAYMENT
+		// CARDLESS
+		// VAS
+
+		if (isAgent()) {
+
+			_main_menu_def_n[0].name = UI_CASHIN_CASHOUT;
+			_main_menu_def_n[0].id = NULL;
+			_main_menu_def_n[0].uKey = GUI_KEY_1;
+
+			_main_menu_def_n[1].name = UI_CARD_PAYMENT;
+			_main_menu_def_n[1].id = NULL;
+			_main_menu_def_n[1].uKey = GUI_KEY_2;
+
+			_main_menu_def_n[2].name = UI_CARDLESS_PAYMENT;
+			_main_menu_def_n[2].id = NULL;
+			_main_menu_def_n[2].uKey = GUI_KEY_3;
+
+			_main_menu_def_n[3].name = UI_VAS;
+			_main_menu_def_n[3].id = NULL;
+			_main_menu_def_n[3].uKey = GUI_KEY_4;
+
+		} else {
+
+			_main_menu_def_n[0].name = UI_CARD_PAYMENT;
+			_main_menu_def_n[0].id = NULL;
+			_main_menu_def_n[0].uKey = GUI_KEY_1;
+
+			_main_menu_def_n[1].name = UI_CARDLESS_PAYMENT;
+			_main_menu_def_n[1].id = NULL;
+			_main_menu_def_n[1].uKey = GUI_KEY_2;
+
+			_main_menu_def_n[2].name = UI_VAS;
+			_main_menu_def_n[2].id = NULL;
+			_main_menu_def_n[2].uKey = GUI_KEY_3;
+
+			_main_menu_def_n[3].name = NULL;
+			_main_menu_def_n[3].id = NULL;
+			_main_menu_def_n[3].uKey = NULL;
+
+		}
+
+	} else {
+
+		//TODO present 3 menus, 
+		// CARD PAYMENT
+		// CARDLESS
+		// VAS
+
+		_main_menu_def_n[0].name = UI_CARD_PAYMENT;
+		_main_menu_def_n[0].id = NULL;
+		_main_menu_def_n[0].uKey = GUI_KEY_1;
+
+		_main_menu_def_n[1].name = UI_CARDLESS_PAYMENT;
+		_main_menu_def_n[1].id = NULL;
+		_main_menu_def_n[1].uKey = GUI_KEY_2;
+
+		_main_menu_def_n[2].name = UI_VAS;
+		_main_menu_def_n[2].id = NULL;
+		_main_menu_def_n[2].uKey = GUI_KEY_3;
+
+		_main_menu_def_n[3].name = NULL;
+		_main_menu_def_n[3].id = NULL;
+		_main_menu_def_n[3].uKey = NULL;
+
+	}
+}
 
 void main_page_show()
 {
@@ -858,27 +987,28 @@ void main_page_show()
 	i = rowlup*4;
 
 	char msg[] = "SELECT OPTION";
+	display_menu();	// present the appropriate menu
 
 	gui_text_out((gui_get_width() - gui_get_text_width(msg)) / 2, GUI_LINE_TOP(0), msg);
 
 	sprintf(szLine1,"%d.%s",++i,_main_menu_def_n[i-1].name);
 	gui_text_out(0, GUI_LINE_TOP(1), szLine1);
 
-	if(i!=nMainTotal){
+	if(i!=nMainTotal && _main_menu_def_n[i].name != NULL){
 		sprintf(szLine2,"%d.%s",++i,_main_menu_def_n[i-1].name);
 		gui_text_out(0, GUI_LINE_TOP(2), szLine2);
 	}
 	
-	if(i!=nMainTotal){
+	if(i!=nMainTotal && _main_menu_def_n[i].name != NULL){
 		sprintf(szLine3,"%d.%s",++i,_main_menu_def_n[i-1].name);
 		gui_text_out(0, GUI_LINE_TOP(3), szLine3);
 	}
-	/*
-	if(i!=nMainTotal){
+	
+	if(i!=nMainTotal && _main_menu_def_n[i].name != NULL){
 		sprintf(szLine4,"%d.%s",++i,_main_menu_def_n[i-1].name);
 		gui_text_out(0, GUI_LINE_TOP(4), szLine4);
 	}
-	*/
+	
 	gui_end_batch_paint();
 }
 

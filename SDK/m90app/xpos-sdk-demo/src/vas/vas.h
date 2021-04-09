@@ -3,21 +3,14 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include "vasmenu.h"
 #include "jsonwrapper/jsobject.h"
 
 
 #define VAS_PENDING_RESPONSE_CODE "25"
 #define VAS_IN_PROGRESS_RESPONSE_CODE "28"
 #define VAS_TXN_NOT_FOUND_RESPONSE_CODE "29"
-
-typedef enum {
-    ENERGY,
-    AIRTIME,
-    TV_SUBSCRIPTIONS,
-    DATA,
-    SMILE,
-    CASHIO
-} VAS_Menu_T;
 
 typedef enum {
     SERVICE_UNKNOWN,
@@ -100,10 +93,6 @@ struct VasResult {
 
 int initVasTables();
 
-int vasTransactionTypes();
-int doVasTransaction(VAS_Menu_T menu);
-
-const char* vasMenuString(VAS_Menu_T type);
 const char* serviceToString(Service service);
 const char* paymentString(PaymentMethod method);
 const char* apiPaymentMethodString(PaymentMethod method);
