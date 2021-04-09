@@ -869,13 +869,13 @@ void display_menu(void)
 			_main_menu_def_n[0].id = NULL;
 			_main_menu_def_n[0].uKey = GUI_KEY_1;
 
-			_main_menu_def_n[1].name = UI_CARDLESS_PAYMENT;
+			_main_menu_def_n[1].name = UI_VAS;
 			_main_menu_def_n[1].id = NULL;
 			_main_menu_def_n[1].uKey = GUI_KEY_2;
 
-			_main_menu_def_n[2].name = UI_VAS;
+			_main_menu_def_n[2].name = NULL;
 			_main_menu_def_n[2].id = NULL;
-			_main_menu_def_n[2].uKey = GUI_KEY_3;
+			_main_menu_def_n[2].uKey = NULL;
 
 			_main_menu_def_n[3].name = NULL;
 			_main_menu_def_n[3].id = NULL;
@@ -883,13 +883,13 @@ void display_menu(void)
 
 		} else {
 
-			_main_menu_def_n[0].name = UI_CARDLESS_PAYMENT;
+			_main_menu_def_n[0].name = UI_VAS;
 			_main_menu_def_n[0].id = NULL;
 			_main_menu_def_n[0].uKey = GUI_KEY_1;
 
-			_main_menu_def_n[1].name = UI_VAS;
+			_main_menu_def_n[1].name = NULL;
 			_main_menu_def_n[1].id = NULL;
-			_main_menu_def_n[1].uKey = GUI_KEY_2;
+			_main_menu_def_n[1].uKey = NULL;
 
 			_main_menu_def_n[2].name = NULL;
 			_main_menu_def_n[2].id = NULL;
