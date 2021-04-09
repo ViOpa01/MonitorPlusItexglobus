@@ -14,6 +14,7 @@
 #include "payvice.h"
 #include "virtualtid.h"
 #include "./platform/simpio.h"
+#include "EmvDB.h"
 
 extern "C" {
 #include "libapi_xpos/inc/libapi_print.h"
