@@ -3,7 +3,7 @@
 
 // Declaring app information
 #define APP_NAME "TAMSLITE"
-#define APP_VER "0.0.8"
+#define APP_VER "0.0.9"
 #define TERMINAL_MANUFACTURER "Morefun"
 #define APP_MODEL "H9"
 #define POWERED_BY "POWERED BY ITEX"

@@ -209,7 +209,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
 {
     VasResult result(CARD_STATUS_UNKNOWN);
     iisys::JSObject jsonReq;
-    std::string body;
+    // std::string body;
     Payvice payvice;
 
     if (cardData->reference.empty()) {
@@ -233,7 +233,7 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
     
 
     if (json) {
-        body = json->dump();
+        // body = json->dump();
         jsonReq("body") = *json;
         jsonReq("method") = "POST";
         jsonReq("headers")("Content-Type") = "application/json";
@@ -243,12 +243,13 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
     
     // jsonReq("host") = std::string("http://") +  vas + ":8028" + url; // staging
     jsonReq("host") = std::string("http://") +  txnHost + ":" + portValue + url;
-
-
-    jsonReq("headers")("token") = apiToken;
-    jsonReq("headers")("signature") = generateRequestAuthorization(body);
-
     jsonReq("terminalId") = vasimpl::getDeviceTerminalId();
+
+    jsonReq("username") = payvice.object(Payvice::USER);
+    jsonReq("wallet") = payvice.object(Payvice::WALLETID);
+    jsonReq("headers")("token") = apiToken;
+    // jsonReq("headers")("signature") = generateRequestAuthorization(body);
+   
 
     if (addPayloadGenerator(&cardData->trxContext, vasPayloadGenerator, (void*)&jsonReq) != 0) {
         return result;

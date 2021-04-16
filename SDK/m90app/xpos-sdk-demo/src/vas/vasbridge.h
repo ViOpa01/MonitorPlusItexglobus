@@ -14,7 +14,9 @@ extern "C" {
 int vasTransactionTypesBridge();
 int doVasCardTransaction(Eft* trxContext, unsigned long amount);
 int requeryMiddleware(Eft* trxContext, const char* tid);
-short setupBaseHugeNetwork(NetWorkParameters * netParam, const char *path);
+int setupBaseHugeNetwork(NetWorkParameters * netParam, const char *path);
+int doCashInCashOut();
+int isAgent();
 
 
 #ifdef __cplusplus

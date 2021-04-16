@@ -320,6 +320,10 @@ static int saveMerchantDataXml(const char* merchantXml, const int size)
         // LOG_PRINTF("Phone no : %s", merchant.phone_no);
     }
 
+    if(ezxml_child(tran, "TERMAPPTYPE")) {
+        strncpy(merchant.app_type, ezxml_child(tran, "TERMAPPTYPE")->txt, sizeof(merchant.app_type) - 1);
+    }
+
     merchant.is_prepped = 0;
 
     ezxml_free(root);
@@ -505,6 +509,12 @@ int readMerchantData(MerchantData* merchant)
         // LOG_PRINTF("Callhome time : %d", merchant->callhome_time);
     }
 
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "app_type");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        strncpy(merchant->app_type, nextTag->valuestring, sizeof(merchant->app_type) - 1);
+    }
+
     cJSON_Delete(json);
 
     return 0;
@@ -557,7 +567,7 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "callhome_ip", cJSON_CreateString(merchant->callhome_ip));
     cJSON_AddItemToObject(requestJson, "callhome_port", cJSON_CreateNumber(merchant->callhome_port));
     cJSON_AddItemToObject(requestJson, "callhome_time", cJSON_CreateNumber(merchant->callhome_time));
-
+    cJSON_AddItemToObject(requestJson, "app_type", cJSON_CreateString(merchant->app_type));
 
 
 

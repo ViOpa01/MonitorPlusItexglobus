@@ -7,14 +7,15 @@
 
 #include "platform/platform.h"
 
-#include "cashio.h"
-#include "vas.h"
 #include "vasdb.h"
+#include "vasmenu.h"
+#include "payvice.h"
 
 #include "jsonwrapper/jsobject.h"
 #include "./platform/simpio.h"
 #include "./platform/vasutility.h"
 
+#include "vas.h"
 #include "airtime.h"
 #include "cashio.h"
 #include "data.h"
@@ -33,26 +34,6 @@ extern "C" {
 #include "../ezxml.h"
 #include "../appInfo.h"
 #include "libapi_xpos/inc/libapi_gui.h"
-}
-
-const char* vasMenuString(VAS_Menu_T type)
-{
-    switch (type) {
-    case ENERGY:
-        return "Electricity";
-    case AIRTIME:
-        return "Airtime";
-    case TV_SUBSCRIPTIONS:
-        return "TV Subscriptions";
-    case DATA:
-        return "Data";
-    case SMILE:
-        return "Smile";
-    case CASHIO:
-        return "Cash In / Cash Out";
-    default:
-        return "";
-    }
 }
 
 const char* serviceToString(Service service)
@@ -279,82 +260,6 @@ int initVasTables()
 {
     EmvDB::init(VASDB_CARD_TABLE, VASDB_FILE);    
     VasDB::init();
-    return 0;
-}
-
-int vasTransactionTypes()
-{
-    static int once_flag = initVasTables();
-    std::vector<std::string> menu;
-    VAS_Menu_T allOptions[] = { ENERGY, AIRTIME, TV_SUBSCRIPTIONS, DATA, SMILE };
-    std::vector<VAS_Menu_T> menuOptions(allOptions, allOptions + sizeof(allOptions) / sizeof(allOptions[0]));
-
-    (void)once_flag;
-
-    const iisys::JSObject& isAgent = Payvice().object(Payvice::IS_AGENT);
-    if (isAgent.isBool() && isAgent.getBool() == true) {
-        menuOptions.push_back(CASHIO);
-    }
-
-    for (size_t i = 0; i < menuOptions.size(); ++i) {
-        menu.push_back(vasMenuString(menuOptions[i]));
-    }
-    menu.push_back("Vas Admin");
-
-    while (1) {
-        int selection = UI_ShowSelection(30000, "Services", menu, 0);
-
-        if (selection < 0) {
-            return -1;
-        } else if (menu.size() - 1 == (size_t)selection) {
-            if (vasAdmin() != 0) {
-                return 0;
-            }
-        } else {
-            if (doVasTransaction(menuOptions[selection]) == -2) {
-                return 0;
-            }
-        }
-    }
-
-    return 0;
-}
-
-int doVasTransaction(VAS_Menu_T menu)
-{
-    VasFlow flow;
-    Postman postman;
-    const char* title = vasMenuString(menu);
-
-    switch (menu) {
-    case ENERGY: {
-        Electricity electricity(title, postman);
-        return flow.start(&electricity);
-    }
-    case AIRTIME: {
-        Airtime airtime(title, postman);
-        return flow.start(&airtime);
-    }
-    case TV_SUBSCRIPTIONS: {
-        PayTV televisionSub(title, postman);
-        return flow.start(&televisionSub);
-    }
-    case DATA: {
-        Data data(title, postman);
-        return flow.start(&data);
-    }
-    case SMILE: {
-        Smile smile(title, postman);
-        return flow.start(&smile);
-    }
-    case CASHIO: {
-        ViceBanking cashIO(title, postman);
-        return flow.start(&cashIO);
-    }
-    default:
-        break;
-    }
-
     return 0;
 }
 
