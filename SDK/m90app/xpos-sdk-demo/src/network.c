@@ -61,15 +61,16 @@ void platformAutoSwitch(NetType *netType)
 }
 
 static const char* networkProfiles[][5] = {
-    { "62160", "etisalat", "", "", "ETISALAT" }, // etisalat
+   	{ "62160", "etisalat", "", "", "ETISALAT" }, // etisalat
     // { "42402", "etisalat", "", ""},     // etisalat
     { "62130", "web.gprs.mtnnigeria.net", "web", "web", "MTN" },
     { "62001", "INTERNET", "", "", "" }, //EMP MTN PRIVATE SIM
     { "62150", "glosecure", "gprs", "gprs", "GLO" },
     { "62120", "internet.ng.airtel.com", "internet", "internet", "AIRTEL" },
     { "23450", "globasure", "web", "web", "GLO" },
-    { "20408", "FAST.M2M", "", "", "" },
+    // { "20408", "FAST.M2M", "", "", "" },
     { "20404", "ESEYE.COM", "USER", "PASS", "" },
+    { "20408", "ESEYE.COM", "USER", "PASS", "" },
     { "20601", "bicsapn", "", "", ""}
     //{"", "public_fast", ""},
     //{"", "public_wlapn", ""},
@@ -719,8 +720,14 @@ short gprsInit(void)
 	memset(&merchantData, 0x00, sizeof(MerchantData));
 	readMerchantData(&merchantData);
 
-	if (imsiToNetProfile(&merchantData.gprsSettings, imsi)) {
+	result = imsiToNetProfile(&merchantData.gprsSettings, imsi);
+	// gui_messagebox_show("SIM IMSI" , imsi, "" , "Ok" , 0);
+	// gui_messagebox_show("SIM APN" , merchantData.gprsSettings.apn, "" , "Ok" , 0);
+	// gui_messagebox_show("SIM USER" , merchantData.gprsSettings.username, "" , "Ok" , 0);
+	// gui_messagebox_show("SIM PASS" , merchantData.gprsSettings.password, "" , "Ok" , 0);
+	if (result) {
 		gui_messagebox_show("GPRS INIT" , "Can't Configure Sim", "" , "Exit" , 0);
+		printf("Imsi : %s : %s, %s, %s\n", imsi, merchantData.gprsSettings.apn, merchantData.gprsSettings.username, merchantData.gprsSettings.password);
 		return -1;
 	}
 

@@ -4,9 +4,12 @@
 
 #include "vas.h"
 #include "payvice.h"
+#include "vasflow.h"
 #include "vasbridge.h"
+#include "cashio.h"
 #include "virtualtid.h"
 #include "../auxPayload.h"
+#include "../menu_list.h"
 #include "jsonwrapper/jsobject.h"
 
 extern "C" {
@@ -196,7 +199,7 @@ int requeryMiddleware(Eft* trxContext, const char* tid)
 }
 
 
-short setupBaseHugeNetwork(NetWorkParameters* netParam, const char* path)
+int setupBaseHugeNetwork(NetWorkParameters* netParam, const char* path)
 {
     char host[] = "basehuge.itexapp.com";
 
@@ -211,4 +214,25 @@ short setupBaseHugeNetwork(NetWorkParameters* netParam, const char* path)
     netParam->packetSize += sprintf((char*)(&netParam->packet[netParam->packetSize]), "GET %s HTTP/1.1\r\n", path);
     netParam->packetSize += sprintf((char*)(&netParam->packet[netParam->packetSize]), "Host: %s:%d\r\n\r\n", netParam->host, netParam->port);
 
+}
+
+int doCashInCashOut()
+{
+    VasFlow flow;
+    Postman postman;
+
+    ViceBanking cashIO(UI_CASHIN_CASHOUT, postman);
+    flow.start(&cashIO);
+}
+
+int isAgent()
+{
+    int ret = 0;
+
+    const iisys::JSObject& isAgent = Payvice().object(Payvice::IS_AGENT);
+    if (isAgent.isBool() && isAgent.getBool() == true) {
+        ret = 1;
+    }
+
+    return ret;
 }
