@@ -15,6 +15,7 @@
 
 #include "vasdb.h"
 #include "vas.h"
+#include "nqr.h"
 
 AirtimeViewModel::AirtimeViewModel(const char* title, VasComProxy& proxy)
     : title(title)
@@ -41,13 +42,16 @@ VasResult AirtimeViewModel::setAmount(unsigned long amount)
 
 const char* AirtimeViewModel::paymentPath() const
 {
-    return "/api/v1/vas/vtu/purchase";
+    if (payMethod == PAY_WITH_NQR) {
+        return nqrStatusCheckUrl();
+    } else {
+        return "/api/v1/vas/vtu/purchase";
+    }
 }
 
 int AirtimeViewModel::getPaymentJson(iisys::JSObject& json) const
 {
-    std::string paymentMethodStr = paymentString(this->payMethod);
-    std::transform(paymentMethodStr.begin(), paymentMethodStr.end(), paymentMethodStr.begin(), ::tolower);
+    std::string paymentMethodStr = apiPaymentMethodString(this->payMethod);
 
     json.clear();
     json("phone") = this->phoneNumber;
@@ -124,26 +128,62 @@ std::map<std::string, std::string> AirtimeViewModel::storageMap(const VasResult&
     return record;
 }
 
-VasResult AirtimeViewModel::complete(const std::string& pin)
+VasResult AirtimeViewModel::initiate(const std::string& pin)
 {
-    iisys::JSObject json;
     VasResult response;
-    std::string rrn;
+    
+    if (payMethod != PAY_WITH_NQR) {
+        response.error = NO_ERRORS;
+        return response;
+    }
 
-    if (getPaymentJson(json) < 0) {
+    iisys::JSObject json;
+
+    if (getPaymentJson(json) != 0) {
         response.error = VAS_ERROR;
         response.message = "Data Error";
         return response;
     }
+    
+    json("clientReference") = clientReference = getClientReference(retrievalReference);
+    json("pin") = encryptedPin(Payvice(), pin.c_str());
 
-    json("pin") = encryptedPin(Payvice(), pin.c_str());    
-    json("clientReference") = getClientReference(rrn);
+    json = createNqrJSON(amount, "VTU", json);
+    response = comProxy.initiate(nqrGenerateUrl(), &json);
+
+    if (response.error != NO_ERRORS) {
+        return response;
+    }
+
+    response = parseVasQr(productCode, response.message);
+
+    return response;
+}
+
+VasResult AirtimeViewModel::complete(const std::string& pin)
+{
+    iisys::JSObject json;
+    VasResult response;
+
+    if (payMethod == PAY_WITH_NQR) {
+        json = getNqrPaymentStatusJson(productCode, clientReference);
+    } else {
+        if (getPaymentJson(json) < 0) {
+            response.error = VAS_ERROR;
+            response.message = "Data Error";
+            return response;
+        }
+
+        json("pin") = encryptedPin(Payvice(), pin.c_str());    
+        json("clientReference") = getClientReference(retrievalReference);
+    }
+
 
     if (payMethod == PAY_WITH_CARD) {
-        cardData = CardData(amount, rrn);
+        cardData = CardData(amount, retrievalReference);
         cardData.refcode = getRefCode(serviceToProductString(service));
         response = comProxy.complete(paymentPath(), &json, &cardData);
-    } else if (payMethod == PAY_WITH_CASH) {
+    } else {
         response = comProxy.complete(paymentPath(), &json);
     }
 
@@ -189,7 +229,7 @@ VasResult AirtimeViewModel::setPaymentMethod(PaymentMethod payMethod)
 {
     VasResult result;
 
-    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH) {
+    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH || payMethod == PAY_WITH_NQR) {
         result.error = NO_ERRORS;
         this->payMethod = payMethod;
     }   
@@ -212,6 +252,16 @@ VasResult AirtimeViewModel::setPhoneNumber(const std::string& phoneNumber)
 Service AirtimeViewModel::getService() const
 {
     return service;
+}
+
+PaymentMethod AirtimeViewModel::getPaymentMethod() const
+{
+    return payMethod;
+}
+
+const std::string& AirtimeViewModel::getRetrievalReference() const
+{
+    return retrievalReference;
 }
 
 std::string AirtimeViewModel::apiServiceString(Service service) const

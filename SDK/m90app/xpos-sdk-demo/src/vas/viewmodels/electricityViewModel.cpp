@@ -16,6 +16,7 @@
 #include "electricityViewModel.h"
 
 #include "vasdb.h"
+#include "nqr.h"
 
 ElectricityViewModel::ElectricityViewModel(const char* title, VasComProxy& proxy)
     : title(title)
@@ -89,6 +90,38 @@ VasResult ElectricityViewModel::lookup()
     return lookupCheck(response);;
 }
 
+VasResult ElectricityViewModel::initiate(const std::string& pin)
+{
+    VasResult response;
+    
+    if (payMethod != PAY_WITH_NQR) {
+        response.error = NO_ERRORS;
+        return response;
+    }
+
+    iisys::JSObject json;
+
+    if (getPaymentJson(json, service) != 0) {
+        response.error = VAS_ERROR;
+        response.message = "Data Error";
+        return response;
+    }
+    
+    json("clientReference") = clientReference = getClientReference(retrievalReference);
+    json("pin") = encryptedPin(Payvice(), pin.c_str());
+
+    json = createNqrJSON(getAmount(), "ELECTRICITY", json);
+    response = comProxy.initiate(nqrGenerateUrl(), &json);
+
+    if (response.error != NO_ERRORS) {
+        return response;
+    }
+
+    response = parseVasQr(lookupResponse.productCode, response.message);
+
+    return response;
+}
+
 VasResult ElectricityViewModel::setAmount(unsigned long amount)
 {
     this->amount = amount;
@@ -99,20 +132,23 @@ VasResult ElectricityViewModel::complete(const std::string& pin)
 {
     iisys::JSObject json;
     VasResult response;
-    std::string rrn;
 
-    if (getPaymentJson(json, service) < 0) {
-        response.error = VAS_ERROR;
-        response.message = "Data Error";
-        return response;
+    if (payMethod == PAY_WITH_NQR) {
+        json = getNqrPaymentStatusJson(lookupResponse.productCode, clientReference);
+    } else {
+        if (getPaymentJson(json, service) < 0) {
+            response.error = VAS_ERROR;
+            response.message = "Data Error";
+            return response;
+        }
+
+        json("pin") = encryptedPin(Payvice(), pin.c_str());
+        json("clientReference") = getClientReference(retrievalReference);
     }
-
-    json("pin") = encryptedPin(Payvice(), pin.c_str());
-    json("clientReference") = getClientReference(rrn);
 
 
     if (payMethod == PAY_WITH_CARD) {
-        cardData = CardData(amount, rrn);
+        cardData = CardData(amount, retrievalReference);
         cardData.refcode = getRefCode(serviceToProductString(service), productString(energyType));
         response = comProxy.complete(paymentPath(), &json, &cardData);
     } else {
@@ -212,7 +248,7 @@ VasResult ElectricityViewModel::setPaymentMethod(PaymentMethod payMethod)
 {
     VasResult result;
 
-    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH) {
+    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH || payMethod == PAY_WITH_NQR) {
         result.error = NO_ERRORS;
         this->payMethod = payMethod;
     }   
@@ -292,8 +328,7 @@ int ElectricityViewModel::getLookupJson(iisys::JSObject& json, Service service) 
 
 int ElectricityViewModel::getPaymentJson(iisys::JSObject& json, Service service) const
 {
-    std::string paymentMethodStr = paymentString(payMethod);
-    std::transform(paymentMethodStr.begin(), paymentMethodStr.end(), paymentMethodStr.begin(), ::tolower);
+    std::string paymentMethodStr = apiPaymentMethodString(payMethod);
 
 
     json("paymentMethod") = paymentMethodStr;
@@ -416,7 +451,11 @@ const char* ElectricityViewModel::productString(EnergyType type)
 
 const char* ElectricityViewModel::paymentPath()
 {
-    return "/api/v1/vas/electricity/payment";
+    if (getPaymentMethod() == PAY_WITH_NQR) {
+        return nqrStatusCheckUrl();
+    } else {
+        return "/api/v1/vas/electricity/payment";
+    }
 }
 
 const char* ElectricityViewModel::apiServiceString(Service service) const
@@ -532,25 +571,26 @@ const unsigned char* ElectricityViewModel::getUserCardNo() const
     return this->userCardInfo.CM_UserNo;
 }
 
+const std::string& ElectricityViewModel::getRetrievalReference() const
+{
+    return retrievalReference;
+}
+
 VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
 {
     VasResult result;
 
-    const iisys::JSObject& response = data("response");
+    iisys::JSObject response;
 
-    std::string product = data("product").getString();
-    std::string vasAccountType = data("VASAccountType").getString();
-    const std::string vasCustomerAccount = data("VASCustomerAccount").getString();
-    const int purchaseTimes = data("purchaseTimes").getNumber();
-
-
-    std::transform(product.begin(), product.end(), product.begin(), ::tolower);
-    std::transform(vasAccountType.begin(), vasAccountType.end(), vasAccountType.begin(), ::tolower);
-
-    if (product != "ikedc" || vasAccountType != "smartcard") {
-        result = NO_ERRORS;
+    const iisys::JSObject& purchaseTimesObj = data("purchaseTimes");
+    const iisys::JSObject& vasCustomerAccountObj = data("VASCustomerAccount");
+    if (!purchaseTimesObj.isNumber() || !purchaseTimesObj.isString() || !vasCustomerAccountObj.isString()) {
+        result = KEY_NOT_FOUND;
         return result;
     }
+
+    const int purchaseTimes = purchaseTimesObj.getNumber();
+    const std::string vasCustomerAccount = vasCustomerAccountObj.getString();
     
     unsigned char inData[512] = "0004 ";
     unsigned char outData[512] = {'\0'};

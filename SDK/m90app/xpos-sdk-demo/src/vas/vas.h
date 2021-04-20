@@ -12,6 +12,10 @@
 #define VAS_IN_PROGRESS_RESPONSE_CODE "28"
 #define VAS_TXN_NOT_FOUND_RESPONSE_CODE "29"
 
+#define VAS_EXCEPTION_RESPONSE_CODE "91"
+#define VAS_STATUS_UNKNOWN_RESPONSE_CODE "92"
+#define VAS_SYSTEM_ERROR_RESPONSE_CODE "99"
+
 typedef enum {
     SERVICE_UNKNOWN,
     IKEJA,
@@ -51,7 +55,8 @@ typedef enum {
     PAY_WITH_CARD  = 1 << 0,
     PAY_WITH_CASH  = 1 << 2,
     PAY_WITH_MCASH = 1 << 3,
-    PAY_WITH_CGATE = 1 << 4
+    PAY_WITH_CGATE = 1 << 4,
+    PAY_WITH_NQR   = 1 << 5
 } PaymentMethod;
 
 typedef enum {
@@ -72,6 +77,7 @@ typedef enum {
     CARD_APPROVED,
     CASH_STATUS_UNKNOWN,
     CARD_STATUS_UNKNOWN,
+    VAS_STATUS_UNKNOWN,
     VAS_DECLINED,
     CARD_PAYMENT_DECLINED,
     NOT_LOGGED_IN,
@@ -116,8 +122,6 @@ int printVasEod(std::map<std::string, std::string> &records);
 
 std::string getVasCurrencySymbol();
 unsigned long getVasAmount(const char* title);
-
-std::string majorDenomination(unsigned long amount);
 
 std::string majorDenomination(unsigned long amount);
 

@@ -25,8 +25,10 @@ struct Data : FlowDelegate {
 
     virtual ~Data();
     
-protected:
+private:
     DataViewModel viewModel;
+
+    VasResult initiateCardlessTransaction();
 };
 
 #endif

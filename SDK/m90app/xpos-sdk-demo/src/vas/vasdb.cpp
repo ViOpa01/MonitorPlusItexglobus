@@ -89,6 +89,7 @@ VasDB::TrxStatus VasDB::vasErrToTrxStatus(VasError error)
         return VasDB::PENDING;
     case CARD_STATUS_UNKNOWN:
     case CASH_STATUS_UNKNOWN:
+    case VAS_STATUS_UNKNOWN:
     case INVALID_JSON:
     case TYPE_MISMATCH:
     case KEY_NOT_FOUND:

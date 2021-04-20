@@ -32,7 +32,7 @@ struct ViceBankingViewModel {
     VasResult setAmount(unsigned long ammount);
     VasResult setPaymentMethod(PaymentMethod payMethod);
     VasResult setPhoneNumber(const std::string& phoneNumber);
-    VasResult setBeneficiary(const std::string& account, const size_t bankIndex);
+    VasResult setBeneficiary(const std::string& account, const int bankIndex);
     VasResult setNarration(const std::string& narration);
 
     Service getService() const;
@@ -42,6 +42,7 @@ struct ViceBankingViewModel {
     const std::string& getBeneficiaryAccount() const;
     unsigned long getAmountSettled() const;
     unsigned long getAmountToDebit() const;
+    const std::string& getRetrievalReference() const;
 
     PaymentMethod getPaymentMethod() const;
     const std::vector<Bank>& banklist() const;
@@ -56,7 +57,8 @@ private:
 
     unsigned long amount;
     std::string beneficiary;
-    size_t beneficiaryBankIndex;
+    int beneficiaryBankIndex;
+
     std::string phoneNumber;
 
     PaymentMethod payMethod;
@@ -64,6 +66,7 @@ private:
 
     std::string narration;
     std::string clientReference;
+    std::string retrievalReference;
 
     static std::vector<Bank> banks;
 

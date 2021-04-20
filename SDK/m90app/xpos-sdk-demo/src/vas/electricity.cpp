@@ -11,7 +11,7 @@
 #include "vasdb.h"
 
 #include "electricity.h"
-
+#include "nqr.h"
 
 Electricity::Electricity(const char* title, VasComProxy& proxy)
     : viewModel(title, proxy)
@@ -122,26 +122,59 @@ VasResult Electricity::lookup()
 
 VasResult Electricity::initiate()
 {
+    VasResult result;
+    PaymentMethod payMethod;
+
     while (1) {
-        
-        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
+        payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_CASH));
         if (payMethod == PAYMENT_METHOD_UNKNOWN) {
-            return VasResult(USER_CANCELLATION);
+            result.error = USER_CANCELLATION;
+            return result;
         } else if (viewModel.setPaymentMethod(payMethod).error != NO_ERRORS) {
-            return VasResult(VAS_ERROR);
+            result.error = VAS_ERROR;
+            return result;
         }
 
         std::string phoneNumber = getPhoneNumber("Phone Number", "");
         if (phoneNumber.empty()) {
             continue;
         } else if (viewModel.setPhoneNumber(phoneNumber).error != NO_ERRORS) {
-            return VasResult(VAS_ERROR);
+            result.error = VAS_ERROR;
+            return result;
         }
 
         break;
     }
 
-    return VasResult(NO_ERRORS);
+    if (payMethod == PAY_WITH_NQR) {
+        result = initiateCardlessTransaction();
+    } else {
+        result.error = NO_ERRORS;
+    }
+
+    return result;
+}
+
+VasResult Electricity::initiateCardlessTransaction()
+{
+    VasResult result;
+    std::string pin;
+
+    result.error = getVasPin(pin);
+    if (result.error != NO_ERRORS) {
+        return result;
+    }
+        
+    Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
+    result = viewModel.initiate(pin);
+    if (result.error) {
+        return result;
+    }
+
+    result.error = presentVasQr(result.message, viewModel.getRetrievalReference());
+    result.message = "";
+
+    return result;
 }
 
 VasResult Electricity::complete()
@@ -149,9 +182,11 @@ VasResult Electricity::complete()
     std::string pin;
     VasResult response;
 
-    response.error = getVasPin(pin);
-    if (response.error != NO_ERRORS) {
-        return response;
+    if (viewModel.getPaymentMethod() != PAY_WITH_NQR) {
+        response.error = getVasPin(pin);
+        if (response.error != NO_ERRORS) {
+            return response;
+        }
     }
 
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");

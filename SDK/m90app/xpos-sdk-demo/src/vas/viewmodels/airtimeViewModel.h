@@ -9,6 +9,7 @@ struct AirtimeViewModel {
 
     AirtimeViewModel(const char* title, VasComProxy& proxy);
 
+    VasResult initiate(const std::string& pin);
     VasResult complete(const std::string& pin);
 
     std::map<std::string, std::string> storageMap(const VasResult& completionStatus);
@@ -21,12 +22,17 @@ struct AirtimeViewModel {
     VasResult setPhoneNumber(const std::string& phoneNumber);
 
     Service getService() const;
+    PaymentMethod getPaymentMethod() const;
+    const std::string& getRetrievalReference() const;
 
 private:
     std::string title;
     VasComProxy& comProxy;
 
     CardData cardData;
+    std::string productCode;
+    std::string clientReference;
+    std::string retrievalReference;
 
     Service service;
     std::string phoneNumber;

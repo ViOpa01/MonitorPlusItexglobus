@@ -15,6 +15,7 @@ struct PayTVViewModel {
     PayTVViewModel(const char* title, VasComProxy& proxy);
 
     VasResult lookup();
+    VasResult initiate(const std::string& pin);
     VasResult complete(const std::string& pin);
     std::map<std::string, std::string>storageMap(const VasResult& completionStatus);
 
@@ -37,6 +38,8 @@ struct PayTVViewModel {
     const iisys::JSObject& getBouquets() const;
     Service getService() const;
     StartimesType getStartimesTypes() const;
+    PaymentMethod getPaymentMethod() const;
+    const std::string& getRetrievalReference() const;
 
     struct {
         std::string name;
@@ -59,6 +62,8 @@ private:
     StartimesType startimestype;
 
     CardData cardData;
+    std::string clientReference;
+    std::string retrievalReference;
 
     iisys::JSObject selectedPackage;
     std::string cycle;

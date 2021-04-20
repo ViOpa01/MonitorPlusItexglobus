@@ -6,7 +6,7 @@
 #define QR_WIDTH	340
 #define QR_HEIGHT	340
 
-void showQrTest()
+void showQrTest(char* data)
 {
 	Util_QR_INFO qr_info;
 	int i;
@@ -19,10 +19,10 @@ void showQrTest()
 	unsigned int tick2 = Sys_TimerOpen(60000);
 	int zoom =  1;
 	int left,top;
-	char *data= "test qr code";
+	// char *data= "test qr code";
 
 
-	printf("showQrTest\r\n");
+	// printf("showQrTest\r\n");
 	qr_info.moudleWidth = 1;		// gain
 	qr_info.nLevel = 1;				// Error correction level
 	qr_info.nVersion = 0;			// Qr version

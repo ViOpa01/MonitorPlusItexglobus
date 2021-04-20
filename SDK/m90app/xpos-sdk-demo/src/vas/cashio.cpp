@@ -12,6 +12,7 @@
 
 #include "cashio.h"
 #include "payvice.h"
+#include "nqr.h"
 
 ViceBanking::ViceBanking(const char* title, VasComProxy& proxy)
     : _title(title)
@@ -55,23 +56,13 @@ VasResult ViceBanking::beginVas()
             return result;
         }
 
-        const size_t bankIndex = selectBank();
+        const int bankIndex = selectBank();
         if (viewModel.setBeneficiary(beneficiaryAccount, bankIndex).error != NO_ERRORS) {
-            return VasResult(USER_CANCELLATION);
+            result.error = USER_CANCELLATION;
+            return result;
         }
-    } 
-
-    result.error = NO_ERRORS;
-
-    return result;
-}
-
-VasResult ViceBanking::lookup()
-{
-    VasResult result;
-
-    if (viewModel.getService() == WITHDRAWAL) {
-        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_MCASH | PAY_WITH_CGATE));
+    } else if (service == WITHDRAWAL) {
+        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_MCASH | PAY_WITH_CGATE));
         if (payMethod == PAYMENT_METHOD_UNKNOWN) {
             result.error = USER_CANCELLATION;
             return result;
@@ -83,14 +74,23 @@ VasResult ViceBanking::lookup()
         }
     }
 
+    result.error = NO_ERRORS;
+
+    return result;
+}
+
+VasResult ViceBanking::lookup()
+{
+    VasResult result;
+
     Demo_SplashScreen("Lookup In Progress", "www.payvice.com");
 
     result = viewModel.lookup();
     if (result.error != NO_ERRORS) {
         UI_ShowButtonMessage(30000, "Error", result.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
+    } else {
+        result = displayLookupInfo();
     }
-
-    result = displayLookupInfo();
 
     return result;
 }
@@ -117,27 +117,30 @@ VasResult ViceBanking::initiate()
         viewModel.setNarration(narration);
     }
 
-    if (!viewModel.isPaymentUSSD()) {
-        response.error = NO_ERRORS;
-        return response;
+    if (viewModel.isPaymentUSSD() || viewModel.getPaymentMethod() == PAY_WITH_NQR) {
+        response = initiateCardlessTransaction();
     }
 
-    // initiate USSD transaction 
+    return response;
+}
 
+VasResult ViceBanking::initiateCardlessTransaction()
+{
+    VasResult result;
     std::string pin;
 
-    response.error = getVasPin(pin);
-    if (response.error != NO_ERRORS) {
-        return response;
+    result.error = getVasPin(pin);
+    if (result.error != NO_ERRORS) {
+        return result;
     }
     
     Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
-    response = viewModel.initiate(pin);
-    if (response.error) {
-        return response;
+    result = viewModel.initiate(pin);
+    if (result.error) {
+        return result;
     }
 
-    if (response.error == NO_ERRORS) {
+    if (viewModel.isPaymentUSSD()) {
         std::string displayTitle;
 
         if (viewModel.getPaymentMethod() == PAY_WITH_CGATE) {
@@ -146,10 +149,13 @@ VasResult ViceBanking::initiate()
             displayTitle = "Check Your Phone";
         }
 
-        UI_ShowButtonMessage(10 * 60 * 1000, displayTitle.c_str(), response.message.c_str(), "OK", UI_DIALOG_TYPE_CONFIRMATION);
+        UI_ShowButtonMessage(10 * 60 * 1000, displayTitle.c_str(), result.message.c_str(), "OK", UI_DIALOG_TYPE_CONFIRMATION);
+    } else if (viewModel.getPaymentMethod() == PAY_WITH_NQR) {
+        result.error = presentVasQr(result.message, viewModel.getRetrievalReference());
+        result.message = "";
     }
 
-    return response;
+    return result;
 }
 
 Service ViceBanking::vasServiceType()
@@ -162,7 +168,7 @@ VasResult ViceBanking::complete()
     VasResult response;
     std::string pin;
 
-    if (!viewModel.isPaymentUSSD()) {
+    if (!viewModel.isPaymentUSSD() && viewModel.getPaymentMethod() != PAY_WITH_NQR) {
         response.error = getVasPin(pin);
         if (response.error != NO_ERRORS) {
             return response;
@@ -182,7 +188,7 @@ std::map<std::string, std::string> ViceBanking::storageMap(const VasResult& comp
 }
 
 
-size_t ViceBanking::selectBank() const
+int ViceBanking::selectBank() const
 {
     std::vector<std::string> menu;
 
@@ -197,9 +203,7 @@ size_t ViceBanking::selectBank() const
         menu.push_back(banks[i].name);
     }
 
-    const int selection = UI_ShowSelection(30000, "Banks", menu, 0);
-
-    return static_cast<size_t>(selection);
+    return UI_ShowSelection(30000, "Banks", menu, 0);
 }
 
 std::string ViceBanking::getBeneficiaryAccount(const char* title, const char* prompt)

@@ -1,3 +1,3 @@
 #pragma once
 
-void showQrTest();
+void showQrTest(char* data);

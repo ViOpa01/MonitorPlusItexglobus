@@ -33,6 +33,7 @@ private:
     std::string _title;
 
     AirtimeViewModel viewModel;
+    VasResult initiateCardlessTransaction();
     Service getAirtimeService(Network network) const;
     std::string networkString(Network network) const;
 };

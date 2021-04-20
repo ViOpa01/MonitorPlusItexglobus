@@ -9,7 +9,8 @@ typedef enum {
     CGATE,
     MCASH,
     PAYATTITUDE,
-    PAYCODE
+    PAYCODE,
+    NQR
 } USSD_T;
 
 

@@ -9,6 +9,7 @@
 #include "platform/platform.h"
 
 #include "vasdb.h"
+#include "nqr.h"
 
 #include "data.h"
 
@@ -93,7 +94,7 @@ VasResult Data::initiate()
 
     while (1) {
 
-        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
+        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_CASH));
         if (payMethod == PAYMENT_METHOD_UNKNOWN) {
             return VasResult(USER_CANCELLATION);
         } else if (viewModel.setPaymentMethod(payMethod).error != NO_ERRORS) {
@@ -109,7 +110,33 @@ VasResult Data::initiate()
         break;
     }
 
+    if (viewModel.getPaymentMethod() == PAY_WITH_NQR) {
+        return initiateCardlessTransaction();
+    }
+
     return VasResult(NO_ERRORS);
+}
+
+VasResult Data::initiateCardlessTransaction()
+{
+    VasResult result;
+    std::string pin;
+
+    result.error = getVasPin(pin);
+    if (result.error != NO_ERRORS) {
+        return result;
+    }
+        
+    Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
+    result = viewModel.initiate(pin);
+    if (result.error) {
+        return result;
+    }
+
+    result.error = presentVasQr(result.message, viewModel.getRetrievalReference());
+    result.message = "";
+
+    return result;
 }
 
 VasResult Data::complete()

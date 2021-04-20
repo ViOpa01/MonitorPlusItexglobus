@@ -11,6 +11,7 @@
 #include "jsonwrapper/jsobject.h"
 
 #include "vasdb.h"
+#include "nqr.h"
 
 #include "smile.h"
 
@@ -125,7 +126,7 @@ VasResult Smile::initiate()
        
         Demo_SplashScreen("Loading Bundles...", "www.payvice.com");
 
-        result = viewModel.initiate();
+        result = viewModel.fetchBundles();
         if (result.error != NO_ERRORS) {
             return VasResult(result.error, "Bundle lookup failed");
         }
@@ -154,7 +155,7 @@ VasResult Smile::initiate()
         viewModel.setSelectedPackageIndex(selection);
     }
 
-    const PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
+    const PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_CASH));
     if (payMethod == PAYMENT_METHOD_UNKNOWN) {
         return VasResult(USER_CANCELLATION);
     }
@@ -164,7 +165,33 @@ VasResult Smile::initiate()
         return result;
     }
 
-    return VasResult(NO_ERRORS);
+    if (viewModel.getPaymentMethod() == PAY_WITH_NQR) {
+        result = initiateCardlessTransaction();
+    }
+
+    return result;
+}
+
+VasResult Smile::initiateCardlessTransaction()
+{
+    VasResult result;
+    std::string pin;
+
+    result.error = getVasPin(pin);
+    if (result.error != NO_ERRORS) {
+        return result;
+    }
+        
+    Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
+    result = viewModel.initiate(pin);
+    if (result.error) {
+        return result;
+    }
+
+    result.error = presentVasQr(result.message, viewModel.getRetrievalReference());
+    result.message = "";
+
+    return result;
 }
 
 VasResult Smile::complete()

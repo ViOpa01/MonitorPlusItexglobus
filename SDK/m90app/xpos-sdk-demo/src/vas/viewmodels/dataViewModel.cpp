@@ -15,6 +15,7 @@
 #include "dataViewModel.h"
 
 #include "vasdb.h"
+#include "nqr.h"
 
 DataViewModel::DataViewModel(const char* title, VasComProxy& proxy)
     : _title(title)
@@ -114,7 +115,7 @@ VasResult DataViewModel::setPaymentMethod(PaymentMethod payMethod)
 {
     VasResult result;
 
-    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH) {
+    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH || payMethod == PAY_WITH_NQR) {
         result.error = NO_ERRORS;
         this->payMethod = payMethod;
     }   
@@ -134,7 +135,7 @@ VasResult DataViewModel::setPhoneNumber(const std::string& phoneNumber)
     return result;
 }
 
-int DataViewModel:: getPaymentJson(iisys::JSObject& json, Service service)
+int DataViewModel::getPaymentJson(iisys::JSObject& json, Service service)
 {
     json.clear();
     json("phone") = phoneNumber;
@@ -146,23 +147,58 @@ int DataViewModel:: getPaymentJson(iisys::JSObject& json, Service service)
     return 0;
 }
 
-VasResult DataViewModel::complete(const std::string& pin)
+VasResult DataViewModel::initiate(const std::string& pin)
 {
-    iisys:: JSObject json;
     VasResult response;
-    std::string rrn;
+    
+    if (payMethod != PAY_WITH_NQR) {
+        response.error = NO_ERRORS;
+        return response;
+    }
 
-    if (getPaymentJson(json, service) < 0) {
+    iisys::JSObject json;
+
+    if (getPaymentJson(json, service) != 0) {
         response.error = VAS_ERROR;
         response.message = "Data Error";
         return response;
     }
-
+    
+    json("clientReference") = clientReference = getClientReference(retrievalReference);
     json("pin") = encryptedPin(Payvice(), pin.c_str());
-    json("clientReference") = getClientReference(rrn);
+
+    json = createNqrJSON(amount, "DATA", json);
+    response = comProxy.initiate(nqrGenerateUrl(), &json);
+
+    if (response.error != NO_ERRORS) {
+        return response;
+    }
+
+    response = parseVasQr(lookupResponse.productCode, response.message);
+
+    return response;
+}
+
+VasResult DataViewModel::complete(const std::string& pin)
+{
+    iisys:: JSObject json;
+    VasResult response;
+
+    if (payMethod == PAY_WITH_NQR) {
+        json = getNqrPaymentStatusJson(lookupResponse.productCode, clientReference);
+    } else {
+        if (getPaymentJson(json, service) < 0) {
+            response.error = VAS_ERROR;
+            response.message = "Data Error";
+            return response;
+        }
+
+        json("pin") = encryptedPin(Payvice(), pin.c_str());
+        json("clientReference") = getClientReference(retrievalReference);
+    }
 
     if (payMethod == PAY_WITH_CARD) {
-        cardData = CardData(amount, rrn);
+        cardData = CardData(amount, retrievalReference);
         cardData.refcode = getRefCode(serviceToProductString(service), this->selectedPackage("description").getString());
         response = comProxy.complete(paymentPath(), &json, &cardData);
     } else {
@@ -226,7 +262,11 @@ std::map<std::string, std::string> DataViewModel::storageMap(const VasResult& co
 
 const char* DataViewModel::paymentPath()
 {
-    return "/api/v1/vas/data/subscribe";
+    if (getPaymentMethod() == PAY_WITH_NQR) {
+        return nqrStatusCheckUrl();
+    } else {
+        return "/api/v1/vas/data/subscribe";
+    }
 }
 
 
@@ -263,6 +303,11 @@ Service DataViewModel::getService() const
 PaymentMethod DataViewModel::getPaymentMethod() const
 {
     return payMethod;
+}
+
+const std::string& DataViewModel::getRetrievalReference() const
+{
+    return retrievalReference;
 }
 
 VasResult DataViewModel::setService(Service service)

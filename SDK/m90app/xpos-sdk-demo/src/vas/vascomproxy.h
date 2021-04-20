@@ -15,7 +15,10 @@
 // Test VAS "http://197.253.19.76:8018"
 // Live VAS "http://197.253.19.76:8019"
 #define VAS_IP "197.253.19.76"
-#define VAS_PORT "8019"
+// #define VAS_PORT "8019"
+// #define VAS_PORT "8018"
+#define VAS_PORT "1880"
+
    
 struct CardData {
     CardData(const unsigned long amt = 0, const std::string& rrn = "")

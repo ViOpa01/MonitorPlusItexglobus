@@ -14,10 +14,10 @@ struct SmileViewModel {
 
     SmileViewModel(const char* title, VasComProxy& proxy);
 
-    VasResult bundleCheck(const VasResult& bundleCheck);
-    VasResult initiate();
     VasResult lookup(); 
+    VasResult initiate(const std::string& pin);
     VasResult complete(const std::string& pin);
+    VasResult fetchBundles();
     const char* apiServiceString(Service service) const;
     const char* recipientTypeString(RecipientType recipient) const;
     const char* apiCompleteServiceType(Service service) const;
@@ -39,6 +39,7 @@ struct SmileViewModel {
     std::string getPhoneNumber();
     Service getService() const;
     PaymentMethod getPaymentMethod() const;
+    const std::string& getRetrievalReference() const;
     
     struct {
         std::string productCode;
@@ -64,6 +65,8 @@ private:
     RecipientType recipientType;
 
     CardData cardData;
+    std::string clientReference;
+    std::string retrievalReference;
 
     struct {
         std::string reference;
@@ -75,6 +78,7 @@ private:
 
     int getLookupJson(iisys::JSObject& json, Service service) const;
     int getPaymentJson(iisys::JSObject& json, Service service);
+    VasResult bundleCheck(const VasResult& bundleCheck);
 
     unsigned long amount;
     VasResult lookupCheck(const VasResult& lookStatus);

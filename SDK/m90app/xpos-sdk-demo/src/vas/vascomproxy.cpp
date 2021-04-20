@@ -541,8 +541,8 @@ int vasPayloadGenerator(void* jsobject, void* data, const void *eft)
 
 std::string vasApiKey()
 {
-    // char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC"; //test
-    char key[] = "o83prs088n4943231342p7sq53o6502q";    //live
+    char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC"; //test
+    // char key[] = "o83prs088n4943231342p7sq53o6502q";    //live
 
     rot13(key);
     return std::string(key);

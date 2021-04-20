@@ -9,6 +9,7 @@
 #include "platform/platform.h"
 
 #include "vasdb.h"
+#include "nqr.h"
 
 #include "paytv.h"
 
@@ -86,12 +87,13 @@ VasResult PayTV::lookup()
 
 VasResult PayTV::initiate()
 {
-    while (1) {
-        VasResult result;
+    VasResult result;
 
-        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
+    while (1) {
+        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_CASH));
         if (payMethod == PAYMENT_METHOD_UNKNOWN) {
-            return VasResult(USER_CANCELLATION);
+            result = VasResult(USER_CANCELLATION);
+            return result;
         } 
 
         result = viewModel.setPaymentMethod(payMethod);
@@ -101,7 +103,8 @@ VasResult PayTV::initiate()
 
         std::string phoneNumber = getPhoneNumber("Phone Number", "");
         if (phoneNumber.empty()) {
-            return VasResult(USER_CANCELLATION);
+            result = VasResult(USER_CANCELLATION);
+            return result;
         }
 
         result = viewModel.setPhoneNumber(phoneNumber);
@@ -112,7 +115,33 @@ VasResult PayTV::initiate()
         break;
     }
 
-    return VasResult(NO_ERRORS);
+    if (viewModel.getPaymentMethod() == PAY_WITH_NQR) {
+        result = initiateCardlessTransaction();
+    }
+
+    return result;
+}
+
+VasResult PayTV::initiateCardlessTransaction()
+{
+    VasResult result;
+    std::string pin;
+
+    result.error = getVasPin(pin);
+    if (result.error != NO_ERRORS) {
+        return result;
+    }
+        
+    Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
+    result = viewModel.initiate(pin);
+    if (result.error) {
+        return result;
+    }
+
+    result.error = presentVasQr(result.message, viewModel.getRetrievalReference());
+    result.message = "";
+
+    return result;
 }
 
 VasResult PayTV::complete()

@@ -236,6 +236,8 @@ const char* paymentString(PaymentMethod method)
         return "mCash";
     case PAY_WITH_CGATE:
         return "CGate";
+    case PAY_WITH_NQR:
+        return "QR";
     default:
         return "";
     }
@@ -251,6 +253,8 @@ const char* apiPaymentMethodString(PaymentMethod method)
     case PAY_WITH_MCASH:
     case PAY_WITH_CGATE:
         return "USSD";
+    case PAY_WITH_NQR:
+        return "NQR";
     default:
         return "";
     }
@@ -694,7 +698,7 @@ PaymentMethod getPaymentMethod(const PaymentMethod preferredMethods)
     int selection;
     std::vector<std::string> menu;
     std::vector<PaymentMethod> methods;
-    PaymentMethod knownMethods[] = { PAY_WITH_CARD, PAY_WITH_CASH, PAY_WITH_MCASH, PAY_WITH_CGATE };
+    PaymentMethod knownMethods[] = { PAY_WITH_CARD, PAY_WITH_NQR, PAY_WITH_CASH, PAY_WITH_MCASH, PAY_WITH_CGATE };
 
     for (size_t i = 0; i < sizeof(knownMethods) / sizeof(PaymentMethod); ++i) {
         if (preferredMethods & knownMethods[i]) {
@@ -738,26 +742,34 @@ Service selectService(const char* title, std::vector<Service>& services)
 
 VasResult vasResponseCheck(const iisys::JSObject& response)
 {
-    const iisys::JSObject& message = response("message");
-    const iisys::JSObject& responseCode = response("responseCode");
+    const iisys::JSObject& messageObj = response("message");
+    const iisys::JSObject& responseCodeObj = response("responseCode");
 
-    if (!responseCode.isString()) {
-        return VasResult(STATUS_ERROR, message.isString() ? message.getString().c_str() : "");
+    const std::string message = messageObj.isString() ? messageObj.getString() : "";
+
+    if (!responseCodeObj.isString()) {
+        return VasResult(STATUS_ERROR, message.c_str());
     }
 
-    if (responseCode.getString() == VAS_PENDING_RESPONSE_CODE || responseCode.getString() == VAS_IN_PROGRESS_RESPONSE_CODE) {
-        return VasResult(TXN_PENDING, message.isString() ? message.getString().c_str() : "");
+    const std::string responseCode = responseCodeObj.getString();
+
+    if (responseCode == VAS_PENDING_RESPONSE_CODE || responseCode == VAS_IN_PROGRESS_RESPONSE_CODE) {
+        return VasResult(TXN_PENDING, message.c_str());
     }
 
-    if (responseCode.getString() == VAS_TXN_NOT_FOUND_RESPONSE_CODE) {
-        return VasResult(TXN_NOT_FOUND, message.isString() ? message.getString().c_str() : "");
+    if (responseCode == VAS_TXN_NOT_FOUND_RESPONSE_CODE) {
+        return VasResult(TXN_NOT_FOUND, message.c_str());
     }
 
-    if (responseCode.getString() != "00") {
-        return VasResult(VAS_DECLINED, message.isString() ? message.getString().c_str() : "");
+    if (responseCode == VAS_EXCEPTION_RESPONSE_CODE || responseCode == VAS_STATUS_UNKNOWN_RESPONSE_CODE || responseCode == VAS_SYSTEM_ERROR_RESPONSE_CODE) {
+        return VasResult(VAS_STATUS_UNKNOWN, message.c_str());
     }
 
-    return VasResult(NO_ERRORS, message.isString() ? message.getString().c_str() : "");
+    if (responseCode != "00") {
+        return VasResult(VAS_DECLINED, message.c_str());
+    }
+
+    return VasResult(NO_ERRORS, message.c_str());
 }
 
 void getVasTransactionReference(std::string& reference, const iisys::JSObject& responseData)

@@ -11,14 +11,16 @@
 
 #include "cashio.h"
 #include "payvice.h"
+#include "nqr.h"
 
 std::vector<ViceBankingViewModel::Bank> ViceBankingViewModel::banks;
 
 ViceBankingViewModel::ViceBankingViewModel(const char* title, VasComProxy& proxy)
     : _title(title)
     , service(SERVICE_UNKNOWN)
-    , comProxy(proxy)
+    , comProxy(proxy), amount(0)
 {
+    beneficiaryBankIndex = -1;
 }
 
 VasResult ViceBankingViewModel::lookupCheck(const VasResult& lookupStatus)
@@ -33,6 +35,7 @@ VasResult ViceBankingViewModel::lookupCheck(const VasResult& lookupStatus)
         return VasResult(INVALID_JSON, "Invalid Response");
     }
 
+
     VasResult errStatus = vasResponseCheck(json);
     if (errStatus.error != NO_ERRORS) {
         return VasResult(errStatus.error, errStatus.message.c_str());
@@ -40,7 +43,7 @@ VasResult ViceBankingViewModel::lookupCheck(const VasResult& lookupStatus)
 
     const iisys::JSObject& data = json("data");
     if (!data.isObject()) {
-        return VasResult(errStatus.error, errStatus.message.c_str());
+        return VasResult(INVALID_JSON);
     }
 
     return extractLookupInfo(data);
@@ -67,6 +70,8 @@ VasResult ViceBankingViewModel::lookup()
             response = comProxy.lookup("/api/v1/vas/vicebanking/mcash/withdrawal/validation", &obj);
         } else if (payMethod == PAY_WITH_CGATE) {
             response = comProxy.lookup("/api/v1/vas/vicebanking/cgate/withdrawal/validation", &obj);
+        } else if (payMethod == PAY_WITH_NQR) {
+            response = comProxy.lookup("/api/v1/vas/nqr/withdrawal/validate", &obj);
         } else {
             return VasResult(VAS_ERROR);
         }
@@ -79,48 +84,49 @@ VasResult ViceBankingViewModel::initiate(const std::string& pin)
 {
     VasResult response;
     
-    if (!isPaymentUSSD()) {
-        response = NO_ERRORS;
+    if (!isPaymentUSSD() && payMethod != PAY_WITH_NQR) {
+        response.error = NO_ERRORS;
         return response;
     }
 
-    // Initiate ussd transaction
     iisys::JSObject json;
 
-    if (getPaymentJson(json) < 0) {
+    if (getPaymentJson(json) != 0) {
         response.error = VAS_ERROR;
         response.message = "Data Error";
         return response;
     }
-
     
-    json("clientReference") = clientReference = getClientReference();
+    json("clientReference") = clientReference = getClientReference(retrievalReference);
     json("pin") = encryptedPin(Payvice(), pin.c_str());
+
 
     if (payMethod == PAY_WITH_MCASH) {
         response = comProxy.initiate("/api/v1/vas/vicebanking/mcash/withdrawal/payment", &json);
     } else if (payMethod == PAY_WITH_CGATE) {
         response = comProxy.initiate("/api/v1/vas/vicebanking/cgate/withdrawal/payment", &json);
+    } else if (payMethod == PAY_WITH_NQR) {
+        json = createNqrJSON(getAmount(), "WITHDRAWAL", json);
+        response = comProxy.initiate(nqrGenerateUrl(), &json);
     }
 
     if (response.error != NO_ERRORS) {
         return response;
     }
 
-    if (!json.load(response.message)) {
-        response.error = INVALID_JSON;
-        response.message = "Invalid Response";
-        return response;
-    }
+    if (isPaymentUSSD()) {
+        if (!json.load(response.message)) {
+            response.error = INVALID_JSON;
+            response.message = "Invalid Response";
+            return response;
+        }
 
-    response = vasResponseCheck(json);
-    if (response.error != NO_ERRORS) {
-        return response;
-    }
+        response = vasResponseCheck(json);
+        if (response.error != NO_ERRORS) {
+            return response;
+        }
 
-    const iisys::JSObject& data = json("data");
-
-    if (response.error == NO_ERRORS) {
+        const iisys::JSObject& data = json("data");
         const iisys::JSObject& productCode = data("productCode");
         const iisys::JSObject& cgateRef = data("referenceCode");
 
@@ -134,6 +140,11 @@ VasResult ViceBankingViewModel::initiate(const std::string& pin)
         }
 
         lookupResponse.productCode = productCode.getString();
+    } else if (payMethod == PAY_WITH_NQR) {
+        response = parseVasQr(lookupResponse.productCode, response.message);
+    } else {
+        response.error = VAS_ERROR;
+        response.message = "";
     }
 
     return response;
@@ -167,6 +178,11 @@ unsigned long ViceBankingViewModel::getAmountSettled() const
 unsigned long ViceBankingViewModel::getAmountToDebit() const
 {
     return lookupResponse.amountToDebit;
+}
+
+const std::string& ViceBankingViewModel::getRetrievalReference() const
+{
+    return retrievalReference;
 }
 
 PaymentMethod ViceBankingViewModel::getPaymentMethod() const
@@ -212,7 +228,7 @@ VasResult ViceBankingViewModel::setPaymentMethod(PaymentMethod payMethod)
         return result;
     } else if (payMethod == PAYMENT_METHOD_UNKNOWN) {
         return result;
-    } else if (payMethod != PAY_WITH_CARD && payMethod != PAY_WITH_CGATE && payMethod != PAY_WITH_MCASH) {
+    } else if (payMethod != PAY_WITH_CARD && payMethod != PAY_WITH_CGATE && payMethod != PAY_WITH_MCASH && payMethod != PAY_WITH_NQR) {
         return result;
     }
     
@@ -234,11 +250,11 @@ VasResult ViceBankingViewModel::setPhoneNumber(const std::string& phoneNumber)
     return result;
 }
 
-VasResult ViceBankingViewModel::setBeneficiary(const std::string& account, const size_t bankIndex)
+VasResult ViceBankingViewModel::setBeneficiary(const std::string& account, const int bankIndex)
 {
     VasResult result;
 
-    if (!account.empty() && bankIndex < ViceBankingViewModel::banks.size()) {
+    if (!account.empty() && bankIndex >= 0 && bankIndex < static_cast<int>(ViceBankingViewModel::banks.size())) {
         beneficiary = account;
         beneficiaryBankIndex = bankIndex;
         result.error = NO_ERRORS;
@@ -258,25 +274,26 @@ VasResult ViceBankingViewModel::complete(const std::string& pin)
 {
     VasResult response;
     iisys::JSObject json;
-    std::string rrn;
 
     if (isPaymentUSSD()) {
         json("service") = apiServiceString(getService());
         json("productCode") = lookupResponse.productCode;
         json("clientReference") = clientReference;
+    } else if (payMethod == PAY_WITH_NQR) {
+        json = getNqrPaymentStatusJson(lookupResponse.productCode, clientReference);
     } else {
         if (getPaymentJson(json) < 0) {
             response.error = VAS_ERROR;
             response.message = "Data Error";
             return response;
         }
-        json("clientReference") = getClientReference(rrn);
+        json("clientReference") = getClientReference(retrievalReference);
         json("pin") = encryptedPin(Payvice(), pin.c_str());
     }
 
 
     if (payMethod == PAY_WITH_CARD) {
-        cardData = CardData(lookupResponse.amountToDebit, rrn);
+        cardData = CardData(lookupResponse.amountToDebit, retrievalReference);
         cardData.refcode = getRefCode(serviceToProductString(service));
 /*
         if (cardData.amount > lookupResponse.thresholdAmount) {
@@ -342,9 +359,8 @@ std::map<std::string, std::string> ViceBankingViewModel::storageMap(const VasRes
     record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
 
     record[VASDB_STATUS_MESSAGE] = completionStatus.message;
-    if (service == TRANSFER) {
-        // record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + ViceBankingViewModel::banks[beneficiaryBankIndex].name + "\"}";
-        record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + ViceBankingViewModel::banks[beneficiaryBankIndex].name +  std::string("\", \"narration\": \"") + narration + "\"}";
+    if (service == TRANSFER && beneficiaryBankIndex >= 0 && !ViceBankingViewModel::banks.empty()) {
+        record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + ViceBankingViewModel::banks[beneficiaryBankIndex].name + "\"}";
     }
 
     return record;
@@ -355,12 +371,14 @@ const char* ViceBankingViewModel::paymentPath(Service service)
     if (service == TRANSFER) {
         return "/api/v1/vas/vicebanking/transfer/payment";
     } else if (service == WITHDRAWAL) {
-        if (payMethod == PAY_WITH_CARD) {
+        if (getPaymentMethod() == PAY_WITH_CARD) {
             return "/api/v1/vas/vicebanking/withdrawal/payment";
-        } else if (payMethod == PAY_WITH_MCASH) {
+        } else if (getPaymentMethod() == PAY_WITH_MCASH) {
             return "/api/v1/vas/vicebanking/mcash/withdrawal/complete-payment";
-        } else if (payMethod == PAY_WITH_CGATE) {
+        } else if (getPaymentMethod() == PAY_WITH_CGATE) {
             return "/api/v1/vas/vicebanking/cgate/withdrawal/complete-payment";
+        } else if (getPaymentMethod() == PAY_WITH_NQR) {
+            return nqrStatusCheckUrl();
         }
     }
 
@@ -396,11 +414,11 @@ VasResult ViceBankingViewModel::extractLookupInfo(const iisys::JSObject& data)
     const iisys::JSObject& withdrawalThreshold  = data("withdrawalThreshold");
     
 
-    if (!name.isNull()) {
+    if (name.isString()) {
         lookupResponse.name = name.getString();
     }
 
-    if (!productCode.isNull()) {
+    if (productCode.isString()) {
         lookupResponse.productCode = productCode.getString();
     }
 
@@ -410,7 +428,7 @@ VasResult ViceBankingViewModel::extractLookupInfo(const iisys::JSObject& data)
         }
 
         iisys::JSObject element = data("account");
-        if (!element.isNull()) {
+        if (element.isString()) {
             lookupResponse.account = element.getString();
         }
     } else if (service == WITHDRAWAL) {
@@ -454,6 +472,8 @@ const char* ViceBankingViewModel::apiServiceString(Service service) const
             return "cgatewithdrawal";
         case PAY_WITH_MCASH:
             return "mcashwithdrawal";
+        case PAY_WITH_NQR:
+            return "nqrwithdrawal";
         default:
             return "";
         }

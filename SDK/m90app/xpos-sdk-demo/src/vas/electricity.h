@@ -25,12 +25,14 @@ struct Electricity : FlowDelegate {
 
     virtual ~Electricity();
     
-protected:
+private:
     ElectricityViewModel viewModel;
     
     ElectricityViewModel::EnergyType getEnergyType(Service service, const char * title);
     std::string getMeterNo(const char* prompt);
     void removeCard(const char* title, const char* desc);
+
+    VasResult initiateCardlessTransaction();
 };
 
 #endif

@@ -20,6 +20,7 @@ struct ElectricityViewModel {
     ElectricityViewModel(const char* title, VasComProxy& proxy);
 
     VasResult lookup();
+    VasResult initiate(const std::string& pin);
     VasResult complete(const std::string& pin);
     const char* apiServiceString(Service service) const;
     std::map<std::string, std::string> storageMap(const VasResult& completionStatus);
@@ -40,6 +41,8 @@ struct ElectricityViewModel {
     unsigned long getAmount() const;
     PaymentMethod getPaymentMethod() const;
     EnergyType getEnergyType() const;
+
+    const std::string& getRetrievalReference() const;
 
     struct {
         std::string name;
@@ -66,7 +69,8 @@ private:
     EnergyType energyType;
 
     CardData cardData;
-
+    std::string clientReference;
+    std::string retrievalReference;
 
     struct {
         std::string reference;

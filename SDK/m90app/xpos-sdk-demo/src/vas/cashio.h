@@ -27,7 +27,8 @@ protected:
     std::string _title;
     ViceBankingViewModel viewModel;
 
-    size_t selectBank() const;
+    int selectBank() const;
+    VasResult initiateCardlessTransaction();
     std::string getBeneficiaryAccount(const char *title, const char* prompt);
 
     VasResult displayLookupInfo() const;

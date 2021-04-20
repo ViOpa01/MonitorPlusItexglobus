@@ -27,6 +27,7 @@ struct Smile : FlowDelegate {
     
 protected:
     SmileViewModel viewModel;
+    VasResult initiateCardlessTransaction();
 
 };
 

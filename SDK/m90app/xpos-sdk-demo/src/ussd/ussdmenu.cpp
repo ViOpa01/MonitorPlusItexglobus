@@ -18,6 +18,7 @@
 
 extern "C" {
 #include "EmvEft.h"
+#include "merchantNQR.h"
 }
 
 const char* ussdTypeToString(USSD_T provider)
@@ -31,6 +32,8 @@ const char* ussdTypeToString(USSD_T provider)
         return "PayAttitude";
     case PAYCODE:
         return "PayCode";
+    case NQR:
+        return "NQR";
     default:
         return "USSD Type Unknown";
     }
@@ -40,7 +43,7 @@ int ussdTransactionsMenu()
 {
     static int once_flag = USSDB::init();
     std::vector<std::string> menu;
-    USSD_T menuOptions[] = { CGATE, MCASH, PAYATTITUDE, PAYCODE };
+    USSD_T menuOptions[] = { CGATE, MCASH, PAYATTITUDE, PAYCODE, NQR };
 
     (void)once_flag;
 
@@ -70,6 +73,10 @@ int ussdTransactionsMenu()
             break;
         case PAYCODE:
             paycodeHandler();
+            break;
+        case NQR:
+            //do some NQR stuffs
+            doMerchantNQRTransaction();
             break;
         default:
             break;

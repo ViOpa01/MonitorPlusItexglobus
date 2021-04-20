@@ -15,6 +15,7 @@
 #include "paytvViewModel.h"
 
 #include "vasdb.h"
+#include "nqr.h"
 
 PayTVViewModel::PayTVViewModel(const char* title, VasComProxy& proxy)
     : _title(title)
@@ -38,23 +39,58 @@ VasResult PayTVViewModel::lookup()
     return lookupCheck(response);
 }
 
-VasResult PayTVViewModel::complete(const std::string& pin)
+VasResult PayTVViewModel::initiate(const std::string& pin)
 {
-    iisys::JSObject json;
     VasResult response;
-    std::string rrn;
+    
+    if (payMethod != PAY_WITH_NQR) {
+        response.error = NO_ERRORS;
+        return response;
+    }
 
-    if (getPaymentJson(json, service) < 0) {
+    iisys::JSObject json;
+
+    if (getPaymentJson(json, service) != 0) {
         response.error = VAS_ERROR;
         response.message = "Data Error";
         return response;
     }
-
+    
+    json("clientReference") = clientReference = getClientReference(retrievalReference);
     json("pin") = encryptedPin(Payvice(), pin.c_str());
-    json("clientReference") = getClientReference(rrn);
+
+    json = createNqrJSON(getAmount(), "CABLE", json);
+    response = comProxy.initiate(nqrGenerateUrl(), &json);
+
+    if (response.error != NO_ERRORS) {
+        return response;
+    }
+
+    response = parseVasQr(lookupResponse.productCode, response.message);
+
+    return response;
+}
+
+VasResult PayTVViewModel::complete(const std::string& pin)
+{
+    iisys::JSObject json;
+    VasResult response;
+
+    if (payMethod == PAY_WITH_NQR) {
+        json = getNqrPaymentStatusJson(lookupResponse.productCode, clientReference);
+    } else {
+        if (getPaymentJson(json, service) < 0) {
+            response.error = VAS_ERROR;
+            response.message = "Data Error";
+            return response;
+        }
+
+        json("pin") = encryptedPin(Payvice(), pin.c_str());
+        json("clientReference") = getClientReference(retrievalReference);
+    }
 
     if (payMethod == PAY_WITH_CARD) {
-        cardData = CardData(amount, rrn);
+        cardData = CardData(amount, retrievalReference);
         cardData.refcode = getRefCode(serviceToProductString(service));
         response = comProxy.complete(paymentPath(), &json, &cardData);
     } else {
@@ -346,9 +382,23 @@ PayTVViewModel::StartimesType PayTVViewModel::getStartimesTypes() const
     return startimestype;
 }
 
+PaymentMethod PayTVViewModel::getPaymentMethod() const
+{
+    return payMethod;
+}
+
+const std::string& PayTVViewModel::getRetrievalReference() const
+{
+    return retrievalReference;
+}
+
 const char* PayTVViewModel::paymentPath()
 {
-    return "/api/v1/vas/cabletv/subscription";
+    if (getPaymentMethod() == PAY_WITH_NQR) {
+        return nqrStatusCheckUrl();
+    } else {
+        return "/api/v1/vas/cabletv/subscription";
+    }
 }
 
 VasResult PayTVViewModel::processPaymentResponse(const iisys::JSObject& json, Service service)
@@ -389,7 +439,7 @@ VasResult PayTVViewModel::setPaymentMethod(PaymentMethod payMethod)
 {
     VasResult result;
 
-    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH) {
+    if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH || payMethod == PAY_WITH_NQR) {
         result.error = NO_ERRORS;
         this->payMethod = payMethod;
     }   

@@ -10,6 +10,7 @@
 
 #include "jsonwrapper/jsobject.h"
 #include "vasdb.h"
+#include "nqr.h"
 
 #include "airtime.h"
 
@@ -82,9 +83,9 @@ Service Airtime::getAirtimeService(Network network) const
 
 VasResult Airtime::initiate()
 {
+    VasResult result;
 
     while (1) {
-        VasResult result;
         unsigned long amount = getVasAmount(serviceToString(viewModel.getService()));
         if (!amount) {
             result = VasResult(USER_CANCELLATION);
@@ -97,9 +98,10 @@ VasResult Airtime::initiate()
             continue;
         }
 
-        const PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_CASH));
+        const PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_CASH));
         if (payMethod == PAYMENT_METHOD_UNKNOWN) {
-            return VasResult(USER_CANCELLATION);
+            result = VasResult(USER_CANCELLATION);
+            return result;
         }
 
         result = viewModel.setPaymentMethod(payMethod);
@@ -109,7 +111,8 @@ VasResult Airtime::initiate()
 
         const std::string phoneNumber = getPhoneNumber("Phone Number", "");
         if (phoneNumber.empty()) {
-            return VasResult(USER_CANCELLATION);
+            result = VasResult(USER_CANCELLATION);
+            return result;
         }
 
         result = viewModel.setPhoneNumber(phoneNumber);
@@ -120,7 +123,33 @@ VasResult Airtime::initiate()
         break;
     }
 
-    return VasResult(NO_ERRORS);
+    if (viewModel.getPaymentMethod() == PAY_WITH_NQR) {
+        result = initiateCardlessTransaction();
+    }
+
+    return result;
+}
+
+VasResult Airtime::initiateCardlessTransaction()
+{
+    VasResult result;
+    std::string pin;
+
+    result.error = getVasPin(pin);
+    if (result.error != NO_ERRORS) {
+        return result;
+    }
+        
+    Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
+    result = viewModel.initiate(pin);
+    if (result.error) {
+        return result;
+    }
+
+    result.error = presentVasQr(result.message, viewModel.getRetrievalReference());
+    result.message = "";
+
+    return result;
 }
 
 Service Airtime::vasServiceType()
@@ -133,10 +162,11 @@ VasResult Airtime::complete()
     std::string pin;
     VasResult response;
 
-
-    response.error = getVasPin(pin);
-    if (response.error != NO_ERRORS) {
-        return response;
+    if (viewModel.getPaymentMethod() != PAY_WITH_NQR) {
+        response.error = getVasPin(pin);
+        if (response.error != NO_ERRORS) {
+            return response;
+        }
     }
 
     Demo_SplashScreen("Please Wait", "www.payvice.com");

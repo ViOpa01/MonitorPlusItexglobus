@@ -355,6 +355,10 @@ int printRequery(const iisys::JSObject& transaction)
         viceBanking.setService(TRANSFER);
         status = viceBanking.processPaymentResponse(response);
         record = viceBanking.storageMap(status);
+        const iisys::JSObject& bankName = transaction("bankName");
+        if (bankName.isString()) {
+            record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + bankName.getString() + "\"}";
+        }
     } else if (productName == "gotv") {
         PayTVViewModel payTv(vasMenuString(TV_SUBSCRIPTIONS), postman);
         if (payTv.setService(GOTV).error != NO_ERRORS){
@@ -582,6 +586,24 @@ int printRequery(const iisys::JSObject& transaction)
     return 0;
 }
 
+static bool isSmartCardRequery(const iisys::JSObject& data)
+{
+    const iisys::JSObject& response = data("response");
+    const iisys::JSObject& accountTypeObj = data("VASAccountType");
+
+    std::string product = data("product").getString();
+    std::string vasAccountType = accountTypeObj.isString() ? accountTypeObj.getString() : "";
+
+    std::transform(product.begin(), product.end(), product.begin(), ::tolower);
+    std::transform(vasAccountType.begin(), vasAccountType.end(), vasAccountType.begin(), ::tolower);
+
+    if (product == "ikedc" && vasAccountType == "smartcard") {
+        return true;
+    }
+
+    return false;
+}
+
 void vasRequery()
 {
     iisys::JSObject transaction;
@@ -618,9 +640,12 @@ void vasRequery()
         UI_ShowButtonMessage(2000, "Requery Failed", "", "OK", UI_DIALOG_TYPE_CAUTION);
     }
 
-    VasResult revalidate = ElectricityViewModel::revalidateSmartCard(transaction);
-    if (revalidate.error != NO_ERRORS) {
-        UI_ShowButtonMessage(2000, "Error", revalidate.message.c_str(), "OK", UI_DIALOG_TYPE_CAUTION);
+    
+    if (isSmartCardRequery(transaction)) {
+        VasResult revalidate = ElectricityViewModel::revalidateSmartCard(transaction);
+        if (revalidate.error != NO_ERRORS) {
+            UI_ShowButtonMessage(2000, "Error", revalidate.message.c_str(), "OK", UI_DIALOG_TYPE_CAUTION);
+        }
     }
 
     printRequery(transaction);

@@ -9,6 +9,7 @@ struct DataViewModel {
     DataViewModel(const char* title, VasComProxy& proxy);
     
     VasResult lookup();
+    VasResult initiate(const std::string& pin);
     VasResult complete(const std::string& pin);
     const char* apiServiceString(Service service) const;
     std::map<std::string, std::string> storageMap(const VasResult& completionStatus);
@@ -24,6 +25,7 @@ struct DataViewModel {
   
     Service getService() const;
     PaymentMethod getPaymentMethod() const;
+    const std::string& getRetrievalReference() const;
 
 
 private:
@@ -35,6 +37,9 @@ private:
     PaymentMethod payMethod;
 
     CardData cardData;
+    std::string clientReference;
+    std::string retrievalReference;
+    
     iisys::JSObject selectedPackage;
     unsigned long amount;
 

@@ -698,7 +698,7 @@ static int _menu_proc(char *pid)
 	}
 	else if (strcmp(pid, "ShowQr") == 0)
 	{
-		showQrTest();
+		showQrTest("Test Qr");
 	}
 	else if (strcmp(pid, "File") == 0)
 	{

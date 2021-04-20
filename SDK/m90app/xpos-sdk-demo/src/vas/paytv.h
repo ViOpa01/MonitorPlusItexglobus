@@ -25,9 +25,10 @@ struct PayTV : FlowDelegate {
 
     virtual ~PayTV();
 
-    private:
+private:
     PayTVViewModel viewModel;
     VasResult displayLookupInfo();
+    VasResult initiateCardlessTransaction();
 
 };
 
