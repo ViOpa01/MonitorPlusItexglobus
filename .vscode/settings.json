@@ -90,6 +90,12 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "payvice.h": "c",
-        "libapi_gui.h": "c"
+        "libapi_gui.h": "c",
+        "bit": "cpp",
+        "*.tcc": "cpp",
+        "memory_resource": "cpp",
+        "string_view": "cpp",
+        "jsobject.h": "c",
+        "appinfo.h": "c"
     }
 }

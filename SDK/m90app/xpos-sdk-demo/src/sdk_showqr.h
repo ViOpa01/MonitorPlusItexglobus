@@ -1,3 +1,4 @@
 #pragma once
 
-void showQrTest(char* data);
+void showQrTest();
+short displayQr(const char* data);

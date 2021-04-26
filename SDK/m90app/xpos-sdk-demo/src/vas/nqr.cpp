@@ -3,6 +3,7 @@
 #include "vas.h"
 
 #include "platform/simpio.h"
+#include "../Receipt.h"
 
 extern "C" {
 #include "string.h"
@@ -74,21 +75,26 @@ VasError presentVasQr(const std::string& qrCode, const std::string& rrn)
         char displayMessage[128] = "Scan to Pay";
 
         // TODO: display or print QR and rrn depending on device
-        showQrTest(qrString);
-        UPrint_MatrixCode(qrString, strlen(qrString), 1, 1);
+        completed = displayQr(qrString);
 
         if (completed) {
             return NO_ERRORS;
         }
-
+ 
         // int i = UI_Show2ButtonMessage(10000, "Confirmation", UI_DIALOG_TYPE_QUESTION, "Are you sure you want to cancel this transaction?", "No", "Yes");
-        int i = UI_ShowOkCancelMessage(10000, "Confirmation", "Are you sure you want to cancel this transaction?", UI_DIALOG_TYPE_CAUTION);
+        int i = UI_ShowOkCancelMessage(10000, "Confirmation", "Are you sure you want to cancel this transaction?", UI_DIALOG_TYPE_QUESTION);
+        printf("\nKey Returned : %d\n", i);
+
         if (i != 0) {
             // Maybe printout QR before cancelling 
-            // UPrint_MatrixCode(qrString, strlen(qrString), 1, 1);
+            // int j = UPrint_MatrixCode(qrString, strlen(qrString), 0, 1);
+            // printf("Printer Returned : % d", j);
+            printNQRCode(qrString);
+
             return USER_CANCELLATION;
         }
     }
+
 }
 
 iisys::JSObject createNqrJSON(const unsigned long amount, const char* service, const iisys::JSObject& json)

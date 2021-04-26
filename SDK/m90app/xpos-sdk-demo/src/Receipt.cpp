@@ -97,7 +97,7 @@ int getPrinterStatus(const int status)
 {
     if (status == UPRN_SUCCESS)
 	{
-		gui_messagebox_show("Print", "Print Success", "", "confirm", 0);
+		gui_messagebox_show("Print", "Print Success", "", "confirm", 3000);
 		return -1;
 	}
 	else if (status == UPRN_OUTOF_PAPER)
@@ -942,4 +942,377 @@ void reprintLastTrans()
 	if(getLastTransaction(&eft)) return;
 
 	printReceipts(&eft, 1);
+}
+
+
+
+int printNQRCode(char * data)
+{
+	int ret = 0; 
+	char dt[14] = {'\0'};
+	char filename[128] = {0};
+    char buff[64] = {'\0'};
+    MerchantParameters parameter = {'\0'};
+	MerchantData mParam = {'\0'};
+
+	readMerchantData(&mParam);
+    getParameters(&parameter);
+    getDateAndTime(dt);
+    sprintf(buff, "%.2s-%.2s-%.2s / %.2s:%.2s", &dt[2], &dt[4], &dt[6], &dt[8], &dt[10]);
+
+	// Prompt is printing
+	gui_begin_batch_paint();			
+	gui_clear_dc();
+	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
+	gui_end_batch_paint();
+
+	while(1) {
+		ret = UPrint_Init();
+
+		if (ret == UPRN_OUTOF_PAPER)
+		{
+			if(gui_messagebox_show( "Print" , "No paper \nDo you wish to reload Paper?" , "cancel" , "confirm" , 0) != 1) {
+				break;
+			}
+		}
+
+		sprintf(filename, "xxxx\\%s", BANKLOGO);
+		UPrint_BitMap(filename, 1);//print image
+
+
+		UPrint_SetFont(8, 2, 2);
+		UPrint_StrBold(mParam.name, 1, 0, 1);
+		UPrint_StrBold(mParam.address, 1, 0, 1);
+
+		printLine("TID", mParam.tid);
+		printLine("MID", parameter.cardAcceptiorIdentificationCode);
+		printLine("DATE TIME: ", buff);
+		printDottedLine();
+
+		printLine("", "");
+
+		UPrint_MatrixCode(data, strlen(data), 1, 1);
+
+		printLine("", "");
+
+		printFooter();
+
+		ret = UPrint_Start();
+		if(getPrinterStatus(ret) < 0) {
+			break;
+		}
+
+	}
+
+	return 0;
+}
+
+static int printNQRReceipt(enum receiptCopy copy, MerchantNQR *nqr)
+{
+    char filename[32] = {'\0'};
+	int ret = 0;
+	char maskedPan[25] = {'\0'};
+    MerchantData mParam = {'\0'};
+	
+    readMerchantData(&mParam);
+	short isApproved = isApprovedResponse(nqr->responseCode);
+	displayPaymentStatus(nqr->responseCode);
+
+
+   // Prompt is printing
+	gui_begin_batch_paint();			
+	gui_clear_dc();
+	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
+	gui_end_batch_paint();
+
+	while(1) {
+
+		ret = UPrint_Init();
+
+		if (ret == UPRN_OUTOF_PAPER)
+		{
+			/*
+			if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
+				break;
+			}
+			*/
+
+			gui_messagebox_show("Print", "No paper \nPlease reload the Paper?", "", "", 3000);
+
+			break;
+		}
+
+		UPrint_SetDensity(3); //Set print density to 3 normal
+
+		sprintf(filename, "xxxx\\%s", BANKLOGO);
+		printReceiptLogo(filename);	// Print Logo
+		printReceiptHeader(nqr->dateAndTime);      // Print Receipt header
+
+		UPrint_StrBold("PURCHASE", 1, 4, 1);
+		UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
+
+		UPrint_SetFont(7, 2, 2);
+
+		
+		if (isApprovedResponse(nqr->responseCode))
+		{
+			UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
+		}
+		else{
+			UPrint_StrBold("DECLINED", 1, 4, 1); 
+		}
+
+		UPrint_Feed(12);
+
+		if(*nqr->merchantName){
+			printLine("MERCHANT NAME", nqr->merchantName);
+		}
+		if(*nqr->merchantNo){
+			printLine("MERCHANT NO", nqr->merchantNo);
+		}		if(*nqr->orderSn){
+			printLine("ORDER SN", nqr->orderSn);
+		}		if(*nqr->orderNo){
+			printLine("ORDER NO", nqr->orderNo);
+		}		if(*nqr->rrn){
+			printLine("RRN", nqr->rrn);
+		}		if(*nqr->dateAndTime){
+			printLine("MERCHANT NAME", nqr->dateAndTime);
+		}
+		
+		printReceiptAmount(atoll(nqr->amount), isApproved);
+
+		UPrint_Str("\n\n", 2, 1);
+
+		UPrint_Feed(12);
+
+		if (*nqr->responseMessage) {
+			printLine("", nqr->responseMessage);
+		}
+
+		if (!isApproved) { 
+			char declinedMessage[65];
+
+			sprintf(declinedMessage, "%s: %s", nqr->responseCode, responseCodeToStr(nqr->responseCode));
+			printLine(declinedMessage, nqr->responseMessage);
+		}
+
+		printDottedLine();
+		
+		printFooter();
+
+		ret = UPrint_Start(); // Output to printer
+		if(getPrinterStatus(ret) < 0) {
+			break;
+		}
+	}
+	
+
+	return 0;
+}
+
+short printNQRReceipts(MerchantNQR * nqr, const short isReprint)
+{
+	int ret = -1;
+
+	ret = printNQRReceipt(isReprint ? REPRINT_COPY : CUSTOMER_COPY, nqr);
+
+	if (isApprovedResponse(nqr->responseCode) && !isReprint) {
+
+		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
+		{
+			LOG_PRINTF("Merchant copy");
+
+			ret = printNQRReceipt(MERCHANT_COPY, nqr);
+			
+		}
+	}
+
+	return ret;
+}
+
+void printPtspMerchantEodReceiptHead(char *date)
+{
+	char filename[32] = {'\0'};
+	int ret = 0;
+	char maskedPan[25] = {'\0'};
+	
+   // Prompt is printing
+	gui_begin_batch_paint();			
+	gui_clear_dc();
+	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
+	gui_end_batch_paint();
+
+	while(1) {
+
+		ret = UPrint_Init();
+
+		if (ret == UPRN_OUTOF_PAPER)
+		{
+			gui_messagebox_show("Print", "No paper \nPlease reload the Paper?", "", "", 3000);
+
+			break;
+		}
+
+		UPrint_SetDensity(3); //Set print density to 3 normal
+
+		sprintf(filename, "xxxx\\%s", BANKLOGO);
+		printReceiptLogo(filename);	// Print Logo
+		printReceiptHeader(date);      // Print Receipt header
+
+	}
+    printLine("NQR TXN REPORT FOR: %s\n\n", date);
+    printLine("TIME AMOUNT RRN GATEWAY | STATUS\n", "");
+}
+
+void printPtspMerchantEodBody(MerchantNQR *merchant)
+{
+	char buff[128]	 = {'\0'};
+	memset(buff, '\0', sizeof(buff));
+	sprintf(buff, "%s %s %s NQR | P\n", merchant->dateAndTime, merchant->amount, merchant->rrn);
+	printLine(buff, "");
+}
+
+void printPtspMerchantEodReceiptFooter(char* sum, int count)
+{
+	
+	char buff[128]	 = {'\0'};
+	memset(buff, '\0', sizeof(buff));
+	sprintf(buff, "%d", count);
+	printLine("\nTotal no. of TXNs: %s", buff);
+	printLine("\nTotal TXN Amount: N%s", sum);
+	printLine("\n", "");
+    printLine("\n", "");
+
+	printDottedLine();
+		
+	printFooter();
+
+	int	ret = UPrint_Start(); // Output to printer
+	if(getPrinterStatus(ret) < 0) {
+		return;
+	}
+}
+
+
+int printNQRLastTXNReceipt(enum receiptCopy copy, MerchantNQR *nqr)
+{
+    char filename[32] = {'\0'};
+	int ret = 0;
+	char maskedPan[25] = {'\0'};
+    MerchantData mParam = {'\0'};
+	
+    readMerchantData(&mParam);
+	short isApproved = isApprovedResponse(nqr->responseCode);
+	displayPaymentStatus(nqr->responseCode);
+
+
+   // Prompt is printing
+	gui_begin_batch_paint();			
+	gui_clear_dc();
+	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
+	gui_end_batch_paint();
+
+	while(1) {
+
+		ret = UPrint_Init();
+
+		if (ret == UPRN_OUTOF_PAPER)
+		{
+			/*
+			if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
+				break;
+			}
+			*/
+
+			gui_messagebox_show("Print", "No paper \nPlease reload the Paper?", "", "", 3000);
+
+			break;
+		}
+
+		UPrint_SetDensity(3); //Set print density to 3 normal
+
+		sprintf(filename, "xxxx\\%s", BANKLOGO);
+		printReceiptLogo(filename);	// Print Logo
+		printReceiptHeader(nqr->dateAndTime);      // Print Receipt header
+
+		UPrint_StrBold("PURCHASE", 1, 4, 1);
+		UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
+
+		UPrint_SetFont(7, 2, 2);
+
+		
+		if (isApprovedResponse(nqr->responseCode) && strcmp(nqr->status, "processed"))
+		{
+			UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
+		}
+		else{
+			UPrint_StrBold("DECLINED", 1, 4, 1); 
+		}
+
+		UPrint_Feed(12);
+
+		if(*nqr->merchantName){
+			printLine("MERCHANT NAME", nqr->merchantName);
+		}
+		if(*nqr->merchantNo){
+			printLine("MERCHANT NO", nqr->merchantNo);
+		}		if(*nqr->orderSn){
+			printLine("ORDER SN", nqr->orderSn);
+		}		if(*nqr->orderNo){
+			printLine("ORDER NO", nqr->orderNo);
+		}		if(*nqr->rrn){
+			printLine("RRN", nqr->rrn);
+		}		if(*nqr->dateAndTime){
+			printLine("MERCHANT NAME", nqr->dateAndTime);
+		}
+		
+		printReceiptAmount(atoll(nqr->amount), isApproved);
+
+		UPrint_Str("\n\n", 2, 1);
+
+		UPrint_Feed(12);
+
+		if (*nqr->responseMessage) {
+			printLine("", nqr->responseMessage);
+		}
+
+		if (!isApproved) { 
+			char declinedMessage[65];
+
+			sprintf(declinedMessage, "%s: %s", nqr->responseCode, responseCodeToStr(nqr->responseCode));
+			printLine(declinedMessage, nqr->responseMessage);
+		}
+
+		printDottedLine();
+		
+		printFooter();
+
+		ret = UPrint_Start(); // Output to printer
+		if(getPrinterStatus(ret) < 0) {
+			break;
+		}
+	}
+	
+
+	return 0;
+}
+
+short printLastNQRReceipts(MerchantNQR * nqr, const short isReprint)
+{
+	int ret = -1;
+
+	ret = printNQRLastTXNReceipt(isReprint ? REPRINT_COPY : CUSTOMER_COPY, nqr);
+
+	if (isApprovedResponse(nqr->responseCode) && !isReprint) {
+
+		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
+		{
+			LOG_PRINTF("Merchant copy");
+
+			ret = printNQRLastTXNReceipt(MERCHANT_COPY, nqr);
+			
+		}
+	}
+
+	return ret;
 }

@@ -76,7 +76,58 @@ int ussdTransactionsMenu()
             break;
         case NQR:
             //do some NQR stuffs
+            NQRMenu();
+            break;
+        default:
+            break;
+        }
+    }
+    
+    return 0;
+}
+
+const char* NQRString(NQR_T handler)
+{
+    switch (handler) {
+    case NQR_TRANSACTION:
+        return "Purchase";
+    // case NQR_CHECK_RECENT_TRANSACTION:
+    //     return "Check Last Transaction";
+    case NQR_REPRINT:
+        return "Reprint Last Transaction";
+    case NQR_PRINT_EOD:
+        return "Print EOD";
+    default:
+        return "USSD Type Unknown";
+    }
+}
+
+int NQRMenu()
+{
+    std::vector<std::string> menu;
+    NQR_T menuOptions[] = { NQR_TRANSACTION, NQR_REPRINT, NQR_PRINT_EOD };
+
+
+    for (size_t i = 0; i < sizeof(menuOptions) / sizeof(NQR_T); ++i) {
+        menu.push_back(NQRString(menuOptions[i]));
+    }
+
+    while (1) {
+        int selection = UI_ShowSelection(30000, "NQR Menu", menu, 0);
+
+        if (selection < 0) {
+            return -1;
+        } 
+
+        switch (menuOptions[selection]) {
+        case NQR_TRANSACTION:
             doMerchantNQRTransaction();
+            break;
+        case NQR_REPRINT:
+            lastNQRTransaction();
+            break;
+        case NQR_PRINT_EOD:
+            fetchNQREOD();
             break;
         default:
             break;

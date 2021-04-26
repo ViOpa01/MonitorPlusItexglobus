@@ -13,9 +13,16 @@ typedef enum {
     NQR
 } USSD_T;
 
+typedef enum {
+    NQR_TRANSACTION,
+    NQR_REPRINT,
+    NQR_PRINT_EOD
+} NQR_T;
+
 
 int ussdTransactionsMenu();
 const char* ussdTypeToString(USSD_T provider);
+int NQRMenu();
 
 #ifdef __cplusplus
 }
