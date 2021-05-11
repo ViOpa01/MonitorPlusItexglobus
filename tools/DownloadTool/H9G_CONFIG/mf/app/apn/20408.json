@@ -1,0 +1,22 @@
+{
+    "apns": [
+        {
+            "name": "fast",
+            "type": "public",
+            "mccmnc": "20408",
+            "apn": "FAST.M2M",
+            "bank": "",
+            "username": "",
+            "password": ""
+        },
+		{
+            "name": "Eseye",
+            "type": "public",
+            "mccmnc": "20408",
+            "apn": "eseye",
+            "bank": "",
+            "username": "",
+            "password": ""
+        }
+    ]
+}

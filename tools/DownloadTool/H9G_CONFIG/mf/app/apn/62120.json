@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "airtel",
+            "type": "public",
+            "mccmnc": "62120",
+            "apn": "internet.ng.airtel.com",
+            "bank": "",
+            "username": "internet",
+            "password": "internet"
+        }
+    ]
+}

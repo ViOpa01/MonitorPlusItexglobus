@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "glo",
+            "type": "public",
+            "mccmnc": "62150",
+            "apn": "glosecure",
+            "bank": "",
+            "username": "gprs",
+            "password": "gprs"
+        }
+    ]
+}

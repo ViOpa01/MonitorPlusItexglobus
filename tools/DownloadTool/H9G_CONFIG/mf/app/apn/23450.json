@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "globasure",
+            "type": "roaming",
+            "mccmnc": "23450",
+            "apn": "globasure",
+            "bank": "",
+            "username": "web",
+            "password": "web"
+        }
+    ]
+}

@@ -906,13 +906,13 @@ short checkToPrepOnDownload()
     memset(&merchant, 0x00, sizeof(MerchantData));
     readMerchantData(&merchant);
     ret = UFile_Check(fileName, FILE_PRIVATE);
-    printf("ret : %d -> Ufile_Check\n", ret);
+    printf("ret : %d -> Ufile_Check %s\n", ret, fileName);
 
     if(ret) return 0;
 
     merchant.is_prepped = 0;
     saveMerchantData(&merchant);
-    logoutAndResetVasDb();
+    // logoutAndResetVasDb();
     uiHandshake();
     return UFile_Remove(fileName, FILE_PRIVATE);
     

@@ -8,8 +8,12 @@
 #include "log.h"
 #include "sdk_http.h"
 #include "merchant.h"
+#include "itexFile.h"
+#include "cJSON.h"
 #include "libapi_xpos/inc/libapi_comm.h"
 #include "libapi_xpos/inc/libapi_gui.h"
+#include "libapi_xpos/inc/libapi_file.h"
+#include "libapi_xpos/inc/libapi_util.h"
 
 
 #define ITEX_TAMS_PUBLIC_IP "basehuge.itexapp.com"
@@ -93,6 +97,171 @@ int imsiToNetProfile(Network* profile, const char* imsi)
     }
 
     return -1;
+}
+
+static short parseSimProfileJson(char *buff, cJSON **parsed)
+{
+
+    const char *json = strchr(buff, '{');
+
+	if (!json) {
+		LOG_PRINTF("Error Passing json content");
+		return -1;
+	}
+
+    *parsed = cJSON_Parse(json);
+
+    if (!(*parsed)) {
+        LOG_PRINTF("Invalid content");
+        return -1;
+    }
+
+    return 0;
+   
+}
+
+int linkSimProfile(Network *profile)
+{
+	int result = -1;
+	int i = 0;
+	char title[] = "Waiting...";
+
+	gui_clear_dc();
+	gui_text_out((gui_get_width() - gui_get_text_width("GPRS INIT")) / 2, 1, "GPRS INIT");
+	gui_text_out((gui_get_width() - gui_get_text_width(title)) / 2, gui_get_height() / 2, title);
+
+	for (i = 0; i < 3; i ++) {
+		result = netLink(profile);
+		if (!result) {
+			break;
+		}
+		Sys_Delay(500);
+	}
+
+	return result;
+}
+
+int manualSimProfile(Network *profile) 
+{
+
+	int result = 0;
+
+APN :
+    gui_clear_dc();
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter APN", GUI_LINE_TOP(2), profile->apn, 1, sizeof(profile->apn) - 1, 1, 1, 30000, (char*)"Enter APN");
+	if (result < 0) return result;
+
+USERNAME :
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter USER", GUI_LINE_TOP(2), profile->username, 1, sizeof(profile->username) - 1, 1, 1, 30000, (char*)"Enter USER");
+	if (result == -2) {
+		goto APN;
+	} else if (result == -1 || result == -3) {
+		return result;
+	}
+
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter PWD", GUI_LINE_TOP(2), profile->password, 1, sizeof(profile->password) - 1, 1, 1, 30000, (char*)"Enter PWD");
+
+	if (result == -2) {
+		goto USERNAME;
+	} else if (result == -1 || result == -3) {
+		return result;
+	}
+
+	printf("manual configuration\n");
+	return linkSimProfile(profile);
+}
+
+int setSimProfile(Network *profile, const char *imsi)
+{
+	cJSON *json, *apns;
+	char filename[32] = {'\0'};
+	char mcc[6] = {'\0'};
+	char buffer[1024] = {'\0'};
+	int ret = -1;
+	size_t size = 0;
+	int i = 0;
+
+	if (strlen(imsi) < 5) {
+		gui_messagebox_show("GPRS INIT" , "Can't Configure Sim", "" , "Exit" , 0);
+		return -1;
+	}
+
+	strncpy(mcc, imsi, 5);
+	sprintf(filename, "../apn/%s.json", mcc);
+
+	ret = UFile_Check(filename, FILE_PRIVATE);
+    printf("ret : %d -> Ufile_Check %s\n", ret, filename);
+
+    if(ret != 0) {
+		ret =  manualSimProfile(profile);
+		return -1;
+	} else if (getRecord((void *)buffer, filename, sizeof(buffer), 0)) {
+		ret =  manualSimProfile(profile);
+		return -1;
+	}
+
+	if (parseSimProfileJson(buffer, &json)) {
+		goto clear_exit;
+	}
+
+	apns = cJSON_GetObjectItemCaseSensitive(json, "apns");
+    if(!cJSON_IsArray(apns) || cJSON_IsNull(apns))
+    {
+        gui_messagebox_show("APN", "apns object not found!", "", "", 3000);
+		ret = manualSimProfile(profile);
+		goto clear_exit;
+    }
+
+	size = cJSON_GetArraySize(apns);
+	for (i = 0; i < size; i++) {
+
+		cJSON *el, *tag;
+
+		el = cJSON_GetArrayItem(apns, i);
+
+		tag = cJSON_GetObjectItemCaseSensitive(el, "apn");
+		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
+			ret = -1;
+			continue;
+		}
+		strcpy(profile->apn, tag->valuestring);
+
+		tag = cJSON_GetObjectItemCaseSensitive(el, "username");
+		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
+			ret = -1;
+			continue;
+		}
+		strcpy(profile->username, tag->valuestring);
+
+		tag = cJSON_GetObjectItemCaseSensitive(el, "password");
+		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
+			ret = -1;
+			continue;
+		}
+		strcpy(profile->password, tag->valuestring);
+
+		tag = cJSON_GetObjectItemCaseSensitive(el, "name");
+		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
+			ret = -1;
+			continue;
+		}
+		strcpy(profile->operatorName, tag->valuestring);
+
+		if (linkSimProfile(profile) == 0) {
+			ret = 0;
+			break;
+		}
+
+	}
+
+	if (ret == -1 || i == size) {
+		ret = manualSimProfile(profile);
+	}
+
+clear_exit :
+	if (!cJSON_IsNull(json)) cJSON_Delete(json);
+	return ret;
+
 }
 
 short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
@@ -720,11 +889,12 @@ short gprsInit(void)
 	memset(&merchantData, 0x00, sizeof(MerchantData));
 	readMerchantData(&merchantData);
 
+	merchantData.gprsSettings.timeout = 30000;
+	result = setSimProfile(&merchantData.gprsSettings, imsi);
+	saveMerchantData(&merchantData);
+
+/*
 	result = imsiToNetProfile(&merchantData.gprsSettings, imsi);
-	// gui_messagebox_show("SIM IMSI" , imsi, "" , "Ok" , 0);
-	// gui_messagebox_show("SIM APN" , merchantData.gprsSettings.apn, "" , "Ok" , 0);
-	// gui_messagebox_show("SIM USER" , merchantData.gprsSettings.username, "" , "Ok" , 0);
-	// gui_messagebox_show("SIM PASS" , merchantData.gprsSettings.password, "" , "Ok" , 0);
 	if (result) {
 		gui_messagebox_show("GPRS INIT" , "Can't Configure Sim", "" , "Exit" , 0);
 		printf("Imsi : %s : %s, %s, %s\n", imsi, merchantData.gprsSettings.apn, merchantData.gprsSettings.username, merchantData.gprsSettings.password);
@@ -739,7 +909,7 @@ short gprsInit(void)
 		if (!result) break;
 		Sys_Delay(500);
 	}
-
+*/
 	return result;
 }
 

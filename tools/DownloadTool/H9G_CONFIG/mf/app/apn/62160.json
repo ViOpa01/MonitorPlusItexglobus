@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "9mobile",
+            "type": "public",
+            "mccmnc": "62160",
+            "apn": "etisalat",
+            "bank": "",
+            "username": "",
+            "password": ""
+        }
+    ]
+}

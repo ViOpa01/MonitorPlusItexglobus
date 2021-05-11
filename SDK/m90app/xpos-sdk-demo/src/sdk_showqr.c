@@ -82,7 +82,7 @@ void showQrTest()
 	return ;
 }
 
-short displayQr(const char* data)
+short displayQr(const char* data, const char* rrn)
 {
 	
 	Util_QR_INFO qr_info;

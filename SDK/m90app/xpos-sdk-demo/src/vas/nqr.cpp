@@ -75,7 +75,7 @@ VasError presentVasQr(const std::string& qrCode, const std::string& rrn)
         char displayMessage[128] = "Scan to Pay";
 
         // TODO: display or print QR and rrn depending on device
-        completed = displayQr(qrString);
+        completed = displayQr(qrString, rrn.c_str());
 
         if (completed) {
             return NO_ERRORS;
@@ -86,11 +86,7 @@ VasError presentVasQr(const std::string& qrCode, const std::string& rrn)
         printf("\nKey Returned : %d\n", i);
 
         if (i != 0) {
-            // Maybe printout QR before cancelling 
-            // int j = UPrint_MatrixCode(qrString, strlen(qrString), 0, 1);
-            // printf("Printer Returned : % d", j);
             printNQRCode(qrString);
-
             return USER_CANCELLATION;
         }
     }

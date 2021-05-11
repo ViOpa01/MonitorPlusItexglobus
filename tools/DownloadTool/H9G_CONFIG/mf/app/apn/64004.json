@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "Vodacom",
+            "type": "public",
+            "mccmnc": "64004",
+            "apn": "internet",
+            "bank": "",
+            "username": "",
+            "password": ""
+        }
+    ]
+}

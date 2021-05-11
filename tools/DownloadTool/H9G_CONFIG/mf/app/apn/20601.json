@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "bics",
+            "type": "roaming",
+            "mccmnc": "20601",
+            "apn": "bicsapn",
+            "bank": "",
+            "username": "",
+            "password": ""
+        }
+    ]
+}

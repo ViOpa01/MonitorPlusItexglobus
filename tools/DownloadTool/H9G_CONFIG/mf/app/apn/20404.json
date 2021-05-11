@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "eseye",
+            "type": "roaming",
+            "mccmnc": "20404",
+            "apn": "ESEYE.COM",
+            "bank": "",
+            "username": "USER",
+            "password": "PASS"
+        }
+    ]
+}

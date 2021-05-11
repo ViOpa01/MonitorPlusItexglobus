@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "mtn",
+            "type": "public",
+            "mccmnc": "62130",
+            "apn": "web.gprs.mtnnigeria.net",
+            "bank": "",
+            "username": "web",
+            "password": "web"
+        }
+    ]
+}

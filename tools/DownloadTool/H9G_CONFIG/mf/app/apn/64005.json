@@ -1,0 +1,13 @@
+{
+    "apns": [
+        {
+            "name": "Airtel",
+            "type": "public",
+            "mccmnc": "64005",
+            "apn": "internet",
+            "bank": "",
+            "username": "",
+            "password": ""
+        }
+    ]
+}

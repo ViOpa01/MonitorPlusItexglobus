@@ -130,6 +130,20 @@ int getPrinterStatus(const int status)
 	}
 }
 
+char* getPrinterStatusStr(const int status)
+{
+	switch (status)
+	{
+		case UPRN_SUCCESS: return "Print Success";
+		case UPRN_OUTOF_PAPER: return "No paper";
+		case UPRN_FILE_FAIL: return "Open File Fail";
+		case UPRN_DEV_FAIL: return "Printer device failure";
+		default: return "Printer unknown fault";
+	}
+
+	return "Printer unknown fault";
+}
+
 void printReceiptLogo(const char filename[32])
 {
     char path[32] = {'\0'};
@@ -946,7 +960,7 @@ void reprintLastTrans()
 
 
 
-int printNQRCode(char * data)
+int printNQRCode(const char * data)
 {
 	int ret = 0; 
 	char dt[14] = {'\0'};
@@ -989,12 +1003,14 @@ int printNQRCode(char * data)
 		printLine("DATE TIME: ", buff);
 		printDottedLine();
 
-		printLine("", "");
+		UPrint_Str("\n", 2, 1);
 
 		UPrint_MatrixCode(data, strlen(data), 1, 1);
 
-		printLine("", "");
+		UPrint_Str("\n", 2, 1);
 
+		printDottedLine();
+		UPrint_Str("\n", 2, 1);
 		printFooter();
 
 		ret = UPrint_Start();
@@ -1011,7 +1027,6 @@ static int printNQRReceipt(enum receiptCopy copy, MerchantNQR *nqr)
 {
     char filename[32] = {'\0'};
 	int ret = 0;
-	char maskedPan[25] = {'\0'};
     MerchantData mParam = {'\0'};
 	
     readMerchantData(&mParam);
@@ -1031,14 +1046,7 @@ static int printNQRReceipt(enum receiptCopy copy, MerchantNQR *nqr)
 
 		if (ret == UPRN_OUTOF_PAPER)
 		{
-			/*
-			if(gui_messagebox_show("Print", "No paper \nDo you wish to reload Paper?", "cancel", "confirm", 0) != 1) {
-				break;
-			}
-			*/
-
 			gui_messagebox_show("Print", "No paper \nPlease reload the Paper?", "", "", 3000);
-
 			break;
 		}
 
@@ -1076,10 +1084,10 @@ static int printNQRReceipt(enum receiptCopy copy, MerchantNQR *nqr)
 		}		if(*nqr->rrn){
 			printLine("RRN", nqr->rrn);
 		}		if(*nqr->dateAndTime){
-			printLine("MERCHANT NAME", nqr->dateAndTime);
+			printLine("DATE/TIME", nqr->dateAndTime);
 		}
 		
-		printReceiptAmount(atoll(nqr->amount), isApproved);
+		printReceiptAmount(atoll(nqr->amount) * 100, isApproved);
 
 		UPrint_Str("\n\n", 2, 1);
 
@@ -1130,11 +1138,11 @@ short printNQRReceipts(MerchantNQR * nqr, const short isReprint)
 	return ret;
 }
 
-void printPtspMerchantEodReceiptHead(char *date)
+int printPtspMerchantEodReceiptHead(char *date)
 {
 	char filename[32] = {'\0'};
 	int ret = 0;
-	char maskedPan[25] = {'\0'};
+	char buff[64] = {'\0'};
 	
    // Prompt is printing
 	gui_begin_batch_paint();			
@@ -1142,66 +1150,125 @@ void printPtspMerchantEodReceiptHead(char *date)
 	gui_text_out(0, GUI_LINE_TOP(0), "printing...");
 	gui_end_batch_paint();
 
-	while(1) {
+	sprintf(buff, "TIME  AMOUNT   RRN  |  STATUS");
 
-		ret = UPrint_Init();
 
-		if (ret == UPRN_OUTOF_PAPER)
-		{
-			gui_messagebox_show("Print", "No paper \nPlease reload the Paper?", "", "", 3000);
+	ret = UPrint_Init();
 
-			break;
-		}
-
-		UPrint_SetDensity(3); //Set print density to 3 normal
-
-		sprintf(filename, "xxxx\\%s", BANKLOGO);
-		printReceiptLogo(filename);	// Print Logo
-		printReceiptHeader(date);      // Print Receipt header
-
+	if (ret != UPRN_SUCCESS)
+	{
+		gui_messagebox_show("Print", getPrinterStatusStr(ret), "", "", 3000);
+		return ret;
 	}
-    printLine("NQR TXN REPORT FOR: %s\n\n", date);
-    printLine("TIME AMOUNT RRN GATEWAY | STATUS\n", "");
-}
 
-void printPtspMerchantEodBody(MerchantNQR *merchant)
-{
-	char buff[128]	 = {'\0'};
-	memset(buff, '\0', sizeof(buff));
-	sprintf(buff, "%s %s %s NQR | P\n", merchant->dateAndTime, merchant->amount, merchant->rrn);
-	printLine(buff, "");
-}
+	UPrint_SetDensity(3); //Set print density to 3 normal
 
-void printPtspMerchantEodReceiptFooter(char* sum, int count)
-{
+	sprintf(filename, "xxxx\\%s", BANKLOGO);
+	printReceiptLogo(filename);	
+	printReceiptHeader(date); 
+
+	UPrint_SetFont(8, 2, 2);
+
+	UPrint_StrBold("NQR END OF THE DAY REPORT", 1, 4, 1);
+	UPrint_StrBold(date, 1, 4, 1);
+	UPrint_StrBold(buff, 1, 4, 1);
+
+	printDottedLine();
+
+	UPrint_Str("\n\n", 2, 1);
 	
+
+	UPrint_Feed(12);
+
+	ret = UPrint_Start(); // Output to printer
+	if (ret != UPRN_SUCCESS)
+	{
+		gui_messagebox_show("Print", getPrinterStatusStr(ret), "", "", 3000);
+		return ret;
+	}
+
+	return 0;
+    
+}
+
+int printPtspMerchantEodBody(MerchantNQR *merchant, const char status)
+{
+	int ret = -1;
 	char buff[128]	 = {'\0'};
 	memset(buff, '\0', sizeof(buff));
-	sprintf(buff, "%d", count);
-	printLine("\nTotal no. of TXNs: %s", buff);
-	printLine("\nTotal TXN Amount: N%s", sum);
-	printLine("\n", "");
-    printLine("\n", "");
 
+	ret = UPrint_Init();
+
+	if (ret != UPRN_SUCCESS)
+	{
+		gui_messagebox_show("Print", getPrinterStatusStr(ret), "", "", 3000);
+		return ret;
+	}
+
+	UPrint_SetDensity(3); //Set print density to 3 normal
+
+	sprintf(buff, "%s NGN %s %s | %c\n", merchant->dateAndTime, merchant->amount, merchant->rrn, status);
+	UPrint_Str(buff, 2, 1);
+	UPrint_Str("\n", 2, 1);
+	
+	UPrint_Feed(12);
+
+	ret = UPrint_Start(); // Output to printer
+	if (ret != UPRN_SUCCESS)
+	{
+		gui_messagebox_show("Print", getPrinterStatusStr(ret), "", "", 3000);
+		return ret;
+	}
+
+	return 0;
+}
+
+int printPtspMerchantEodReceiptFooter(char* sum, const int count)
+{
+	int ret = -1;
+	char buff[128]	 = {'\0'};
+
+	ret = UPrint_Init();
+
+	if (ret != UPRN_SUCCESS)
+	{
+		gui_messagebox_show("Print", getPrinterStatusStr(ret), "", "", 3000);
+		return ret;
+	}
+
+	UPrint_SetDensity(3); //Set print density to 3 normal
+
+	printDottedLine();
+	UPrint_Str("\n\n", 2, 1);
+
+	memset(buff, '\0', sizeof(buff));
+	sprintf(buff, "%d", count);	
+	printLine("Total No. of TXNs : ", buff);
+
+	memset(buff, '\0', sizeof(buff));
+	sprintf(buff, "NGN %s", sum);	
+	printLine("Total TXN Amount: ", buff);
+	UPrint_Str("\n\n", 2, 1);
 	printDottedLine();
 		
 	printFooter();
 
-	int	ret = UPrint_Start(); // Output to printer
-	if(getPrinterStatus(ret) < 0) {
-		return;
+	ret = UPrint_Start(); // Output to printer
+	if (ret != UPRN_SUCCESS)
+	{
+		gui_messagebox_show("Print", getPrinterStatusStr(ret), "", "", 3000);
+		return ret;
 	}
+
+	return 0;
 }
 
 
-int printNQRLastTXNReceipt(enum receiptCopy copy, MerchantNQR *nqr)
+short printNQRLastTXNReceipt(MerchantNQR *nqr, enum receiptCopy copy)
 {
     char filename[32] = {'\0'};
 	int ret = 0;
-	char maskedPan[25] = {'\0'};
-    MerchantData mParam = {'\0'};
 	
-    readMerchantData(&mParam);
 	short isApproved = isApprovedResponse(nqr->responseCode);
 	displayPaymentStatus(nqr->responseCode);
 
@@ -1241,7 +1308,7 @@ int printNQRLastTXNReceipt(enum receiptCopy copy, MerchantNQR *nqr)
 		UPrint_SetFont(7, 2, 2);
 
 		
-		if (isApprovedResponse(nqr->responseCode) && strcmp(nqr->status, "processed"))
+		if (isApprovedResponse(nqr->responseCode) && strcmp(nqr->status, "processed") == 0)
 		{
 			UPrint_StrBold("APPROVED", 1, 4, 1); //Centered large font print title,empty 4 lines
 		}
@@ -1263,10 +1330,10 @@ int printNQRLastTXNReceipt(enum receiptCopy copy, MerchantNQR *nqr)
 		}		if(*nqr->rrn){
 			printLine("RRN", nqr->rrn);
 		}		if(*nqr->dateAndTime){
-			printLine("MERCHANT NAME", nqr->dateAndTime);
+			printLine("DATE/TIME", nqr->dateAndTime);
 		}
 		
-		printReceiptAmount(atoll(nqr->amount), isApproved);
+		printReceiptAmount(atoll(nqr->amount) * 100, isApproved);
 
 		UPrint_Str("\n\n", 2, 1);
 
@@ -1293,26 +1360,6 @@ int printNQRLastTXNReceipt(enum receiptCopy copy, MerchantNQR *nqr)
 		}
 	}
 	
-
-	return 0;
-}
-
-short printLastNQRReceipts(MerchantNQR * nqr, const short isReprint)
-{
-	int ret = -1;
-
-	ret = printNQRLastTXNReceipt(isReprint ? REPRINT_COPY : CUSTOMER_COPY, nqr);
-
-	if (isApprovedResponse(nqr->responseCode) && !isReprint) {
-
-		if (gui_messagebox_show("MERCHANT COPY", "Print Copy?", "No", "Yes", 0) == 1)
-		{
-			LOG_PRINTF("Merchant copy");
-
-			ret = printNQRLastTXNReceipt(MERCHANT_COPY, nqr);
-			
-		}
-	}
 
 	return ret;
 }
