@@ -12,12 +12,10 @@
 #define REQUERY_IP "197.253.19.76"
 #define REQUERY_PORT 8017
 
-// Test VAS "http://197.253.19.76:8018"
+// Test VAS "http://197.253.19.76:1880"
 // Live VAS "http://197.253.19.76:8019"
 #define VAS_IP "197.253.19.76"
 #define VAS_PORT "8019"
-// #define VAS_PORT "8018"
-// #define VAS_PORT "1880"
 
    
 struct CardData {

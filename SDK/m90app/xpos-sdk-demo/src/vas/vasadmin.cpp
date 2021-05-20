@@ -16,6 +16,7 @@
 #include "viewmodels/dataViewModel.h"
 #include "viewmodels/smileViewModel.h"
 #include "viewmodels/paytvViewModel.h"
+#include "viewmodels/jambviewmodel.h"
 
 #include "payvice.h"
 #include "vas.h"
@@ -480,6 +481,20 @@ int printRequery(const iisys::JSObject& transaction)
         }
         status = smile.processPaymentResponse(response);
         record = smile.storageMap(status);
+    } else if (productName == "jambutme") {
+        JambViewModel jamb(vasMenuString(JAMB_EPIN), postman);
+        if (jamb.setService(JAMB_UTME_PIN).error != NO_ERRORS) {
+            return -1;
+        }
+        status = jamb.processPaymentResponse(response);
+        record = jamb.storageMap(status);
+    } else if (productName == "jambde") {
+        JambViewModel jamb(vasMenuString(JAMB_EPIN), postman);
+        if (jamb.setService(JAMB_DE_PIN).error != NO_ERRORS) {
+            return -1;
+        }
+        status = jamb.processPaymentResponse(response);
+        record = jamb.storageMap(status);
     }
 
     const iisys::JSObject& account = transaction("VASCustomerAccount");

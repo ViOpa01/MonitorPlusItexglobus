@@ -99,6 +99,10 @@ const char* serviceToString(Service service)
         return "Transfer";
     case WITHDRAWAL:
         return "Withdrawal";
+    case JAMB_UTME_PIN:
+        return "JAMB UTME PIN";
+    case JAMB_DE_PIN:
+        return "JAMB DE PIN";
     default:
         return "";
     }
@@ -153,6 +157,9 @@ const char* serviceStringToLogoFile(const std::string& serviceString)
     } else if(serviceString == serviceToString(WITHDRAWAL)
                 || serviceString == serviceToString(TRANSFER)) {
         return "itex/bank.bmp";
+    } else if(serviceString == serviceToString(JAMB_UTME_PIN)
+                || serviceString == serviceToString(JAMB_DE_PIN)) {
+        return "vaslogos\\jamb.bmp";
     }
     return "";
 }
@@ -220,6 +227,10 @@ const char* serviceToProductString(Service service)
         return "AIRTELPIN";
     case GLOVOT:
         return "GLOVOT";
+    case JAMB_UTME_PIN:
+        return "JAMBUTMEPIN";
+    case JAMB_DE_PIN:
+        return "JAMBDEPIN";
     default:
         return "VAS";
     }
@@ -331,7 +342,9 @@ int printVas(std::map<std::string, std::string>& record)
 
             printStatus = printVasReceipt(record, CASHIO);
             
-        } else {
+        } else if (record[VASDB_CATEGORY] == vasMenuString(JAMB_EPIN)) {
+            printStatus = printVasReceipt(record, JAMB_EPIN);
+        }else {
 
         }
     }
@@ -451,6 +464,19 @@ void printTv(std::map<std::string, std::string> &record)
     } 
 }
 
+void printJambEpin(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_PHONE, VASDB_PRODUCT, "pin", "email", "expiry", "dial"};
+    const char* labels[] = {"WALLET", "TXN TID", "CONF. CODE", "NAME", "PHONE", "BUNDLE", "PIN", "EMAIL", "EXPIRY", "TO LOAD"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            if(*(record[keys[i]].c_str()))
+                printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
 static void printAsteric(size_t len)
 {
     char line[32] = {'\0'};
@@ -517,6 +543,8 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
             printTv(record);
         } else if(type == CASHIO) {
             printCashio(record);
+        } else if(type == JAMB_EPIN) {
+            printJambEpin(record);
         }
 
         printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
@@ -719,7 +747,7 @@ PaymentMethod getPaymentMethod(const PaymentMethod preferredMethods)
     return methods[selection];
 }
 
-Service selectService(const char* title, std::vector<Service>& services)
+Service selectService(const char* title, const std::vector<Service>& services)
 {
     int selection;
     std::vector<std::string> menu;

@@ -12,7 +12,8 @@ typedef enum {
     TV_SUBSCRIPTIONS,
     DATA,
     SMILE,
-    CASHIO
+    CASHIO,
+    JAMB_EPIN
 } VAS_Menu_T;
 
 std::vector<VAS_Menu_T> getVasTransactions(std::vector<std::string>& menu);

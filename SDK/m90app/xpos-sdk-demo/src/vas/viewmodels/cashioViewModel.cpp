@@ -295,14 +295,14 @@ VasResult ViceBankingViewModel::complete(const std::string& pin)
     if (payMethod == PAY_WITH_CARD) {
         cardData = CardData(lookupResponse.amountToDebit, retrievalReference);
         cardData.refcode = getRefCode(serviceToProductString(service));
-/*
+
         if (cardData.amount > lookupResponse.thresholdAmount) {
             const std::string serviceCode = "87001001";     // Test, instead of 87001214, send 87001001 
             const std::string accountNo = "1022665017";     // instead of 0001451023, send 1022643026 (all in F60)
             cardData.upWithdrawal.field60 =
             "upsl-direct~010085C24300148041Meter Number=12." + serviceCode + ".Acct=" + accountNo + ".Phone=" + phoneNumber + "~upsl-withdrawal";
         }
-*/
+
         response = comProxy.complete(paymentPath(service), &json, &cardData);
     } else {
         response = comProxy.complete(paymentPath(service), &json);
@@ -360,7 +360,7 @@ std::map<std::string, std::string> ViceBankingViewModel::storageMap(const VasRes
 
     record[VASDB_STATUS_MESSAGE] = completionStatus.message;
     if (service == TRANSFER && beneficiaryBankIndex >= 0 && !ViceBankingViewModel::banks.empty()) {
-        record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + ViceBankingViewModel::banks[beneficiaryBankIndex].name + "\"}";
+        record[VASDB_SERVICE_DATA] = std::string("{\"recBank\": \"") + ViceBankingViewModel::banks[beneficiaryBankIndex].name + std::string("\",\"narration\": \"") + this->narration + "\"}";
     }
 
     return record;

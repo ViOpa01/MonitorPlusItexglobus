@@ -11,6 +11,7 @@
 #include "electricity.h"
 #include "paytv.h"
 #include "smile.h"
+#include "jamb.h"
 
 #include "vas.h"
 #include "vasdb.h"
@@ -37,6 +38,7 @@ std::vector<VAS_Menu_T> getVasTransactions(std::vector<std::string>& menu)
     menuOptions.push_back(AIRTIME);
     menuOptions.push_back(DATA);
     menuOptions.push_back(SMILE);
+    menuOptions.push_back(JAMB_EPIN);
 
     for (size_t i = 0; i < menuOptions.size(); ++i) {
         menu.push_back(vasMenuString(menuOptions[i]));
@@ -104,6 +106,9 @@ int doVasTransaction(VAS_Menu_T menu)
         ViceBanking cashIO(title, postman);
         return flow.start(&cashIO);
     }
+    case JAMB_EPIN: {
+        return Jamb::menu(flow, title, postman);
+    }
     default:
         break;
     }
@@ -136,6 +141,8 @@ const char* vasMenuString(VAS_Menu_T type)
         return "Smile";
     case CASHIO:
         return "Cash In / Cash Out";
+    case JAMB_EPIN:
+        return "JAMB PIN";
     default:
         return "";
     }

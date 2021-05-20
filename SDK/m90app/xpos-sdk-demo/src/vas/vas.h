@@ -47,7 +47,9 @@ typedef enum {
     SMILEBUNDLE,
     STARTIMES,
     WITHDRAWAL,
-    TRANSFER
+    TRANSFER,
+    JAMB_UTME_PIN,
+    JAMB_DE_PIN
 } Service;
 
 typedef enum {
@@ -106,7 +108,7 @@ const char* serviceToProductString(Service service);
 
 PaymentMethod getPaymentMethod(const PaymentMethod preferredMethods);
 
-Service selectService(const char * title, std::vector<Service>& services);
+Service selectService(const char * title, const std::vector<Service>& services);
 VasResult vasResponseCheck(const iisys::JSObject& response);
 
 void getVasTransactionReference(std::string& reference, const iisys::JSObject& responseData);
