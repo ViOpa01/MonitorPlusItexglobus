@@ -49,7 +49,9 @@ typedef enum {
     WITHDRAWAL,
     TRANSFER,
     JAMB_UTME_PIN,
-    JAMB_DE_PIN
+    JAMB_DE_PIN,
+    WAEC_REGISTRATION,
+    WAEC_RESULT_CHECKER
 } Service;
 
 typedef enum {

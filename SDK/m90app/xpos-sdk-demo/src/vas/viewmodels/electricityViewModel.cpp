@@ -584,7 +584,7 @@ VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
 
     const iisys::JSObject& purchaseTimesObj = data("purchaseTimes");
     const iisys::JSObject& vasCustomerAccountObj = data("VASCustomerAccount");
-    if (!purchaseTimesObj.isNumber() || !purchaseTimesObj.isString() || !vasCustomerAccountObj.isString()) {
+    if (!purchaseTimesObj.isNumber() && !purchaseTimesObj.isString() || !vasCustomerAccountObj.isString()) {
         result = KEY_NOT_FOUND;
         return result;
     }

@@ -117,75 +117,23 @@ std::string Postman::generateRequestAuthorization(const std::string& requestBody
 
 VasResult Postman::sendVasCashRequest(const char* url, const iisys::JSObject* json)
 {
-    VasResult result(CASH_STATUS_UNKNOWN);
-    std::string body;
-    Payvice payvice;
-    
-    NetWorkParameters netParam = {'\0'};
+    VasResult result = this->sendVasRequest(url, json);
 
-   
-    strncpy((char *)netParam.host, txnHost.c_str(), sizeof(netParam.host) - 1);
-    netParam.receiveTimeout = 120000;
-	strncpy(netParam.title, "vas", 10);
-    netParam.isHttp = 1;
-    netParam.isSsl = 0;
-    netParam.port = atol(portValue.c_str());   // staging 8028, live 80, test 8018
-    netParam.endTag = "";  // I might need to comment it out later
-
-    const std::string apiToken = payvice.getApiToken();
-    if (apiToken.empty()) {
-        result.error = TOKEN_UNAVAILABLE;
-        result.message = TOKEN_UNAVAILABLE_STR;
+     if (result.error == NO_ERRORS || result.error == TOKEN_UNAVAILABLE) {
         return result;
-    }
-
-    if (json) {
-        body = json->dump();
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", url);
-    } else {
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "GET %s\r\n", url);
-    }
-
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s:%d\r\n", netParam.host, netParam.port);
-
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "token: %s\r\n", apiToken.c_str());
-    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "signature: %s\r\n", generateRequestAuthorization(body).c_str());
-    
-
-    if (json) {
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Type: application/json\r\n");
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Length: %zu\r\n", body.length());
-    }
-    
-
-    if (body.length()) {
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "\r\n%s", body.c_str());
-    } 
-
-    enum CommsStatus commStatus = sendAndRecvPacket(&netParam);
-    if(commStatus == SEND_RECEIVE_SUCCESSFUL){
-        result.error = NO_ERRORS;
-        result.message = strchr((const char*)netParam.response, '{');
-        return result;
-
-    } else if (!json || (*json)("clientReference").isNull()) {
-
-        if (commStatus == CONNECTION_FAILED) {
-            result.message = "Connection Error";
-        } else if (commStatus == SENDING_FAILED) {
-            result.message = "Send Error";
-        } else if (commStatus == RECEIVING_FAILED) {
-            result.message = "Receive error";
-        } else {
-            result.message = "Unknown Network Error";
-        }
-
+    } else if (!json) {
         result.error = CASH_STATUS_UNKNOWN;
         return result;
     }
 
     // Attempt to requery automatically
     const iisys::JSObject& clientRef = (*json)("clientReference");
+    if (clientRef.isNull()) {
+        result.error = CASH_STATUS_UNKNOWN;
+        return result;
+    }
+
+    Payvice payvice;
     const iisys::JSObject& walletId = payvice.object(Payvice::WALLETID);
     VasResult requeryStatus =  requeryVas(clientRef.getString().c_str(), walletId.getString().c_str(), payvice.getApiToken().c_str());
 
@@ -385,8 +333,8 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json)
     }
 
     strncpy((char *)netParam.host, txnHost.c_str(), sizeof(netParam.host) - 1);
-    netParam.receiveTimeout = 60000;
-	strncpy(netParam.title, "Payvice", 10);
+    netParam.receiveTimeout = 120000;
+	strncpy(netParam.title, "vas", 10);
     netParam.isHttp = 1;
     netParam.isSsl = 0;
     netParam.port = atol(portValue.c_str());
@@ -431,7 +379,7 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json)
         } else {
             result.message = "Unknown Network Error";
         }
-        result.error = VAS_ERROR;
+        result.error = CASH_STATUS_UNKNOWN;
 
         return result;
     } 

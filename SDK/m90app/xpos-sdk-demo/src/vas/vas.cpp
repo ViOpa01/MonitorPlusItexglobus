@@ -103,6 +103,10 @@ const char* serviceToString(Service service)
         return "JAMB UTME PIN";
     case JAMB_DE_PIN:
         return "JAMB DE PIN";
+    case WAEC_REGISTRATION:
+        return "WAEC REGISTRATION";
+    case WAEC_RESULT_CHECKER:
+        return "WAEC RESULT CHECKER";
     default:
         return "";
     }
@@ -160,6 +164,9 @@ const char* serviceStringToLogoFile(const std::string& serviceString)
     } else if(serviceString == serviceToString(JAMB_UTME_PIN)
                 || serviceString == serviceToString(JAMB_DE_PIN)) {
         return "vaslogos\\jamb.bmp";
+    } else if(serviceString == serviceToString(WAEC_REGISTRATION)
+                || serviceString == serviceToString(WAEC_RESULT_CHECKER)) {
+        return "vaslogos\\waec.bmp";
     }
     return "";
 }
@@ -231,6 +238,10 @@ const char* serviceToProductString(Service service)
         return "JAMBUTMEPIN";
     case JAMB_DE_PIN:
         return "JAMBDEPIN";
+    case WAEC_REGISTRATION:
+        return "WAEC REGISTRATION";
+    case WAEC_RESULT_CHECKER:
+        return "WAEC RESULT CHECKER";
     default:
         return "VAS";
     }
@@ -344,7 +355,9 @@ int printVas(std::map<std::string, std::string>& record)
             
         } else if (record[VASDB_CATEGORY] == vasMenuString(JAMB_EPIN)) {
             printStatus = printVasReceipt(record, JAMB_EPIN);
-        }else {
+        } else if (record[VASDB_CATEGORY] == vasMenuString(WAEC)) {
+            printStatus = printVasReceipt(record, WAEC);
+        } else {
 
         }
     }
@@ -477,6 +490,19 @@ void printJambEpin(std::map<std::string, std::string> &record)
     } 
 }
 
+void printWaec(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_PHONE, VASDB_PRODUCT, "pin", "token", "email", "expiry", "dial"};
+    const char* labels[] = {"WALLET", "TXN TID", "CONF. CODE", "NAME", "PHONE", "BUNDLE", "PIN", "TOKEN", "EMAIL", "EXPIRY", "TO LOAD"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            if(*(record[keys[i]].c_str()))
+                printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
 static void printAsteric(size_t len)
 {
     char line[32] = {'\0'};
@@ -545,6 +571,8 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
             printCashio(record);
         } else if(type == JAMB_EPIN) {
             printJambEpin(record);
+        } else if(type == WAEC) {
+            printWaec(record);
         }
 
         printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
