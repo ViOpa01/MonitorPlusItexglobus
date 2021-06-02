@@ -17,6 +17,7 @@
 #include "viewmodels/smileViewModel.h"
 #include "viewmodels/paytvViewModel.h"
 #include "viewmodels/jambviewmodel.h"
+#include "viewmodels/waecviewmodel.h"
 
 #include "payvice.h"
 #include "vas.h"
@@ -495,6 +496,20 @@ int printRequery(const iisys::JSObject& transaction)
         }
         status = jamb.processPaymentResponse(response);
         record = jamb.storageMap(status);
+    } else if (productName == "waecreg") {
+        WaecViewModel waec(vasMenuString(WAEC), postman);
+        if (waec.setService(WAEC_REGISTRATION).error != NO_ERRORS) {
+            return -1;
+        }
+        status = waec.processPaymentResponse(response);
+        record = waec.storageMap(status);
+    } else if (productName == "waecresult") {
+        WaecViewModel waec(vasMenuString(WAEC), postman);
+        if (waec.setService(WAEC_RESULT_CHECKER).error != NO_ERRORS) {
+            return -1;
+        }
+        status = waec.processPaymentResponse(response);
+        record = waec.storageMap(status);
     }
 
     const iisys::JSObject& account = transaction("VASCustomerAccount");
