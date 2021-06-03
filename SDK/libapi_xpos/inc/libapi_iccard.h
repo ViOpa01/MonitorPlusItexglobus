@@ -185,7 +185,7 @@ Functions: Clear magtek buffer
 Input :	 Nothing
 Output : nothing
 return: nothing
-Remarks: Nothing
+Remarks: must call card_magtek_flush before card_MagStripeDetect
 *************************************************************************************/
 LIB_EXPORT void card_magtek_flush(void);
 /*************************************************************************************
@@ -196,9 +196,9 @@ Input :	 Nothing
 Output : trackinfo ,If successful, the magnetic stripe card data is returned.
 return: UICC_FAIL			= -1,   // Fail
 		UICC_OK            =  0    // Success
-Remarks: Nothing
+Remarks: must call card_magtek_flush before card_MagStripeDetect
 *************************************************************************************/
-LIB_EXPORT int card_MagStripeDetect(struct card_magtek_track_info *trackinfo);
+LIB_EXPORT int card_MagStripeDetect(card_magtek_track_info *trackinfo);
 
 LIB_EXPORT int mf_rfid_mfcl_open(void);
 LIB_EXPORT int mf_rfid_mfcl_close(void);

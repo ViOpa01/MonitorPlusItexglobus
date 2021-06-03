@@ -151,9 +151,9 @@ LIB_EXPORT int UPrint_SetFont(int size, int zoom_w, int zoom_h);
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:LinZhu
 Functions:Set print font
-Input : size: Set print other font size(0--8)
-		zoom_w: Set the horizontal magnification of English(0--1)
-		zoom_h: Set the vertical magnification of English(0--1)
+Input : size: Set print other font size(0--1)
+		zoom_w: Set the horizontal magnification of English(1--5)
+		zoom_h: Set the vertical magnification of English(1--5)
 Output : Nothing
 return: UPRN_CACHE_ERR        = -7,            //Save cache failed
 		UPRN_SUCCESS          =  0		       //Success
@@ -172,5 +172,39 @@ return: UPRN_CACHE_ERR        = -7,            //Save cache failed
 Remarks: 
 *************************************************************************************/
 LIB_EXPORT int UPrint_SetDensity(int v);
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:George
+Functions:set the follow print buffer align format
+Input : nAlign:  0 left, 1 center, 2 right
+Output: Nothing
+return: Nothing
+Remarks:
+*************************************************************************************/
+LIB_EXPORT void UPrint_Set_Align(int nAlign);
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:George
+Functions:set the line print buffer align format,will not affect next line
+Input : nAlign:  0 left, 1 center, 2 right
+Output: Nothing
+return: Nothing
+Remarks:
+*************************************************************************************/
+LIB_EXPORT void UPrint_Set_LineAlign(int nAlign);
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:George
+Functions:String printing (UPrint_StrBold) with automatic line feed function, support \r, \n newline
+Input : sLeft:   left align string
+		sRight:  right align string
+		nlinegap:  Line spacing, unit pixels, 0 is the default value (for Pin printing use)
+Output: Nothing
+return: Nothing
+Remarks: For Persian print
+*************************************************************************************/
+LIB_EXPORT void UPrint_str_line(char*sLeft,char*sRight,int nLinegap);
+
 
 #endif /*__LIBAPI_PRINT_HEADER__*/

@@ -15,6 +15,7 @@
 #define GUI_GUIPAINT				0x000A0001
 #define GUI_KEYPRESS				0x00050001
 #define GUI_SCAN_OK					0x000E0021
+#define GUI_USR_PROC				0x000EFF00
 
 #define GUI_KEY_0		'0'
 #define GUI_KEY_1		'1'
@@ -76,7 +77,27 @@ typedef struct __st_gui_message{
 }st_gui_message;
 
 
-
+typedef struct _st_gui_sign_procs{
+	//Draw sign page and watermark
+	int (*page_paint)(const char *m_watermark);  
+	int (*page_getbackcount)();  
+	//Whether to allow cancellation
+	int (*page_usecancel)(); 
+	//Whether to cancel prompt
+	int (*page_usecancelask)();  
+	//Cancel get watermark
+	int (*page_getwatermark)( char *outwatermark);
+	//Minimum number of trajectory points
+	int (*page_getwritepointcount)();  
+	//Whether to use the cashier confirmation page
+	int (*page_usesigntype)(); 
+	//Whether the picture uses 320*130 resolution
+	int (*page_use320_130)(); 
+	//Minimum number of strokes
+	int (*page_getpointupcount)();  
+	int (*page_buffwidth)();
+	int (*page_buffheight)();
+}st_gui_sign_procs;
 
 
 
@@ -441,17 +462,16 @@ Output : Nothing
 return: 0 success
 *************************************************************************************/
 LIB_EXPORT int gui_main_menu_func_add(void * pfunc);
-
-
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
 Author:lx
-Functions:Add menu item
-Input : menu_item		Menu data
+Functions:def menu handler
+Input : pfunc		Menu handler
 Output : Nothing			
 return: 0 success
 *************************************************************************************/
-LIB_EXPORT int gui_main_menu_item_add(st_gui_menu_item_def * menu_item);
+
+LIB_EXPORT int gui_main_menu_func_del(void * pfunc);
 
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
@@ -525,7 +545,7 @@ Output : width			Image width
 return: Image content array, which needs to be released after use
 *************************************************************************************/
 LIB_EXPORT char * gui_load_bmp(char * filename , int *width , int *height);
-
+LIB_EXPORT char * gui_load_bmp_ex(char * filename , int *width , int *height, int * color);
 
 
 /*************************************************************************************
@@ -638,7 +658,7 @@ Output: Nothing
 return: Nothing
 *************************************************************************************/
 LIB_EXPORT int gui_select_page_ex(char *title , char *items[],int itemscount,int timeover, int select);
-
+LIB_EXPORT int gui_select_page_ex_t(char *title ,char items[][255],int itemscount,int timeover, int select);
 
 
 /*************************************************************************************
@@ -682,7 +702,19 @@ Output : Nothing
 return: 0			success
 *************************************************************************************/
 LIB_EXPORT void  gui_textout_line_center(char *pMsg , int top);
+LIB_EXPORT void  gui_textout_line_left(char *pMsg , int top);
+LIB_EXPORT void  gui_textout_line_right(char *pMsg , int top);
 
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:Display text in the middle of the screen ,Show only English
+Input :   pMsg		pmsg content
+		
+Output : Nothing			
+return: 0			success
+*************************************************************************************/
+LIB_EXPORT void gui_text_out_win_center(char *pmsg);
 
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
@@ -714,3 +746,122 @@ return:   1			Confirm return
 		  3			Timeout		
 *************************************************************************************/
 LIB_EXPORT int gui_messagebox_showEx(char *title, char *msg , char* pszLeftOp, char* pszRightOp , int timeover,int flag,unsigned char * keylist, int * presskey);
+
+LIB_EXPORT void gui_setTitle(char *title);
+#define gui_set_title	gui_setTitle
+
+LIB_EXPORT int gui_text_out_heghlight(int x, int y, int y2,char * text);
+
+LIB_EXPORT int gui_default_msg_func_add(void * pfunc);
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:lx
+Functions:Add menu item
+Input : menu_item		Menu data
+Output : Nothing			
+return: 0 success
+*************************************************************************************/
+LIB_EXPORT int gui_main_menu_item_add(st_gui_menu_item_def * menu_item);
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:lbx
+Functions:del menu item
+Input : name: the value of st_gui_menu_item_def->name id: the value of st_gui_menu_item_def->id
+Output : Nothing			
+return: 0 success
+*************************************************************************************/
+LIB_EXPORT int gui_main_menu_item_del(char *name ,char *id);
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:Set sign processing function
+Input :   procs	st_gui_sign_procs content
+		
+Output : Nothing			
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT void gui_setprocs( st_gui_sign_procs *procs );
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:Determine whether it has been signed
+Input :   index	Signature index
+		
+Output : Nothing			
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT int gui_sign_exist( const char *index );
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:Signature processing
+Input :   index	Signature index
+	  date	Device date
+	  refno	Reference No
+		
+Output : Nothing			
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT int gui_sign_proc( const char *index, const char *date, const char *refno );
+LIB_EXPORT int gui_sign_proc2( const char *index, const char *date, const char *refno, int timeout );
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:Get sign print string
+Input :   index	Signature index
+		
+Output : Nothing			
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT extern const char * gui_sign_print(const char *index);
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:JBIG encoding interface
+Input :   index	Signature index
+		
+Output : **jbigencode
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT int gui_sign_encode( const char *index, char **jbigencode );
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:JBIG results released
+Input :   *jbigencode 
+		
+Output : Nothing			
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT int gui_sign_encode_free( char *jbigencode );
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:Clean up signature data
+Input :  Nothing
+		
+Output : Nothing			
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT extern int gui_sign_clean();
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linz
+Functions:JBIG encoding interface
+Input : filename 	the filename of Signature   
+	index		Signature index
+		
+Output : 
+return: 0	success
+*************************************************************************************/
+LIB_EXPORT int gui_sign_savetofile(char *filename, const char *index);
+

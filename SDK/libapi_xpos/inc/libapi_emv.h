@@ -239,10 +239,28 @@ Input:	char *psCardNo   (PAN)
 		char *psAmt      (Amount)
 		char cMsgType    1--PIN_LAST   2--PIN_AGAIN   3--PIN_NOMAL
 Output:	char *psPin      (Entered password)
-return: int	 0--OK   >0--Length of password entered  -ERR_PIN_EMPTY--bypass -ERR_TIMEOUT--timeout -ERR_USR_CANCEL--CANCEL -ERR_KEY_INVALID--INVALID  
+return: int	 0:bypass;   >0:Length of PIN;  -4:timeout; -7--CANCEL; -9:INVALID;  
 */
 /*************************************************************************************/
 LIB_EXPORT void EMV_SetInputPin(int (*InputPin)(char *,char *,char ,char *));
+
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:wuxp
+Functions:Set the onine PIN interface
+Input :  Callback function
+Output : Nothing
+return: Nothing
+*/
+/*
+Callback(InputOnlinePin):(char *psCardNo,char *psAmt,char *psPin)//Enter password interface function pointer
+Input:	char *psCardNo   (PAN)
+		char *psAmt      (Amount)
+Output:	char *psPin      (Entered password)
+return: int	 0:SUCC;	  -4:timeout; -7:CANCEL; -18:EMPTY;  
+*/
+/*************************************************************************************/
+LIB_EXPORT void EMV_SetInputOnlinePin(int (*InputOnlinePin)(char *,char *,char *));
 
 /*************************************************************************************
 Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
@@ -395,5 +413,29 @@ return: 0
 *************************************************************************************/
 
 LIB_EXPORT int EMV_SetReadCardShow(st_read_card_show st_msg);
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:clear DRL FILE into device
+Input :
+		
+Output : Nothing
+return: 	UEMV_PRM_ERR =-8, //Wrong parameter
+			UEMV_PRM_FAIL=-1, //FAIL
+			UEMV_PRM_OK=0 //SUCC
+*************************************************************************************/
+LIB_EXPORT int EMV_PrmClearDRLFile(void);
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:LINBX
+Functions:Set drl buffer into device
+Input : pTerminalApps: drl buffer
+		
+Output : Nothing
+return: 	UEMV_PRM_ERR =-8, //Wrong parameter
+			UEMV_PRM_FAIL=-1, //FAIL
+			UEMV_PRM_OK=0 //SUCC
+*************************************************************************************/
+LIB_EXPORT int EMV_PrmSetDRL(TERMDRL stDRL);
 
 #endif
