@@ -17,6 +17,15 @@ void vasimpl::formattedDateTime(char* dateTime, size_t len)
     getFormattedDateTime(dateTime, len);
 }
 
+std::string vasimpl::formattedDateTime()
+{
+    char dateTime[32] = { 0 };
+    
+    formattedDateTime(dateTime, sizeof(dateTime));
+
+    return std::string(dateTime);
+}
+
 iisys::JSObject vasimpl::getState()
 {
     return iisys::JSObject();

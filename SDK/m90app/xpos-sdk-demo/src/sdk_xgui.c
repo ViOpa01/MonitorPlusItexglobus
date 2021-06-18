@@ -55,7 +55,7 @@ typedef struct __st_gui_menu_key_def{
 	unsigned int uKey;
 }st_gui_key_menu;
 
-static st_gui_key_menu _main_menu_def_n[4] = {'\0'};
+static st_gui_key_menu _main_menu_def_n[5] = {'\0'};
 
 // Define the menu array, the first parameter is the name of the parent menu,
 // the second parameter is the name of the current menu,
@@ -654,9 +654,13 @@ static int _menu_proc(char *pid)
 	else if(!operatorHandler(pid))
 	{
 		return 0;
-	} else if(!strcmp(pid, UI_CASHIN_CASHOUT))
+	} else if(!strcmp(pid, UI_CASHIN))
 	{
-		doCashInCashOut();
+		performCashIn();
+		return 0;
+	} else if(!strcmp(pid, UI_CASHOUT))
+	{
+		performCashOut();
 		return 0;
 	}
 	else if (strcmp(pid, "Sales") == 0)
@@ -865,11 +869,33 @@ void display_menu(void)
 
 		if (isAgent()) {
 
-			_main_menu_def_n[0].name = UI_CASHIN_CASHOUT;
+			_main_menu_def_n[0].name = UI_CASHOUT;
 			_main_menu_def_n[0].id = NULL;
 			_main_menu_def_n[0].uKey = GUI_KEY_1;
 
-			_main_menu_def_n[1].name = UI_VAS;
+			_main_menu_def_n[1].name = UI_CASHIN;
+			_main_menu_def_n[1].id = NULL;
+			_main_menu_def_n[1].uKey = GUI_KEY_2;
+
+			_main_menu_def_n[2].name = UI_VAS;
+			_main_menu_def_n[2].id = NULL;
+			_main_menu_def_n[2].uKey = GUI_KEY_3;
+
+			_main_menu_def_n[3].name = SMART_CARD_TEST;
+			_main_menu_def_n[3].id = NULL;
+			_main_menu_def_n[3].uKey = GUI_KEY_4;
+
+			_main_menu_def_n[4].name = NULL;
+			_main_menu_def_n[4].id = NULL;
+			_main_menu_def_n[4].uKey = NULL;
+
+		} else {
+
+			_main_menu_def_n[0].name = UI_VAS;
+			_main_menu_def_n[0].id = NULL;
+			_main_menu_def_n[0].uKey = GUI_KEY_1;
+
+			_main_menu_def_n[1].name = SMART_CARD_TEST;
 			_main_menu_def_n[1].id = NULL;
 			_main_menu_def_n[1].uKey = GUI_KEY_2;
 
@@ -881,23 +907,9 @@ void display_menu(void)
 			_main_menu_def_n[3].id = NULL;
 			_main_menu_def_n[3].uKey = NULL;
 
-		} else {
-
-			_main_menu_def_n[0].name = UI_VAS;
-			_main_menu_def_n[0].id = NULL;
-			_main_menu_def_n[0].uKey = GUI_KEY_1;
-
-			_main_menu_def_n[1].name = NULL;
-			_main_menu_def_n[1].id = NULL;
-			_main_menu_def_n[1].uKey = NULL;
-
-			_main_menu_def_n[2].name = NULL;
-			_main_menu_def_n[2].id = NULL;
-			_main_menu_def_n[2].uKey = NULL;
-
-			_main_menu_def_n[3].name = NULL;
-			_main_menu_def_n[3].id = NULL;
-			_main_menu_def_n[3].uKey = NULL;
+			_main_menu_def_n[4].name = NULL;
+			_main_menu_def_n[4].id = NULL;
+			_main_menu_def_n[4].uKey = NULL;
 		}
 
 
@@ -911,21 +923,25 @@ void display_menu(void)
 
 		if (isAgent()) {
 
-			_main_menu_def_n[0].name = UI_CASHIN_CASHOUT;
+			_main_menu_def_n[0].name = UI_CARD_PAYMENT;
 			_main_menu_def_n[0].id = NULL;
 			_main_menu_def_n[0].uKey = GUI_KEY_1;
 
-			_main_menu_def_n[1].name = UI_CARD_PAYMENT;
+			_main_menu_def_n[1].name = UI_CARDLESS_PAYMENT;
 			_main_menu_def_n[1].id = NULL;
 			_main_menu_def_n[1].uKey = GUI_KEY_2;
 
-			_main_menu_def_n[2].name = UI_CARDLESS_PAYMENT;
+			_main_menu_def_n[2].name = UI_CASHOUT;
 			_main_menu_def_n[2].id = NULL;
 			_main_menu_def_n[2].uKey = GUI_KEY_3;
 
-			_main_menu_def_n[3].name = UI_VAS;
+			_main_menu_def_n[3].name = UI_CASHIN;
 			_main_menu_def_n[3].id = NULL;
 			_main_menu_def_n[3].uKey = GUI_KEY_4;
+
+			_main_menu_def_n[4].name = UI_VAS;
+			_main_menu_def_n[4].id = NULL;
+			_main_menu_def_n[4].uKey = GUI_KEY_5;
 
 		} else {
 
@@ -941,9 +957,13 @@ void display_menu(void)
 			_main_menu_def_n[2].id = NULL;
 			_main_menu_def_n[2].uKey = GUI_KEY_3;
 
-			_main_menu_def_n[3].name = NULL;
+			_main_menu_def_n[3].name = SMART_CARD_TEST;
 			_main_menu_def_n[3].id = NULL;
-			_main_menu_def_n[3].uKey = NULL;
+			_main_menu_def_n[3].uKey = GUI_KEY_4;
+
+			_main_menu_def_n[4].name = NULL;
+			_main_menu_def_n[4].id = NULL;
+			_main_menu_def_n[4].uKey = NULL;
 
 		}
 
@@ -966,9 +986,13 @@ void display_menu(void)
 		_main_menu_def_n[2].id = NULL;
 		_main_menu_def_n[2].uKey = GUI_KEY_3;
 
-		_main_menu_def_n[3].name = NULL;
+		_main_menu_def_n[3].name = SMART_CARD_TEST;
 		_main_menu_def_n[3].id = NULL;
-		_main_menu_def_n[3].uKey = NULL;
+		_main_menu_def_n[3].uKey = GUI_KEY_4;
+
+		_main_menu_def_n[4].name = NULL;
+		_main_menu_def_n[4].id = NULL;
+		_main_menu_def_n[4].uKey = NULL;
 
 	}
 }
@@ -980,11 +1004,12 @@ void main_page_show()
 	char szLine2[16]={0};
 	char szLine3[16]={0};
 	char szLine4[16]={0};
+	char szLine5[16]={0};
 	gui_begin_batch_paint();
 	gui_clear_dc();
 	gui_set_text_zoom(2);
 	//gui_set_font(0);
-	i = rowlup*4;
+	i = 0*5;
 
 	char msg[] = "SELECT OPTION";
 	display_menu();	// present the appropriate menu
@@ -1007,6 +1032,11 @@ void main_page_show()
 	if(i!=nMainTotal && _main_menu_def_n[i].name != NULL){
 		sprintf(szLine4,"%d.%s",++i,_main_menu_def_n[i-1].name);
 		gui_text_out(0, GUI_LINE_TOP(4), szLine4);
+	}
+
+	if(i!=nMainTotal && _main_menu_def_n[i].name != NULL){
+		sprintf(szLine5,"%d.%s",++i,_main_menu_def_n[i-1].name);
+		gui_text_out(0, GUI_LINE_TOP(5), szLine5);
 	}
 	
 	gui_end_batch_paint();

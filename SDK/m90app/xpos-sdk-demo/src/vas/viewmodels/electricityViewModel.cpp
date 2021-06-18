@@ -51,6 +51,8 @@ VasResult ElectricityViewModel::lookupCheck(const VasResult& lookupStatus)
     const iisys::JSObject& address = responseData("address");
 	const iisys::JSObject& minAmount = responseData("minimumAmount");
 	const iisys::JSObject& pCode = responseData("productCode");
+	const iisys::JSObject& arrears = responseData("customerArrears");
+    
 
     if (!name.isString()) {
         result = VasResult(KEY_NOT_FOUND, "Name not found");
@@ -63,7 +65,8 @@ VasResult ElectricityViewModel::lookupCheck(const VasResult& lookupStatus)
         lookupResponse.address = address.getString();
     }
 
-    lookupResponse.minPayableAmount = !minAmount.isNull() ? (unsigned long) lround(minAmount.getNumber() * 100.0) : 0;
+    lookupResponse.minPayableAmount = minAmount.isString() ? (unsigned long) lround(minAmount.getNumber() * 100.0) : 0;
+    lookupResponse.arrears = arrears.isString() ? (unsigned long) lround(arrears.getNumber() * 100.0) : 0;
 
     if (!pCode.isString()) {
         result.error = VAS_ERROR;
@@ -203,9 +206,7 @@ std::map<std::string, std::string> ElectricityViewModel::storageMap(const VasRes
 
     if (payMethod == PAY_WITH_CARD) {
         if (cardData.primaryIndex > 0) {
-            char primaryIndex[16] = { 0 };
-            sprintf(primaryIndex, "%lu", cardData.primaryIndex);
-            record[VASDB_CARD_ID] = primaryIndex;
+            record[VASDB_CARD_ID] = vasimpl::to_string(cardData.primaryIndex);
         }
 
         if (vasimpl::getDeviceTerminalId() != cardData.transactionTid) {
@@ -580,7 +581,7 @@ VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
 {
     VasResult result;
 
-    iisys::JSObject response;
+    iisys::JSObject response = data("response");
 
     const iisys::JSObject& purchaseTimesObj = data("purchaseTimes");
     const iisys::JSObject& vasCustomerAccountObj = data("VASCustomerAccount");

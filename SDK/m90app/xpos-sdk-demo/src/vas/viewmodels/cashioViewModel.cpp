@@ -8,8 +8,9 @@
 #include <math.h>
 
 #include "platform/platform.h"
+#include "vasdb.h"
 
-#include "cashio.h"
+#include "cashioViewModel.h"
 #include "payvice.h"
 #include "nqr.h"
 
@@ -75,7 +76,9 @@ VasResult ViceBankingViewModel::lookup()
         } else {
             return VasResult(VAS_ERROR);
         }
-    }
+    } else if (getService() == WALLET_FUNDING && payMethod == PAY_WITH_CARD) {
+        response = comProxy.lookup("/api/v1/vas/vicebanking/deposit/validation", &obj);
+    } 
 
     return lookupCheck(response);
 }
@@ -201,12 +204,14 @@ bool ViceBankingViewModel::isPaymentUSSD() const
 VasResult ViceBankingViewModel::setService(Service service)
 {
     VasResult result;
-    if (service != TRANSFER && service != WITHDRAWAL) {
+    if (service != TRANSFER && service != WITHDRAWAL && service != WALLET_FUNDING) {
         return result;
     }
 
     if (service == TRANSFER) {
         payMethod = PAY_WITH_CASH;
+    } else if (service == WALLET_FUNDING) {
+        payMethod = PAY_WITH_CARD;
     }
 
     this->service = service;
@@ -226,9 +231,9 @@ VasResult ViceBankingViewModel::setPaymentMethod(PaymentMethod payMethod)
 
     if (getService() == TRANSFER && payMethod != PAY_WITH_CASH) {
         return result;
-    } else if (payMethod == PAYMENT_METHOD_UNKNOWN) {
+    } else if (getService()  == WALLET_FUNDING && payMethod != PAY_WITH_CARD) {
         return result;
-    } else if (payMethod != PAY_WITH_CARD && payMethod != PAY_WITH_CGATE && payMethod != PAY_WITH_MCASH && payMethod != PAY_WITH_NQR) {
+    } else if (payMethod != PAY_WITH_CASH && payMethod != PAY_WITH_CARD && payMethod != PAY_WITH_CGATE && payMethod != PAY_WITH_MCASH && payMethod != PAY_WITH_NQR) {
         return result;
     }
     
@@ -288,7 +293,11 @@ VasResult ViceBankingViewModel::complete(const std::string& pin)
             return response;
         }
         json("clientReference") = getClientReference(retrievalReference);
-        json("pin") = encryptedPin(Payvice(), pin.c_str());
+        if (!pin.empty()) {
+            json("pin") = encryptedPin(Payvice(), pin.c_str());
+        } else {
+            json("pin") = "";
+        }
     }
 
 
@@ -346,9 +355,7 @@ std::map<std::string, std::string> ViceBankingViewModel::storageMap(const VasRes
 
     if (payMethod == PAY_WITH_CARD) {
         if (cardData.primaryIndex > 0) {
-            char primaryIndex[16] = { 0 };
-            sprintf(primaryIndex, "%lu", cardData.primaryIndex);
-            record[VASDB_CARD_ID] = primaryIndex;
+            record[VASDB_CARD_ID] = vasimpl::to_string(cardData.primaryIndex);
         }
 
         if (vasimpl::getDeviceTerminalId() != cardData.transactionTid) {
@@ -380,6 +387,8 @@ const char* ViceBankingViewModel::paymentPath(Service service)
         } else if (getPaymentMethod() == PAY_WITH_NQR) {
             return nqrStatusCheckUrl();
         }
+    } else if (service == WALLET_FUNDING) {
+        return "/api/v1/vas/vicebanking/deposit/payment";
     }
 
     return "";
@@ -431,7 +440,7 @@ VasResult ViceBankingViewModel::extractLookupInfo(const iisys::JSObject& data)
         if (element.isString()) {
             lookupResponse.account = element.getString();
         }
-    } else if (service == WITHDRAWAL) {
+    } else if (service == WITHDRAWAL || service == WALLET_FUNDING) {
         lookupResponse.amountSettled = (unsigned long) lround(amountSettled.getNumber() * 100.0);
         lookupResponse.amountToDebit = (unsigned long) lround(amountToDebit.getNumber() * 100.0);
         if (withdrawalThreshold.isNumber() || withdrawalThreshold.isString()) {
@@ -477,6 +486,8 @@ const char* ViceBankingViewModel::apiServiceString(Service service) const
         default:
             return "";
         }
+    } else if (service == WALLET_FUNDING) {
+        return "deposit";
     }
 
     return "";

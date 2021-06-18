@@ -25,7 +25,7 @@ Electricity::~Electricity()
 VasResult Electricity::beginVas()
 {
     VasResult result;
-    Service services[] = { IKEJA, EKEDC, EEDC, IBEDC, PHED, AEDC, KEDCO };
+    Service services[] = { IKEJA, EKEDC, EEDC, IBEDC, AEDC, PHED, KEDCO };
     std::vector<Service> serviceVector(services, services + sizeof(services) / sizeof(Service));
 
     const Service service = selectService("Distri. Companies", serviceVector);
@@ -109,7 +109,11 @@ VasResult Electricity::lookup()
 
     confirmationMessage << viewModel.lookupResponse.name << std::endl << std::endl;
     if (!viewModel.lookupResponse.address.empty()) {
-        confirmationMessage << "Addr:" << std::endl << viewModel.lookupResponse.address;
+        confirmationMessage << "Addr:" << std::endl << viewModel.lookupResponse.address << std::endl;
+    }
+
+    if (viewModel.lookupResponse.arrears > 0) {
+        confirmationMessage << "Arrears:" << std::endl << majorDenomination(viewModel.lookupResponse.arrears) << std::endl;
     }
 
     int i = UI_ShowOkCancelMessage(30000, "Confirm Info", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
@@ -182,7 +186,7 @@ VasResult Electricity::complete()
     std::string pin;
     VasResult response;
 
-    if (viewModel.getPaymentMethod() != PAY_WITH_NQR) {
+    if (viewModel.getPaymentMethod() == PAY_WITH_CASH) {
         response.error = getVasPin(pin);
         if (response.error != NO_ERRORS) {
             return response;

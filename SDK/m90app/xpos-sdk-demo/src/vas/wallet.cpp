@@ -10,7 +10,77 @@
 
 #include "platform/platform.h"
 #include "vascomproxy.h"
+#include "vasdb.h"
+#include "virtualtid.h"
+#include "viewmodels/cashioViewModel.h"
 
+
+int fundPayviceWallet()
+{
+    VasResult result;
+    Postman postman;
+    ViceBankingViewModel viewModel("", postman);
+
+    Payvice payvice;
+
+    if (!loggedIn(payvice)) {
+        logIn(payvice);
+        return -2;
+    }
+
+    if (!itexIsMerchant() && !virtualConfigurationIsSet()) {
+        Demo_SplashScreen("Configuring...", "www.payvice.com");
+        if (resetVirtualConfiguration() < 0) {
+            return -1;
+        }
+    }
+
+    const unsigned long amount = getVasAmount(serviceToString(WALLET_FUNDING));
+    if (amount == 0 || viewModel.setAmount(amount).error != NO_ERRORS) {
+        return -1;
+    } else if (viewModel.setService(WALLET_FUNDING).error != NO_ERRORS) {
+        return -1;
+    }
+
+    const std::string phoneNumber = getPhoneNumber("Phone Number", "");
+    if (phoneNumber.empty()) {
+        return -1;
+    }
+
+    result = viewModel.setPhoneNumber(phoneNumber);
+    if (result.error != NO_ERRORS) {
+        UI_ShowButtonMessage(30000, "Error", result.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
+        return -1;
+    }
+
+    Demo_SplashScreen("Wallet Balance", "Please wait...");
+    result = viewModel.lookup();
+    if (result.error != NO_ERRORS) {
+        UI_ShowButtonMessage(30000, "Error", result.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
+        return -1;
+    }
+    
+    result = viewModel.complete("");
+
+    std::map<std::string, std::string> record = viewModel.storageMap(result);
+
+    if (record.find(VASDB_DATE) == record.end() || record[VASDB_DATE].empty()) {
+        record[VASDB_DATE] = vasimpl::formattedDateTime() + ".000";
+    }
+
+    if (result.error) {
+         UI_ShowButtonMessage(3000, record[VASDB_STATUS].c_str(), result.message.c_str(), "OK", UI_DIALOG_TYPE_WARNING);
+    } else {
+         UI_ShowButtonMessage(3000, "Approved", result.message.c_str(), "OK", UI_DIALOG_TYPE_CONFIRMATION);
+    }
+    
+    // print
+    record["walletId"] = payvice.object(Payvice::WALLETID).getString();
+    // printStatus = 
+    printVas(record);
+
+    return 0;
+}
 
 int walletBalance()
 {
@@ -83,7 +153,7 @@ int walletTransfer()
         return -1;
     }
 
-    if (getPin(pin, "Payvice Pin") != EMV_CT_PIN_INPUT_OKAY) {
+    if (getVasPin(pin) != NO_ERRORS) {
         return -1;
     }
 

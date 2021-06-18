@@ -243,9 +243,7 @@ std::map<std::string, std::string> DataViewModel::storageMap(const VasResult& co
 
     if (payMethod == PAY_WITH_CARD) {
         if (cardData.primaryIndex > 0) {
-            char primaryIndex[16] = { 0 };
-            sprintf(primaryIndex, "%lu", cardData.primaryIndex);
-            record[VASDB_CARD_ID] = primaryIndex;
+            record[VASDB_CARD_ID] = vasimpl::to_string(cardData.primaryIndex);
         }
 
         if (vasimpl::getDeviceTerminalId() != cardData.transactionTid) {

@@ -6,8 +6,9 @@
 
 #define UI_CARD_PAYMENT     "Card Payment"
 #define UI_CARDLESS_PAYMENT "Cardless Payment"
-#define UI_VAS              "Value Added Service"
-#define UI_CASHIN_CASHOUT   "Cash In / Cash Out"
+#define UI_VAS              "Bills Payment"
+#define UI_CASHOUT          "Withdrawal"
+#define UI_CASHIN           "Transfer"
 #define SMART_CARD_TEST     "Smart Card Test"
 /*
 #define UI_PURCHASE         "Purchase"          // Menu for Purchase

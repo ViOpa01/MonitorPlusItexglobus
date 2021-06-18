@@ -51,7 +51,12 @@ typedef enum {
     JAMB_UTME_PIN,
     JAMB_DE_PIN,
     WAEC_REGISTRATION,
-    WAEC_RESULT_CHECKER
+    WAEC_RESULT_CHECKER,
+    AIRTIME_USSD,
+    DATA_USSD,
+    ELECTRICITY_USSD,
+    PAYTV_USSD,
+    WALLET_FUNDING
 } Service;
 
 typedef enum {
@@ -123,6 +128,7 @@ int printVas(std::map<std::string, std::string>& record);
 
 int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T type);
 int printVasEod(std::map<std::string, std::string> &records);
+int printDefaultVasReceipt(std::map<std::string, std::string> &record);
 
 std::string getVasCurrencySymbol();
 unsigned long getVasAmount(const char* title);
@@ -136,5 +142,9 @@ std::string vasApplicationVersion();
 const char* vasChannel();
 std::string getRefCode(const std::string& vasCategory, const std::string& vasProduct = "");
 void printVasFooter();
+
+std::string vasApiKey();
+
+std::string vasApiKey();
 
 #endif

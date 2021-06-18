@@ -30,8 +30,6 @@ extern "C" {
 
 static const char* TOKEN_UNAVAILABLE_STR = "Token Unavailable";
 
-std::string vasApiKey();
-
 bool isValidVasTransactionType(const CardData& cardData);
 int vasPayloadGenerator(void* jsobject, void* data, const void *eft);
 
@@ -55,9 +53,9 @@ VasResult Postman::initiate(const char* url, const iisys::JSObject* json, CardDa
     return doRequest(url, json, card);
 }
 
-VasResult Postman::complete(const char* url, const iisys::JSObject* json, CardData* card)
+VasResult Postman::complete(const char* url, const iisys::JSObject* json, CardData* card, std::map<std::string, std::string>* recvHeaders)
 {
-    return doRequest(url, json, card);
+    return doRequest(url, json, card, recvHeaders);
 }
 
 VasResult Postman::reverse(CardData& cardData)
@@ -82,14 +80,14 @@ VasResult Postman::reverse(CardData& cardData)
     return result;
 }
 
-VasResult Postman::doRequest(const char* url, const iisys::JSObject* json, CardData* card)
+VasResult Postman::doRequest(const char* url, const iisys::JSObject* json, CardData* card, std::map<std::string, std::string>* recvHeaders)
 {
     VasResult result;
     
     if (card) {
         result = sendVasCardRequest(url, json, card);
     } else {
-        result = sendVasCashRequest(url, json);
+        result = sendVasCashRequest(url, json, recvHeaders);
     }
 
     return result;
@@ -115,7 +113,7 @@ std::string Postman::generateRequestAuthorization(const std::string& requestBody
     return std::string(signaturehex);
 }
 
-VasResult Postman::sendVasCashRequest(const char* url, const iisys::JSObject* json)
+VasResult Postman::sendVasCashRequest(const char* url, const iisys::JSObject* json, std::map<std::string, std::string>* recvHeaders)
 {
     VasResult result = this->sendVasRequest(url, json);
 
@@ -321,7 +319,7 @@ VasResult Postman::requeryVas(const char* clientRef, const char* walletId, const
     return result;
 }
 
-VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json)
+VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json, std::map<std::string, std::string>* recvHeaders)
 {
     VasResult result(CASH_STATUS_UNKNOWN);
     NetWorkParameters netParam = {'\0'};
@@ -485,13 +483,4 @@ int vasPayloadGenerator(void* jsobject, void* data, const void *eft)
 
     return 0;
 
-}
-
-std::string vasApiKey()
-{
-    // char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC"; //test
-    char key[] = "o83prs088n4943231342p7sq53o6502q";    //live
-
-    rot13(key);
-    return std::string(key);
 }

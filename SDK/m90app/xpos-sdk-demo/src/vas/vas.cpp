@@ -17,7 +17,6 @@
 
 #include "vas.h"
 #include "airtime.h"
-#include "cashio.h"
 #include "data.h"
 #include "electricity.h"
 #include "paytv.h"
@@ -35,6 +34,8 @@ extern "C" {
 #include "../appInfo.h"
 #include "libapi_xpos/inc/libapi_gui.h"
 }
+
+static int printVasUssdPin(std::map<std::string, std::string> &record, const VAS_Menu_T type);
 
 const char* serviceToString(Service service)
 {
@@ -104,9 +105,19 @@ const char* serviceToString(Service service)
     case JAMB_DE_PIN:
         return "JAMB DE PIN";
     case WAEC_REGISTRATION:
-        return "WAEC REGISTRATION";
+        return "WAEC Registration";
     case WAEC_RESULT_CHECKER:
-        return "WAEC RESULT CHECKER";
+        return "WAEC Result Checker";
+    case AIRTIME_USSD:
+        return "Airtime PIN";
+    case DATA_USSD:
+        return "Data PIN";
+    case ELECTRICITY_USSD:
+        return "Electricity PIN";
+    case PAYTV_USSD:
+        return "Pay-TV PIN";
+    case WALLET_FUNDING:
+        return "Wallet Funding";
     default:
         return "";
     }
@@ -242,6 +253,8 @@ const char* serviceToProductString(Service service)
         return "WAEC REGISTRATION";
     case WAEC_RESULT_CHECKER:
         return "WAEC RESULT CHECKER";
+    case AIRTIME_USSD:
+        return "AIRTIMEUSSD";
     default:
         return "VAS";
     }
@@ -289,15 +302,35 @@ int initVasTables()
     return 0;
 }
 
+std::map<std::string, std::string> pinObjToMap(const iisys::JSObject& pinObj)
+{
+    std::map<std::string, std::string> pin;
+
+    if (!pinObj.isObject()) {
+        return pin;
+    }
+
+    for (iisys::JSObject::const_iterator begin = pinObj.begin(), end = pinObj.end();
+                                        begin != end; ++begin) {
+        if (begin->second.isString()) {
+
+            pin[begin->first] = begin->second.getString();
+        }
+    }
+
+    return pin;
+}
+
 int printVas(std::map<std::string, std::string>& record)
 {
     iisys::JSObject serviceData;
     int printStatus;
+    int printPins = -1;
 
     if (serviceData.load(record[VASDB_SERVICE_DATA]) && serviceData.isObject()) {
         for (iisys::JSObject::iterator begin = serviceData.begin(),
                                         end = serviceData.end(); begin != end; ++begin) {
-            if (record.find(begin->first) == record.end())
+            if (record.find(begin->first) == record.end() && begin->second.isString())
                 record[begin->first] = begin->second.getString();
         }
     }
@@ -317,6 +350,10 @@ int printVas(std::map<std::string, std::string>& record)
             count = (int) sizeof(copies) / sizeof(char*);
         }
         record["receipt_copy"] = copies[0];
+    } else if (record[VASDB_CATEGORY] == vasMenuString(VAS_USSD)){
+        if (UI_ShowOkCancelMessage(10000, "Print", "Confirm to print pin(s)", UI_DIALOG_TYPE_CONFIRMATION) == 0) {
+            printPins = 1;
+        }
     }
 
     if (record.find(DB_MTI) != record.end() && !strncmp(record[DB_MTI].c_str(), "04", 2)) {
@@ -331,7 +368,6 @@ int printVas(std::map<std::string, std::string>& record)
                 break;
             }
         }
-
  
 
         if (record[VASDB_CATEGORY] == vasMenuString(ENERGY)) {
@@ -344,21 +380,63 @@ int printVas(std::map<std::string, std::string>& record)
             printStatus = printVasReceipt(record, TV_SUBSCRIPTIONS);
         } else if (record[VASDB_CATEGORY] == vasMenuString(SMILE)) {
             printStatus = printVasReceipt(record, SMILE);
-        } else if(record[VASDB_CATEGORY] == vasMenuString(CASHIO)){
+        } else if(record[VASDB_CATEGORY] == vasMenuString(CASHIN)){
             std::map<std::string, std::string>::iterator itr;
 
             for(itr = record.begin(); itr != record.end(); ++itr) {
                 printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
             }
 
-            printStatus = printVasReceipt(record, CASHIO);
+            printStatus = printVasReceipt(record, CASHIN);
+            
+        } else if(record[VASDB_CATEGORY] == vasMenuString(CASHOUT)){
+            std::map<std::string, std::string>::iterator itr;
+
+            for(itr = record.begin(); itr != record.end(); ++itr) {
+                printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
+            }
+
+            printStatus = printVasReceipt(record, CASHOUT);
             
         } else if (record[VASDB_CATEGORY] == vasMenuString(JAMB_EPIN)) {
             printStatus = printVasReceipt(record, JAMB_EPIN);
         } else if (record[VASDB_CATEGORY] == vasMenuString(WAEC)) {
             printStatus = printVasReceipt(record, WAEC);
-        } else {
+        } else if (record[VASDB_CATEGORY] == vasMenuString(VAS_USSD)) {
+            const iisys::JSObject& pins = serviceData("pins");
+            
+            vasimpl::formatAmount(record["amount"]);
 
+            if ((count != 1 && i == 0 || printPins == 1)  && pins.isArray()) {
+                const iisys::JSObject& hintObj = serviceData("hint");
+                const iisys::JSObject& batchNoObj = serviceData("batchNo");
+                const iisys::JSObject& productObj = serviceData("product");
+                const iisys::JSObject& descriptionObj = serviceData("description");
+
+                const std::string hint = hintObj.isString() ? hintObj.getString() : "";
+                std::string amount = record["amount"];
+                const std::string batchNo = batchNoObj.isString() ? batchNoObj.getString() : "";
+                const std::string product = productObj.isString() ? productObj.getString() : "";
+                const std::string description = descriptionObj.isString() ? descriptionObj.getString() : "";
+
+                for (int i = 0; i < pins.size(); ++i) {
+                    std::map<std::string, std::string> pinrecord = pinObjToMap(pins[i]);
+                    pinrecord[VASDB_SERVICE] = record[VASDB_SERVICE];
+                    pinrecord["currencySymbol"] = record["currencySymbol"];
+                    pinrecord["merchantName"] = record["merchantName"];
+                    pinrecord["termianlId"] = record["termianlId"];
+                    pinrecord["VASDB_DATE"] = record[VASDB_DATE];
+                    pinrecord["hint"] = hint;
+                    pinrecord["amount"] = amount;
+                    pinrecord["batchNo"] = batchNo;
+                    pinrecord["product"] = product;
+                    pinrecord["description"] = description;
+                    printStatus = printVasUssdPin(pinrecord, VAS_USSD);
+                }
+            }
+            printStatus = printVasReceipt(record, VAS_USSD);
+        } else {
+            printStatus = printDefaultVasReceipt(record);
         }
     }
 
@@ -503,6 +581,32 @@ void printWaec(std::map<std::string, std::string> &record)
     } 
 }
 
+void printVasUssd(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_PHONE, VASDB_PRODUCT, "expiry", "batchNo", "description"};
+    const char* labels[] = {"WALLET", "TXN TID", "BENF. NO.", "NAME", "PHONE", "BUNDLE", "EXPIRY", "BATCH NO", "DESCRIPTION"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            if(*(record[keys[i]].c_str()))
+                printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
+void printDefault(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_PHONE, VASDB_PRODUCT};
+    const char* labels[] = {"WALLET", "TXN TID", "BENEFICIARY", "PHONE", "NAME", "BUNDLE"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            if(*(record[keys[i]].c_str()))
+                printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
 static void printAsteric(size_t len)
 {
     char line[32] = {'\0'};
@@ -567,12 +671,14 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
             printAirtime(record);
         } else if(type == TV_SUBSCRIPTIONS) {
             printTv(record);
-        } else if(type == CASHIO) {
+        } else if(type == CASHIN || type == CASHOUT) {
             printCashio(record);
         } else if(type == JAMB_EPIN) {
             printJambEpin(record);
         } else if(type == WAEC) {
             printWaec(record);
+        } else if(type == VAS_USSD) {
+            printVasUssd(record);
         }
 
         printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
@@ -625,6 +731,178 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
 
         printDottedLine();
         printVasFooter();
+
+        ret = UPrint_Start();
+        if(getPrinterStatus(ret) < 0 ) {
+            break;
+        }
+    }
+    
+
+    return ret;
+}
+
+int printDefaultVasReceipt(std::map<std::string, std::string> &record)
+{
+    MerchantData mParam = {'\0'};
+    int ret = 0;
+    char buff[32] = {'\0'};
+    char logoFileName[64] = {'\0'};
+    
+    std::map<std::string, std::string>::iterator itr;
+
+    for(itr = record.begin(); itr != record.end(); ++itr) {
+        printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
+    }
+
+    readMerchantData(&mParam);
+
+    while(1) {
+        ret = UPrint_Init();
+
+        if (ret == UPRN_OUTOF_PAPER) {
+            if (UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION)) {
+                break;
+            }
+        }
+
+        // Print Bank Logo
+        strcpy(logoFileName, record["vaslogo"].c_str());
+        printReceiptLogo(logoFileName);
+        printReceiptHeader(record[VASDB_DATE].c_str());
+
+        strcpy(buff, record[VASDB_SERVICE].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record["receipt_copy"].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+
+        UPrint_SetDensity(3); //Set print density to 3 normal
+        UPrint_SetFont(7, 2, 2);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record[VASDB_STATUS].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+        UPrint_Feed(12);
+
+        printDefault(record);
+
+        printLine("PAYMENT METHOD", record[VASDB_PAYMENT_METHOD].c_str());
+
+        if(!record[VASDB_REF].empty())
+        {
+            printLine("REF ", record[VASDB_REF].c_str());
+        }
+        
+        if(!record[VASDB_TRANS_SEQ].empty())
+        {
+            printLine("TRANS SEQ", record[VASDB_TRANS_SEQ].c_str());
+        }
+
+        if(!record[VASDB_VIRTUAL_TID].empty())
+        {
+            printLine("VID", record[VASDB_VIRTUAL_TID].c_str());
+        }
+
+        if(mParam.tid[0]) {
+            printLine("TID", mParam.tid);
+        }
+
+        // "card" is added because requery uses lower case
+        if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD) || record[VASDB_PAYMENT_METHOD] == "card") {
+
+            const char *keys[] = {DB_NAME, DB_PAN, DB_AID, DB_LABEL, DB_EXPDATE, DB_RRN, DB_AUTHID, DB_RESP};
+            const char *labels[] = {"CARD NAME", "PAN", "AID", "LABEL", "EXPIRY", "CREF", "AUTH CODE", "RESP CODE"};
+
+            for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+                if (record.find(keys[i]) != record.end()) {
+                    if(*(record[keys[i]].c_str()))
+                        printLine(labels[i], record[keys[i]].c_str());
+                }
+            } 
+        }
+
+        memset(buff, '\0', sizeof(buff));
+        sprintf(buff, "NGN %s", record[VASDB_AMOUNT].c_str());
+
+        printAsteric(strlen(buff));
+        UPrint_StrBold(buff, 1, 4, 1);
+        printAsteric(strlen(buff));
+
+        UPrint_Feed(12);
+
+        memset(buff, '\0', sizeof(buff));
+        strcpy(buff, record[VASDB_STATUS_MESSAGE].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+
+        printDottedLine();
+        printVasFooter();
+
+        ret = UPrint_Start();
+        if(getPrinterStatus(ret) < 0 ) {
+            break;
+        }
+    }
+    
+
+    return ret;
+}
+
+int printVasUssdPin(std::map<std::string, std::string> &record, const VAS_Menu_T type)
+{
+    MerchantData mParam = {'\0'};
+    int ret = 0;
+    char buff[32] = {'\0'};
+    char logoFileName[64] = {'\0'};
+    
+    std::map<std::string, std::string>::iterator itr;
+
+    for(itr = record.begin(); itr != record.end(); ++itr) {
+        printf("%s : %s\n", itr->first.c_str(), itr->second.c_str());
+    }
+
+    readMerchantData(&mParam);
+
+    while(1) {
+        ret = UPrint_Init();
+
+        if (ret == UPRN_OUTOF_PAPER) {
+            if (UI_ShowButtonMessage(0, "Print", "No paper", "confirm", UI_DIALOG_TYPE_CONFIRMATION)) {
+                break;
+            }
+        }
+
+        printReceiptHeader(record["VASDB_DATE"].c_str());
+
+        strcpy(buff, record[VASDB_SERVICE].c_str());
+        UPrint_StrBold(buff, 1, 4, 1);
+
+        UPrint_SetDensity(3); //Set print density to 3 normal
+        
+        {
+
+            const char *keys[] = {"batchNo", "hint", "sequenceNo", "product", "description", "pin"};
+            const char *labels[] = {"BATCH NO", "HINT", "SEQ NO", "PRODUCT", "DESC", "PIN"};
+
+            for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+                if (record.find(keys[i]) != record.end()) {
+                    if(*(record[keys[i]].c_str()))
+                        printLine(labels[i], record[keys[i]].c_str());
+                }
+            } 
+        }
+
+        memset(buff, '\0', sizeof(buff));
+        sprintf(buff, "NGN %s", record["amount"].c_str());
+
+        printAsteric(strlen(buff));
+        UPrint_StrBold(buff, 1, 4, 1);
+        printAsteric(strlen(buff));
+
+        printDottedLine();
+	    UPrint_Feed(100);
+
 
         ret = UPrint_Start();
         if(getPrinterStatus(ret) < 0 ) {
@@ -927,4 +1205,12 @@ void printVasFooter()
 	UPrint_StrBold("vassupport@iisysgroup.com", 1, 4, 1);
 	UPrint_StrBold("agencybanking@iisysgroup.com", 1, 4, 1);
 	UPrint_Feed(108);
+}
+
+std::string vasApiKey()
+{
+    // char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC"; //test
+    char key[] = "o83prs088n4943231342p7sq53o6502q";    //live
+    rot13(key);
+    return std::string(key);
 }

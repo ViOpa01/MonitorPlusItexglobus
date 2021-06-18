@@ -149,9 +149,11 @@ VasResult PayTV::complete()
     std::string pin;
     VasResult response;
 
-    response.error = getVasPin(pin);
-    if(response.error != NO_ERRORS) {
-        return response;
+    if (viewModel.getPaymentMethod() == PAY_WITH_CASH) {
+        response.error = getVasPin(pin);
+        if(response.error != NO_ERRORS) {
+            return response;
+        }
     }
 
     Demo_SplashScreen("Payment In Progress", "www.payvice.com");

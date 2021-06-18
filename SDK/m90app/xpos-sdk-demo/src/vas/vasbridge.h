@@ -15,7 +15,8 @@ int vasTransactionTypesBridge();
 int doVasCardTransaction(Eft* trxContext, unsigned long amount);
 int requeryMiddleware(Eft* trxContext, const char* tid);
 int setupBaseHugeNetwork(NetWorkParameters * netParam, const char *path);
-int doCashInCashOut();
+int performCashIn();
+int performCashOut();
 int isAgent();
 
 

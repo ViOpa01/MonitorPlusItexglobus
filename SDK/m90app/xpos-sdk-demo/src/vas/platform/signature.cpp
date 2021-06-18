@@ -107,6 +107,75 @@ unsigned char* vasimpl::base64_encode(const unsigned char* src, size_t len, size
     return out;
 }
 
+unsigned char* vasimpl::base64_decode(const unsigned char* src, size_t len, size_t* out_len)
+{
+    unsigned char dtable[256], *out, *pos, block[4], tmp;
+    size_t i, count, olen;
+    int pad = 0;
+
+    memset(dtable, 0x80, 256);
+    for (i = 0; i < sizeof(base64_table) - 1; i++)
+        dtable[base64_table[i]] = (unsigned char)i;
+    dtable['='] = 0;
+
+    count = 0;
+    for (i = 0; i < len; i++) {
+        if (dtable[src[i]] != 0x80)
+            count++;
+    }
+
+    if (count == 0 || count % 4)
+        return NULL;
+
+    olen = count / 4 * 3;
+    pos = out = (unsigned char*) malloc(olen);
+    if (out == NULL)
+        return NULL;
+
+    count = 0;
+    for (i = 0; i < len; i++) {
+        tmp = dtable[src[i]];
+        if (tmp == 0x80)
+            continue;
+
+        if (src[i] == '=')
+            pad++;
+        block[count] = tmp;
+        count++;
+        if (count == 4) {
+            *pos++ = (block[0] << 2) | (block[1] >> 4);
+            *pos++ = (block[1] << 4) | (block[2] >> 2);
+            *pos++ = (block[2] << 6) | block[3];
+            count = 0;
+            if (pad) {
+                if (pad == 1)
+                    pos--;
+                else if (pad == 2)
+                    pos -= 2;
+                else {
+                    /* Invalid padding */
+                    free(out);
+                    return NULL;
+                }
+                break;
+            }
+        }
+    }
+
+    *out_len = pos - out;
+    return out;
+}
+
+std::string vasimpl::base64_decode(const unsigned char* src, size_t len)
+{
+    size_t outlen;
+    unsigned char* data = vasimpl::base64_decode(src, len, &outlen);
+    std::string ret((const char*)data, outlen);
+    free(data);
+
+    return ret;
+}
+
 int vasimpl::sha512Hex(char* hexoutput, const char* data, const size_t datalen)
 {
     SHA512_CTX ctx;
@@ -226,3 +295,68 @@ std::string vasimpl::generateRequestAuthorization_v2(const std::string& requestB
     return std::string(signaturehex);
 }
 
+static std::string decrypt(const unsigned char* ciphertext, const int ciphertext_len, const unsigned char* key, const unsigned char* iv, const EVP_CIPHER* cipher)
+{
+    EVP_CIPHER_CTX* ctx;
+    int len;
+    int plaintext_len = 0;
+    std::string ret;
+    unsigned char* plaintext = new unsigned char[ciphertext_len];
+
+    if (!plaintext) {
+        return ret;
+    }
+
+    memset(plaintext, 0, ciphertext_len);
+
+    /* Create and initialise the context */
+    if (!(ctx = EVP_CIPHER_CTX_new())) {
+        delete[] plaintext;
+        return ret;
+    }
+
+    /* Initialise the decryption operation. IMPORTANT - ensure you use a key
+   * and IV size appropriate for your cipher
+   * In this example we are using 256 bit AES (i.e. a 256 bit key). The
+   * IV size for *most* modes is the same as the block size. For AES this
+   * is 128 bits */
+    if (1 != EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv)) {
+        goto cleanup;
+    }
+
+    EVP_CIPHER_CTX_set_key_length(ctx, EVP_MAX_KEY_LENGTH);
+
+    /* Provide the message to be decrypted, and obtain the plaintext output.
+   * EVP_DecryptUpdate can be called multiple times if necessary
+   */
+    if (1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len)) {
+        goto cleanup;
+    }
+
+    plaintext_len = len;
+
+    /* Finalize the decryption. Further plaintext bytes may be written at
+   * this stage.
+   */
+    if (1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) {
+        goto cleanup;
+    }
+
+    plaintext_len += len;
+
+    /* Add the null terminator */
+    plaintext[plaintext_len] = 0;
+    ret = (char*)plaintext;
+
+    /* Clean up */
+cleanup:
+    EVP_CIPHER_CTX_free(ctx);
+    delete[] plaintext;
+    return ret;
+}
+
+std::string vasimpl::cbc128_decrypt(const unsigned char* ciphertext, const int ciphertext_len, const unsigned char* key, const unsigned char* iv)
+{
+    return decrypt(ciphertext, ciphertext_len, key, iv, EVP_aes_128_cbc());
+    return "";
+}

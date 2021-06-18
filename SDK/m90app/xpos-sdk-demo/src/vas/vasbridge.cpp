@@ -6,7 +6,6 @@
 #include "payvice.h"
 #include "vasflow.h"
 #include "vasbridge.h"
-#include "cashio.h"
 #include "virtualtid.h"
 #include "../auxPayload.h"
 #include "../menu_list.h"
@@ -20,7 +19,19 @@ extern "C" {
 
 int vasTransactionTypesBridge()
 {
-    return vasTransactionTypes();
+    MerchantData merchant;
+    bool displayCashio = false;
+
+	memset(&merchant, 0x00, sizeof(MerchantData));
+	readMerchantData(&merchant);
+
+    printf("Merchant type : %s\n", merchant.app_type);
+
+	if (strcmp(merchant.app_type, "AGENCY") && strcmp(merchant.app_type, "CONVERTED")) {
+        displayCashio = true;
+    }
+
+    return vasTransactionTypes(displayCashio);
 }
 
 int doVasCardTransaction(Eft* trxContext, unsigned long amount)
@@ -216,13 +227,14 @@ int setupBaseHugeNetwork(NetWorkParameters* netParam, const char* path)
 
 }
 
-int doCashInCashOut()
+int performCashIn()
 {
-    VasFlow flow;
-    Postman postman;
+    return doCashIn();
+}
 
-    ViceBanking cashIO(UI_CASHIN_CASHOUT, postman);
-    flow.start(&cashIO);
+int performCashOut()
+{
+    return doCashOut();
 }
 
 int isAgent()

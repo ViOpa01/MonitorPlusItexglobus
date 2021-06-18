@@ -18,6 +18,10 @@
 #include "viewmodels/paytvViewModel.h"
 #include "viewmodels/jambviewmodel.h"
 #include "viewmodels/waecviewmodel.h"
+#include "viewmodels/airtimeUssdViewModel.h"
+#include "viewmodels/dataUssdViewModel.h"
+#include "viewmodels/electricityUssdViewModel.h"
+#include "viewmodels/paytvUssdViewModel.h"
 
 #include "payvice.h"
 #include "vas.h"
@@ -348,12 +352,12 @@ int printRequery(const iisys::JSObject& transaction)
         status = electricity.processPaymentResponse(response);
         record = electricity.storageMap(status);
     } else if (productName == "withdrawal") {
-        ViceBankingViewModel viceBanking(vasMenuString(CASHIO), postman);
+        ViceBankingViewModel viceBanking(vasMenuString(CASHOUT), postman);
         viceBanking.setService(WITHDRAWAL);
         status = viceBanking.processPaymentResponse(response);
         record = viceBanking.storageMap(status);
     } else if (productName == "transfer") {
-        ViceBankingViewModel viceBanking(vasMenuString(CASHIO), postman);
+        ViceBankingViewModel viceBanking(vasMenuString(CASHIN), postman);
         viceBanking.setService(TRANSFER);
         status = viceBanking.processPaymentResponse(response);
         record = viceBanking.storageMap(status);
@@ -510,6 +514,104 @@ int printRequery(const iisys::JSObject& transaction)
         }
         status = waec.processPaymentResponse(response);
         record = waec.storageMap(status);
+    } else if (productName == "airtimepin") {
+        AirtimeUssdViewModel airtimeUssd(vasMenuString(VAS_USSD), postman);
+        if (airtimeUssd.getService() != AIRTIME_USSD) {
+            return -1;
+        }
+        status = airtimeUssd.processPaymentResponse(response);
+        record = airtimeUssd.storageMap(status);
+    } else if (productName == "9mobiledatapin") {
+        DataUssdViewModel dataUssd(vasMenuString(VAS_USSD), postman);
+        if (dataUssd.setService(ETISALATDATA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = dataUssd.processPaymentResponse(response);
+        record = dataUssd.storageMap(status);
+    } else if (productName == "airteldatapin") {
+        DataUssdViewModel dataUssd(vasMenuString(VAS_USSD), postman);
+        if (dataUssd.setService(AIRTELDATA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = dataUssd.processPaymentResponse(response);
+        record = dataUssd.storageMap(status);
+    } else if (productName == "glodatapin") {
+        DataUssdViewModel dataUssd(vasMenuString(VAS_USSD), postman);
+        if (dataUssd.setService(GLODATA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = dataUssd.processPaymentResponse(response);
+        record = dataUssd.storageMap(status);
+    } else if (productName == "mtndatapin") {
+        DataUssdViewModel dataUssd(vasMenuString(VAS_USSD), postman);
+        if (dataUssd.setService(MTNDATA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = dataUssd.processPaymentResponse(response);
+        record = dataUssd.storageMap(status);
+    } else if (productName == "multichoicepin") {
+        PaytvUssdViewModel paytvUssd(vasMenuString(VAS_USSD), postman);
+        if (paytvUssd.setService(DSTV).error != NO_ERRORS) {
+            return -1;
+        }
+        status = paytvUssd.processPaymentResponse(response);
+        record = paytvUssd.storageMap(status);
+    } else if (productName == "startimespin") {
+        PaytvUssdViewModel paytvUssd(vasMenuString(VAS_USSD), postman);
+        if (paytvUssd.setService(STARTIMES).error != NO_ERRORS) {
+            return -1;
+        }
+        status = paytvUssd.processPaymentResponse(response);
+        record = paytvUssd.storageMap(status);
+    } else if (productName == "ikedcpin") {
+        ElectricityUssdViewModel electricityUssd(vasMenuString(VAS_USSD), postman);
+        if (electricityUssd.setService(IKEJA).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricityUssd.processPaymentResponse(response);
+        record = electricityUssd.storageMap(status);
+    } else if (productName == "ekedcpin") {
+        ElectricityUssdViewModel electricityUssd(vasMenuString(VAS_USSD), postman);
+        if (electricityUssd.setService(EKEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricityUssd.processPaymentResponse(response);
+        record = electricityUssd.storageMap(status);
+    } else if (productName == "eedcpin") {
+        ElectricityUssdViewModel electricityUssd(vasMenuString(VAS_USSD), postman);
+        if (electricityUssd.setService(EEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricityUssd.processPaymentResponse(response);
+        record = electricityUssd.storageMap(status);
+    } else if (productName == "ibedcpin") {
+        ElectricityUssdViewModel electricityUssd(vasMenuString(VAS_USSD), postman);
+        if (electricityUssd.setService(IBEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricityUssd.processPaymentResponse(response);
+        record = electricityUssd.storageMap(status);
+    } else if (productName == "phedcpin") {
+        ElectricityUssdViewModel electricityUssd(vasMenuString(VAS_USSD), postman);
+        if (electricityUssd.setService(PHED).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricityUssd.processPaymentResponse(response);
+        record = electricityUssd.storageMap(status);
+    } else if (productName == "aedcpin") {
+        ElectricityUssdViewModel electricityUssd(vasMenuString(VAS_USSD), postman);
+        if (electricityUssd.setService(AEDC).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricityUssd.processPaymentResponse(response);
+        record = electricityUssd.storageMap(status);
+    } else if (productName == "kedcopin") {
+        ElectricityUssdViewModel electricityUssd(vasMenuString(VAS_USSD), postman);
+        if (electricityUssd.setService(KEDCO).error != NO_ERRORS) {
+            return -1;
+        }
+        status = electricityUssd.processPaymentResponse(response);
+        record = electricityUssd.storageMap(status);
     }
 
     const iisys::JSObject& account = transaction("VASCustomerAccount");
@@ -684,7 +786,7 @@ void vasRequery()
 int vasAdmin()
 {
     Payvice payvice;
-    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Balance Enquiry", "Commission Transfer", "Log out"};
+    const char* optionStr[] = { "Requery", "End of Day", "Reprint Today", "Reprint with Date", "Fund Wallet", "Balance Enquiry", "Commission Transfer", "Log out"};
 
     if (!loggedIn(payvice)) {
         logIn(payvice);
@@ -706,18 +808,20 @@ int vasAdmin()
         vasReprintByDate();
         break;
     case 4:
-        walletBalance();
+        fundPayviceWallet();
         break;
     case 5:
-        walletTransfer();
+        walletBalance();
         break;
     case 6:
-        if (UI_ShowOkCancelMessage(10000, "Confirm Logout", "Are you sure you want to log out?", UI_DIALOG_TYPE_CAUTION) == CONFIRM) {
-        
-            if (logOut(payvice) == 0) {
-                remove(VASDB_FILE);
-                initVasTables();
-            }
+        walletTransfer();
+        break;
+    case 7:
+        if (UI_ShowOkCancelMessage(10000, "Confirm Logout", "Are you sure you want to log out?", UI_DIALOG_TYPE_CAUTION)) {
+            break;
+        } else if (logOut(payvice) == 0) {
+            remove(VASDB_FILE);
+            initVasTables();
         }
         return -1;
     default:

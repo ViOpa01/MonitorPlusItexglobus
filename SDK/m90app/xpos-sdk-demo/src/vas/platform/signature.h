@@ -9,6 +9,10 @@ namespace vasimpl {
 int bin2hex(unsigned char* pcInBuffer, char* pcOutBuffer, int iLen);
 
 unsigned char* base64_encode(const unsigned char* src, size_t len, size_t* out_len);
+unsigned char* base64_decode(const unsigned char* src, size_t len, size_t* out_len);
+
+std::string base64_decode(const unsigned char* src, size_t len);
+
 int sha512Hex(char* hexoutput, const char* data, const size_t datalen);
 
 int sha512Bin(char* digest, const char* data, const size_t datalen);
@@ -22,6 +26,7 @@ int hmac_sha256(
 
 
 std::string generateRequestAuthorization_v2(const std::string& requestBody);
+std::string cbc128_decrypt(const unsigned char* ciphertext, const int ciphertext_len, const unsigned char* key, const unsigned char* iv);
 
 }
 

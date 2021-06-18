@@ -59,7 +59,7 @@ struct Payvice {
     static int resetApiToken();
 
     std::string getApiToken();
-
+    
     int error() const;
 
     bool isFileExists(const char* filename);

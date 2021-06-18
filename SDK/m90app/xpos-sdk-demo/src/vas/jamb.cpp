@@ -116,7 +116,7 @@ VasResult Jamb::complete()
     std::string pin;
     VasResult response;
 
-    if (viewModel.getPaymentMethod() != PAY_WITH_NQR) {
+    if (viewModel.getPaymentMethod() == PAY_WITH_CASH) {
         response.error = getVasPin(pin);
         if (response.error != NO_ERRORS) {
             return response;

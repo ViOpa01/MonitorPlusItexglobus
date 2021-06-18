@@ -12,15 +12,18 @@ typedef enum {
     TV_SUBSCRIPTIONS,
     DATA,
     SMILE,
-    CASHIO,
+    CASHIN,
+    CASHOUT,
     JAMB_EPIN,
-    WAEC
+    WAEC,
+    VAS_USSD
 } VAS_Menu_T;
 
-std::vector<VAS_Menu_T> getVasTransactions(std::vector<std::string>& menu);
-int vasTransactionTypes();
+std::vector<VAS_Menu_T> getVasTransactions(std::vector<std::string>& menu, const bool displayCashio);
+int vasTransactionTypes(const bool displayCashio);
 int doVasTransaction(VAS_Menu_T menu);
-int doCashIO();
+int doCashIn();
+int doCashOut();
 
 const char* vasMenuString(VAS_Menu_T type);
 

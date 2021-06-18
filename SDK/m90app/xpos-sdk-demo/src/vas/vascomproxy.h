@@ -2,6 +2,12 @@
 #define VAS_VASCOMPROXY_H
 #include <string.h>
 
+#include <map>
+#include <string>
+
+#include <map>
+#include <string>
+
 #include "vas.h"
 #include "jsonwrapper/jsobject.h"
 
@@ -49,10 +55,10 @@ struct VasComProxy {
 
     virtual VasResult lookup(const char* url, const iisys::JSObject*) = 0;
     virtual VasResult initiate(const char* url, const iisys::JSObject*, CardData* = NULL) = 0;
-    virtual VasResult complete(const char* url, const iisys::JSObject*, CardData* = NULL) = 0;
+    virtual VasResult complete(const char* url, const iisys::JSObject*, CardData* = NULL, std::map<std::string, std::string>* = NULL) = 0;
     virtual VasResult reverse(CardData& cardData) = 0;
 
-    virtual VasResult sendVasRequest(const char* url, const iisys::JSObject* = NULL) = 0;
+    virtual VasResult sendVasRequest(const char* url, const iisys::JSObject* = NULL, std::map<std::string, std::string>* = NULL) = 0;
 };
 
 struct Postman : public VasComProxy {
@@ -62,19 +68,19 @@ struct Postman : public VasComProxy {
 
     VasResult lookup(const char* url, const iisys::JSObject*);
     VasResult initiate(const char* url, const iisys::JSObject*, CardData*);
-    VasResult complete(const char* url, const iisys::JSObject*, CardData*);
+    VasResult complete(const char* url, const iisys::JSObject*, CardData*, std::map<std::string, std::string>* = NULL);
     VasResult reverse(CardData& cardData);
-    VasResult sendVasRequest(const char* url, const iisys::JSObject* = NULL);
+    VasResult sendVasRequest(const char* url, const iisys::JSObject* = NULL, std::map<std::string, std::string>* = NULL);
 
     static VasError manualRequery(iisys::JSObject& transaction, const std::string& sequence, const std::string& cardRef);
 
 
 private:
     VasResult
-    doRequest(const char* url, const iisys::JSObject*, CardData*);
+    doRequest(const char* url, const iisys::JSObject*, CardData*, std::map<std::string, std::string>* = NULL);
     
     VasResult
-    sendVasCashRequest(const char* url, const iisys::JSObject*);
+    sendVasCashRequest(const char* url, const iisys::JSObject*, std::map<std::string, std::string>* recvHeaders);
     
     VasResult
     sendVasCardRequest(const char* url, const iisys::JSObject*, CardData*);

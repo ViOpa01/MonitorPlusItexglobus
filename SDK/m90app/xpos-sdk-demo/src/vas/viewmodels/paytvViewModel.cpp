@@ -209,9 +209,7 @@ std::map<std::string, std::string> PayTVViewModel::storageMap(const VasResult& c
 
     if (payMethod == PAY_WITH_CARD) {
         if (cardData.primaryIndex > 0) {
-            char primaryIndex[16] = { 0 };
-            sprintf(primaryIndex, "%lu", cardData.primaryIndex);
-            record[VASDB_CARD_ID] = primaryIndex;
+            record[VASDB_CARD_ID] = vasimpl::to_string(cardData.primaryIndex);
         }
 
         if (vasimpl::getDeviceTerminalId() != cardData.transactionTid) {

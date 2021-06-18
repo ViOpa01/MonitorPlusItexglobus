@@ -14,6 +14,7 @@
 #include "payvice.h"
 #include "virtualtid.h"
 #include "./platform/simpio.h"
+#include "./platform/vasutility.h"
 #include "EmvDB.h"
 
 extern "C" {
@@ -92,15 +93,7 @@ private:
 
         std::map<std::string, std::string> record = delegate->storageMap(completeStatus);
         if (record.find(VASDB_DATE) == record.end() || record[VASDB_DATE].empty()) {
-            char dateTime[32] = { 0 };
-            char yyyymmddhhmmss[15] = {'\0'};
-
-            // time_t now = time(NULL);
-            // strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S.000", localtime(&now));
-
-            getDateAndTime(yyyymmddhhmmss);
-            beautifyDateTime(dateTime, 31, yyyymmddhhmmss);
-            record[VASDB_DATE] = dateTime;
+            record[VASDB_DATE] = vasimpl::formattedDateTime() + ".000";
         }
         long index = VasDB::saveVasTransaction(record);
 

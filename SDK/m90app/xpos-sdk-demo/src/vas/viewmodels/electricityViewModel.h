@@ -49,6 +49,7 @@ struct ElectricityViewModel {
         std::string address;
         std::string productCode;
         unsigned long minPayableAmount;
+        unsigned long arrears;
     } lookupResponse;
 
 

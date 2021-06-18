@@ -8,6 +8,7 @@ namespace vasimpl {
 
 
 void formattedDateTime(char* dateTime, size_t len);
+std::string formattedDateTime();
 int formatAmount(std::string& ulAmount);
 iisys::JSObject getState();
 
