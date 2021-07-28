@@ -33,6 +33,8 @@ typedef struct Vas
     char auxResponse[0x1000 * 2];
     char customRefCode[1024];
     int  switchMerchant;
+    int abortTrans : 2;
+
 } Vas;
 
 typedef struct IccDataT

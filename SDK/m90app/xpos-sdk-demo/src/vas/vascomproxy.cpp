@@ -203,9 +203,13 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
     
     strncpy(cardData->trxContext.echoData, cardData->refcode.c_str(), sizeof(cardData->trxContext.echoData) - 1);
     strncpy(cardData->trxContext.rrn, cardData->reference.c_str(), strlen(cardData->reference.c_str()));
-    strcpy(cardData->trxContext.paymentInformation, cardData->upWithdrawal.field60.c_str()); // TODO enable for upsl withdrawal
-
+    strcpy(cardData->trxContext.paymentInformation, cardData->upWithdrawal.field60.c_str()); 
+    
     if (doVasCardTransaction(&cardData->trxContext, cardData->amount) < 0) {
+
+        if (cardData->trxContext.vas.abortTrans) {
+            result.error = INPUT_ABORT;
+        }
         return result;  // We weren't able to initiate transaction
     }
 
@@ -214,10 +218,17 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
 
     if (cardData->trxContext.vas.auxResponse[0]) {
         // Extra check to assert that card tranaction was successful?
-        if (!strcmp(cardData->trxContext.responseCode, "00") && isValidVasTransactionType(*cardData)) {
-            result.error = NO_ERRORS;
+        if (0 == strcmp(cardData->trxContext.responseCode, "00")) {
+            if (isValidVasTransactionType(*cardData)) {
+                result.error = NO_ERRORS;
+                result.message = cardData->trxContext.vas.auxResponse;
+            } else {
+                result.message = "Transaction Type Error";
+            }
+        } else if (cardData->trxContext.responseCode[0]) {
+            result.error = CARD_PAYMENT_DECLINED;
+            result.message = responseCodeToStr(cardData->trxContext.responseCode);
         }
-        result.message = cardData->trxContext.vas.auxResponse;
         return result;
     }
     
@@ -268,6 +279,7 @@ VasResult Postman::requeryVas(const char* clientRef, const char* walletId, const
     VasResult result;
     NetWorkParameters netParam = {'\0'};
     iisys::JSObject json;
+    const char* jsonBody;
     
     strncpy((char *)netParam.host, REQUERY_IP, sizeof(netParam.host) - 1);
     netParam.receiveTimeout = 60000;
@@ -300,7 +312,11 @@ VasResult Postman::requeryVas(const char* clientRef, const char* walletId, const
     enum CommsStatus commStatus = sendAndRecvPacket(&netParam);
     if(commStatus == SEND_RECEIVE_SUCCESSFUL){
         result.error = NO_ERRORS;
-        result.message = strchr((const char*)netParam.response, '{');
+
+        jsonBody = strchr((const char*)netParam.response, '{');
+        if (jsonBody != NULL) {
+            result.message = jsonBody;
+        }
 
     } else {
 
@@ -325,6 +341,7 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
     NetWorkParameters netParam = {'\0'};
     Payvice payvice;
     std::string body;
+    const char* jsonBody;
 
     if (!loggedIn(payvice)) {
         return VasResult(VAS_ERROR);
@@ -383,7 +400,10 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
     } 
 
     result.error = NO_ERRORS;
-    result.message = strchr((const char*)netParam.response, '{');   
+    jsonBody = strchr((const char*)netParam.response, '{');
+    if (jsonBody != NULL) {
+        result.message  = jsonBody;
+    }
 
     return result;
 }

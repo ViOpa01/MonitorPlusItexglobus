@@ -579,6 +579,7 @@ const std::string& ElectricityViewModel::getRetrievalReference() const
 
 VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
 {
+    
     VasResult result;
 
     iisys::JSObject response = data("response");
@@ -606,6 +607,11 @@ VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
 
     smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
 
+    if (smartCardInFunc.detectPsamCB()) {
+        result.message = "NO PSMA!";
+        return result;
+    }
+
     if (smartCardInFunc.detectSmartCardCb("UPDATE CARD", "INSERT CUSTOMER CARD", 3 * 60 * 1000)) {
         result.message = "Detect Card Error";
         return result;
@@ -618,6 +624,13 @@ VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
     if (userCardInfo.CM_Purchase_Times == purchaseTimes && strcmp((char*)userCardInfo.CM_UserNo, vasCustomerAccount.c_str()) == 0) {
         unsigned char psamBalance[16] = { 0 };
 
+        smartCardInFunc.removeCustomerCardCb("SMART CARD", "REMOVE CARD!");
+
+        if (smartCardInFunc.detectSmartCardCb("UPDATE CARD", "INSERT CUSTOMER CARD", 3 * 60 * 1000)) {
+            result.message = "Detect Card Error";
+            return result;
+        }
+
         userCardInfo.CM_Purchase_Power = response("unit_value").getNumber();
         userCardInfo.CM_Purchase_Times += 1;
 
@@ -626,6 +639,8 @@ VasResult ElectricityViewModel::revalidateSmartCard(const iisys::JSObject& data)
             result.message = unistarErrorToString(ret);
             return result;
         }
+
+        result.message = "Write Updated";
         result.error = NO_ERRORS;
     } else {
         result.message = "Write Unauthorized";

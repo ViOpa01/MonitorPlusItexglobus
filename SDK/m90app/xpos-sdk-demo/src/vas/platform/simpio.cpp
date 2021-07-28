@@ -71,7 +71,7 @@ int getNumeric(char *val, size_t minlength, size_t maxlength, int display, int t
     int result = 0;
 
     gui_clear_dc();
-    result = Util_InputMethod(GUI_LINE_TOP(0), (char *)title, GUI_LINE_TOP(2), val, minlength, maxlength, 1, timeout);
+    result = Util_InputMethod(GUI_LINE_TOP(0), (char *)prompt, GUI_LINE_TOP(2), val, minlength, maxlength, 1, timeout);
 
     if(result < 0)
     {
@@ -149,9 +149,13 @@ int getText(std::string& val, int display, int timeout, const char* title, const
 int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE type)
 {
     int result = 0;
+    char msg[128 + 1] = {'\0'};
+
+    memset(msg, 0x00, sizeof(msg));
+    strncpy(msg, text, sizeof(msg) - 1);
 
     gui_clear_dc();
-	result = gui_messagebox_show((char *)title, (char *)text, "Cancel", "Ok", 0);
+	result = gui_messagebox_show((char *)title, (char *)msg, "Cancel", "Ok", 0);
 
     switch (result) {
     case 1:
@@ -171,9 +175,13 @@ int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const
 {
 
     int result = 0;
+    char msg[128 + 1] = {'\0'};
+
+    memset(msg, 0x00, sizeof(msg));
+    strncpy(msg, text, sizeof(msg) - 1);
 
     gui_clear_dc();
-	result = gui_messagebox_show((char *)title, (char *)((text && *text) ? text : " "), "", (char *)button, timeout);
+	result = gui_messagebox_show((char *)title, (char *)((msg && *msg) ? msg : " "), "", (char *)button, timeout);
 
     switch (result)
     {

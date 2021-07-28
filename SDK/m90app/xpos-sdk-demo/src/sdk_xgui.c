@@ -881,9 +881,9 @@ void display_menu(void)
 			_main_menu_def_n[2].id = NULL;
 			_main_menu_def_n[2].uKey = GUI_KEY_3;
 
-			_main_menu_def_n[3].name = SMART_CARD_TEST;
+			_main_menu_def_n[3].name = NULL;
 			_main_menu_def_n[3].id = NULL;
-			_main_menu_def_n[3].uKey = GUI_KEY_4;
+			_main_menu_def_n[3].uKey = NULL;
 
 			_main_menu_def_n[4].name = NULL;
 			_main_menu_def_n[4].id = NULL;
@@ -895,9 +895,9 @@ void display_menu(void)
 			_main_menu_def_n[0].id = NULL;
 			_main_menu_def_n[0].uKey = GUI_KEY_1;
 
-			_main_menu_def_n[1].name = SMART_CARD_TEST;
+			_main_menu_def_n[1].name = NULL;
 			_main_menu_def_n[1].id = NULL;
-			_main_menu_def_n[1].uKey = GUI_KEY_2;
+			_main_menu_def_n[1].uKey = NULL;
 
 			_main_menu_def_n[2].name = NULL;
 			_main_menu_def_n[2].id = NULL;
@@ -957,9 +957,9 @@ void display_menu(void)
 			_main_menu_def_n[2].id = NULL;
 			_main_menu_def_n[2].uKey = GUI_KEY_3;
 
-			_main_menu_def_n[3].name = SMART_CARD_TEST;
+			_main_menu_def_n[3].name = NULL;
 			_main_menu_def_n[3].id = NULL;
-			_main_menu_def_n[3].uKey = GUI_KEY_4;
+			_main_menu_def_n[3].uKey = NULL;
 
 			_main_menu_def_n[4].name = NULL;
 			_main_menu_def_n[4].id = NULL;
@@ -986,9 +986,9 @@ void display_menu(void)
 		_main_menu_def_n[2].id = NULL;
 		_main_menu_def_n[2].uKey = GUI_KEY_3;
 
-		_main_menu_def_n[3].name = SMART_CARD_TEST;
+		_main_menu_def_n[3].name = NULL;
 		_main_menu_def_n[3].id = NULL;
-		_main_menu_def_n[3].uKey = GUI_KEY_4;
+		_main_menu_def_n[3].uKey = NULL;
 
 		_main_menu_def_n[4].name = NULL;
 		_main_menu_def_n[4].id = NULL;

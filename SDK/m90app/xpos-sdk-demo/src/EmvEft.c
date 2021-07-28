@@ -1496,6 +1496,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	if (card_in->trans_type == -1)
 	{
 		LOG_PRINTF("\nUnknow transaction type");
+		eft->vas.abortTrans = 1;
 		return -1;
 	}
 
@@ -1520,8 +1521,10 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	if (accountTypeRequired(eft->transType))
 	{
 		eft->fromAccount = getAccountType();
-		if (eft->fromAccount == ACCOUNT_END)
+		if (eft->fromAccount == ACCOUNT_END) {
+			eft->vas.abortTrans = 1;
 			return -1;
+		}
 	}
 
 	puts("==================> 4");
@@ -1537,6 +1540,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 		long long namt = getAmount(eft, title);
 		if (namt < 0) {
 			free(card_in);
+			eft->vas.abortTrans = 1;
 			return -1;
 		}
 
@@ -1627,6 +1631,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 		gui_messagebox_show("", "Terminate", "", "ok", 0);
 		free(card_in);
 		free(card_out);
+		eft->vas.abortTrans = 1;
 		return -1;
 	}
 	else
@@ -1634,6 +1639,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 		gui_messagebox_show("", "Cancel", "", "ok", 0);
 		free(card_in);
 		free(card_out);
+		eft->vas.abortTrans = 1;
 		return -1;
 	}
 
@@ -1643,7 +1649,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	{ //will never happen
 		free(card_in);
 		free(card_out);
-
+		eft->vas.abortTrans = 1;
 		return -2;
 	}
 
@@ -1652,6 +1658,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	if (addIccTagsToEft(eft))
 	{
 		return -3;
+		eft->vas.abortTrans = 1;
 	}
 
 	{
@@ -1732,6 +1739,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	if (eft->iccDataBcdLen <= 0)
 	{
 		fprintf("Error building Icc data\n", eft->iccDataBcdLen);
+		eft->vas.abortTrans = 1;
 		return -3;
 	}
 
@@ -1788,6 +1796,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 		free(card_in);
 		free(card_out);
 		fprintf(stderr, "Error creating iso packet\n");
+		eft->vas.abortTrans = 1;
 		return -3;
 	}
 

@@ -230,9 +230,9 @@ std::string Electricity::getMeterNo(const char* title)
     std::string prompt;
 
     if (viewModel.getEnergyType() == ElectricityViewModel::PREPAID_TOKEN) {
-        prompt = "Meter No";
+        prompt = "Enter Meter No";
     } else if (viewModel.getEnergyType() == ElectricityViewModel::POSTPAID) {
-        prompt = "Account No";
+        prompt = "Enter Account No";
     }
 
     if (viewModel.getEnergyType() == ElectricityViewModel::PREPAID_SMARTCARD) {

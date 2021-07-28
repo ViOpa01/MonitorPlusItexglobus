@@ -87,9 +87,12 @@ private:
             }
             return -1;
         }
-
-        
+      
         VasResult completeStatus = delegate->complete();
+        if (completeStatus.error == USER_CANCELLATION || completeStatus.error == INPUT_ABORT
+            || completeStatus.error == INPUT_TIMEOUT_ERROR || completeStatus.error == INPUT_ERROR) {
+            return -1;
+        }
 
         std::map<std::string, std::string> record = delegate->storageMap(completeStatus);
         if (record.find(VASDB_DATE) == record.end() || record[VASDB_DATE].empty()) {

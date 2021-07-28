@@ -59,12 +59,14 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
         char vtSecurity[97] = {'\0'};
 
         if (switchMerchantToVas((void*)trxContext) < 0) {
+            trxContext->vas.abortTrans = 1;
             return ret;
         }
 
         //TODO enable this section of code for upsl withdrawal
         if (trxContext->paymentInformation[0]) {
             if (getUpWithrawalField53(vtSecurity) < 0) {
+                trxContext->vas.abortTrans = 1;
                 return -1;
             }
 
@@ -78,11 +80,13 @@ int doVasCardTransaction(Eft* trxContext, unsigned long amount)
 
         if (getSessionKey(sessionKey)) {
             printf("Error getting session key");
+            trxContext->vas.abortTrans = 1;
             return ret;
         }
 
         if (getParameters(&merchantParameters)) {
             printf("Error getting parameters\n");
+            trxContext->vas.abortTrans = 1;
             return ret;
         }
         strncpy(trxContext->sessionKey, sessionKey, sizeof(trxContext->sessionKey));

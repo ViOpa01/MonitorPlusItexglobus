@@ -569,11 +569,10 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "callhome_time", cJSON_CreateNumber(merchant->callhome_time));
     cJSON_AddItemToObject(requestJson, "app_type", cJSON_CreateString(merchant->app_type));
 
-
-
-
     requestJsonStr = cJSON_PrintUnformatted(requestJson);
     memcpy(jsonData, requestJsonStr, sizeof(jsonData));
+    free(requestJsonStr);
+    cJSON_Delete(requestJson);
 
     ret = saveRecord((void *)jsonData, MERCHANT_DETAIL_FILE, sizeof(jsonData), 0);
 

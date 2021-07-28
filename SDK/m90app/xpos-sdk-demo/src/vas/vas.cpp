@@ -171,7 +171,8 @@ const char* serviceStringToLogoFile(const std::string& serviceString)
 
     } else if(serviceString == serviceToString(WITHDRAWAL)
                 || serviceString == serviceToString(TRANSFER)) {
-        return "itex/bank.bmp";
+        // return "itex/bank.bmp";
+        return "vaslogos\\itex.bmp";
     } else if(serviceString == serviceToString(JAMB_UTME_PIN)
                 || serviceString == serviceToString(JAMB_DE_PIN)) {
         return "vaslogos\\jamb.bmp";
@@ -705,8 +706,8 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
         // "card" is added because requery uses lower case
         if(record[VASDB_PAYMENT_METHOD] == paymentString(PAY_WITH_CARD) || record[VASDB_PAYMENT_METHOD] == "card") {
 
-            const char *keys[] = {DB_NAME, DB_PAN, DB_AID, DB_LABEL, DB_EXPDATE, DB_RRN, DB_AUTHID, DB_RESP};
-            const char *labels[] = {"CARD NAME", "PAN", "AID", "LABEL", "EXPIRY", "CREF", "AUTH CODE", "RESP CODE"};
+            const char *keys[] = {DB_NAME, DB_PAN, DB_AID, DB_LABEL, DB_EXPDATE, DB_RRN, DB_AUTHID, DB_RESP, DB_TVR, DB_TSI};
+            const char *labels[] = {"CARD NAME", "PAN", "AID", "LABEL", "EXPIRY", "CREF", "AUTH CODE", "RESP CODE", "TVR", "TSI"};
 
             for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
                 if (record.find(keys[i]) != record.end()) {
@@ -1197,9 +1198,9 @@ void printVasFooter()
 {
 	char buff[64] = {'\0'};
 
-	sprintf(buff, "%s %s", APP_NAME, APP_VER);
-    UPrint_StrBold(buff, 1, 4, 1);
-	UPrint_StrBold(POWERED_BY, 1, 4, 1);
+	sprintf(buff, "%s %s, %s", APP_NAME, APP_VER, POWERED_BY);
+    // UPrint_StrBold(buff, 1, 4, 1);
+	// UPrint_StrBold(POWERED_BY, 1, 4, 1);
 	UPrint_StrBold("0906 277 4420, 0907 031 4511", 1, 4, 1);
 	UPrint_StrBold("0907 031 4443", 1, 4, 1);
 	UPrint_StrBold("vassupport@iisysgroup.com", 1, 4, 1);

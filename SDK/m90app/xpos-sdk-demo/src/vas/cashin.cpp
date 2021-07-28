@@ -42,7 +42,7 @@ VasResult Cashin::beginVas()
         return result;
     }
 
-    const std::string beneficiaryAccount = getBeneficiaryAccount("Transfer", "Enter Beneficairy Account");
+    const std::string beneficiaryAccount = getBeneficiaryAccount("Transfer", "Beneficairy Account");
     if (beneficiaryAccount.empty()) {
         result.error = USER_CANCELLATION;
         return result;
@@ -165,7 +165,7 @@ VasResult Cashin::displayLookupInfo() const
 
     confirmationMessage << viewModel.getName() << std::endl;
     confirmationMessage << "NUBAN: " << viewModel.getBeneficiaryAccount() << std::endl;
-    confirmationMessage << "Amount: " <<  std::fixed << std::setprecision(2) <<  viewModel.getAmount() / 100.0 << std::endl;
+    confirmationMessage << "Amount: " <<  majorDenomination(viewModel.getAmount()) << std::endl;
 
     int i = UI_ShowOkCancelMessage(30000, "Please Confirm", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
     if (i != 0) {

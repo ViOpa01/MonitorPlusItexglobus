@@ -156,13 +156,16 @@ void addCallHomeData(NetworkManagement *networkMangement)
 // strncpy(networkMangement->callHOmeData, "{\"bl\":100,\"btemp\":35,\"cloc\":{\"cid\":\"00C9778E\",\"lac\":\"7D0B\",\"mcc\":\"621\",\"mnc\":\"60\",\"ss\":\"-87dbm\"},\"coms\":\"GSM/UMTSDualMode\",\"cs\":\"NotCharging\",\"ctime\":\"2019-12-20 12:06:14\",\"hb\":\"true\",\"imsi\":\"621600087808190\",\"lTxnAt\":\"\",\"mid\":\"FBP205600444741\",\"pads\":\"\",\"ps\":\"PrinterAvailable\",\"ptad\":\"Itex Integrated Services\",\"serial\":\"346-231-236\",\"sim\":\"9mobile\",\"simID\":\"89234000089199032105\",\"ss\":\"33\",\"sv\":\"TAMSLITE v(1.0.6)Built for POSVAS onFri Dec 20 10:50:14 2019\",\"tid\":\"2070HE88\",\"tmanu\":\"Morefun\",\"tmn\":\"V240m 3GPlus\"}", sizeof(networkMangement->callHOmeData));
 
     free(callHomeJsonStr);
+    cJSON_Delete(callHomeJson);
 }
 
 short isDevMode(const enum NetType netType)
 {
     switch (netType) {
-        case NET_EPMS_SSL_TEST: case NET_EPMS_PLAIN_TEST: 
-        case NET_POSVAS_SSL_TEST: NET_POSVAS_PLAIN_TEST:
+        case NET_EPMS_SSL_TEST: 
+        case NET_EPMS_PLAIN_TEST: 
+        case NET_POSVAS_SSL_TEST: 
+        case NET_POSVAS_PLAIN_TEST:
         case UPSL_DIRECT_TEST:
             return 1;
 

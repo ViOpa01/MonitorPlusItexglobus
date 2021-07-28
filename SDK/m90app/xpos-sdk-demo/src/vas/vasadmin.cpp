@@ -778,6 +778,8 @@ void vasRequery()
         if (revalidate.error != NO_ERRORS) {
             UI_ShowButtonMessage(2000, "Error", revalidate.message.c_str(), "OK", UI_DIALOG_TYPE_CAUTION);
         }
+
+        UI_ShowOkCancelMessage(2000, "SMART CARD", revalidate.message.c_str(), UI_DIALOG_TYPE_NONE);
     }
 
     printRequery(transaction);

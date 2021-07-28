@@ -152,14 +152,14 @@ APN :
 	if (result < 0) return result;
 
 USERNAME :
-    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter USER", GUI_LINE_TOP(2), profile->username, 1, sizeof(profile->username) - 1, 1, 1, 30000, (char*)"Enter USER");
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter USER", GUI_LINE_TOP(2), profile->username, 0, sizeof(profile->username) - 1, 1, 1, 30000, (char*)"Enter USER");
 	if (result == -2) {
 		goto APN;
 	} else if (result == -1 || result == -3) {
 		return result;
 	}
 
-    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter PWD", GUI_LINE_TOP(2), profile->password, 1, sizeof(profile->password) - 1, 1, 1, 30000, (char*)"Enter PWD");
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter PWD", GUI_LINE_TOP(2), profile->password, 0, sizeof(profile->password) - 1, 1, 1, 30000, (char*)"Enter PWD");
 
 	if (result == -2) {
 		goto USERNAME;
@@ -281,7 +281,7 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		strncpy(netParam->title, "Nibss", 10);
 
 		// strncpy(netParam->host, "197.253.19.78", strlen(mParam.nibss_ip));
-		// netParam->port = 5001;
+		// netParam->port = 5008;
 		// netParam->isSsl = 1;
 
 		// strncpy(netParam->host, "196.6.103.73", strlen(mParam.nibss_ip));
@@ -890,7 +890,16 @@ short gprsInit(void)
 	readMerchantData(&merchantData);
 
 	merchantData.gprsSettings.timeout = 30000;
-	result = setSimProfile(&merchantData.gprsSettings, imsi);
+
+	if (merchantData.gprsSettings.apn[0] || 
+		merchantData.gprsSettings.apn[0] || 
+		merchantData.gprsSettings.username[0] || 
+		merchantData.gprsSettings.password[0]) 
+	{
+		result = linkSimProfile(&merchantData.gprsSettings);
+	} else {
+		result = setSimProfile(&merchantData.gprsSettings, imsi);
+	}
 	saveMerchantData(&merchantData);
 
 /*

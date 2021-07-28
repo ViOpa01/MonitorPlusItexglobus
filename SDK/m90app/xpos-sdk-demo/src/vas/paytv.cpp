@@ -211,18 +211,14 @@ VasResult PayTV::displayLookupInfo()
     const size_t size = bouquets.size();
     std::vector<std::string> menuData;
     std::string cycle;
+    std::string amountStr;
     int index;
-    if (viewModel.getService() == DSTV || viewModel.getService() == GOTV) {
-        for (size_t i = 0; i < size; ++i) {
-            menuData.push_back(bouquets[i]("name").getString() + vasimpl::menuendl() + bouquets[i]("amount").getString() + " Naira");
-        }
 
-        index = UI_ShowSelection(60000, "Bouquets", menuData, 0);
-    } else {
-        while (1) {
-            menuData.clear();
+    while (1) {
+
+        if (viewModel.getService() == DSTV || viewModel.getService() == GOTV) {
             for (size_t i = 0; i < size; ++i) {
-                menuData.push_back(bouquets[i]("name").getString());
+                menuData.push_back(bouquets[i]("name").getString() + vasimpl::menuendl() + bouquets[i]("amount").getString() + " Naira");
             }
 
             index = UI_ShowSelection(60000, "Bouquets", menuData, 0);
@@ -230,24 +226,48 @@ VasResult PayTV::displayLookupInfo()
                 return VasResult(USER_CANCELLATION);
             }
 
-            const iisys::JSObject& bouquet = bouquets[index];
-            const iisys::JSObject& cycles = bouquet("cycles");
+            amountStr = bouquets[index]("amount").getString();
 
-            menuData.clear();
-            std::vector<std::string> cyclesVec;
-            for (iisys::JSObject::const_iterator it = cycles.begin(); it != cycles.end(); ++it) {
-                cyclesVec.push_back(it->first);
-                menuData.push_back(it->first + vasimpl::menuendl() + it->second.getString() + " Naira");
+        } else {
+            while (1) {
+                menuData.clear();
+                for (size_t i = 0; i < size; ++i) {
+                    menuData.push_back(bouquets[i]("name").getString());
+                }
+
+                index = UI_ShowSelection(60000, "Bouquets", menuData, 0);
+                if (index < 0) {
+                    return VasResult(USER_CANCELLATION);
+                }
+
+                const iisys::JSObject& bouquet = bouquets[index];
+                const iisys::JSObject& cycles = bouquet("cycles");
+
+                menuData.clear();
+                std::vector<std::string> cyclesVec;
+                for (iisys::JSObject::const_iterator it = cycles.begin(); it != cycles.end(); ++it) {
+                    cyclesVec.push_back(it->first);
+                    menuData.push_back(it->first + vasimpl::menuendl() + it->second.getString() + " Naira");
+                }
+
+                int cycleIndex = UI_ShowSelection(60000, "Cycles", menuData, 0);
+                if (cycleIndex < 0) {
+                    continue;
+                }
+                cycle = cyclesVec[cycleIndex];
+                amountStr = vasimpl::to_string(cycles(cycle).getNumber());
+                break;
             }
 
-            int cycleIndex = UI_ShowSelection(60000, "Cycles", menuData, 0);
-            if (cycleIndex < 0) {
-                continue;
-            }
-            cycle = cyclesVec[cycleIndex];
-            break;
         }
 
+        confirmationMessage.str(std::string());
+        confirmationMessage << "Bouquet:" << std::endl << bouquets[index]("name").getString() << std::endl;
+        confirmationMessage << "Amount: NGN "  << amountStr << std::endl;
+
+        if (UI_ShowOkCancelMessage(30000, "Confirm", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE) == 0) {
+            break;
+        }
     }
 
     if (index < 0) {
