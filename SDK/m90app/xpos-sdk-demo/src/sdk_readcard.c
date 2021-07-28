@@ -83,6 +83,20 @@ void sdk_SetTermConfig()
 }
 
 
+static short isVisa(unsigned char * aid, const int size)
+{
+	if (size < 5) return 0;
+
+	if (!memcmp(aid, "\xA0\x00\x00\x00\x03", 5)) {
+		return size;
+	}
+
+	return 0;
+}
+
+
+
+
 static void sdk_add_demo_aids(TERMINALAPPLIST *TerminalApps)
 {
 	int i = 0;
@@ -143,9 +157,18 @@ static void sdk_add_demo_aids(TERMINALAPPLIST *TerminalApps)
 	{
 		TerminalApps->TermApp[i].bTerminalPriority = 0x03;	//Terminal priority
 		TerminalApps->TermApp[i].bTargetPercentageInt = 0x00;/*Randomly selected target percentage DF17*/
-		memcpy(TerminalApps->TermApp[i].TAC_Default, "\x00\x00\x00\x00\x00", 5);/* TAC Default data format (n5) DF11*/ 
-		memcpy(TerminalApps->TermApp[i].TAC_Denial, "\x00\x00\x00\x00\x00", 5);/* TAC Refuse: data format (n5) DF13*/
-		memcpy(TerminalApps->TermApp[i].TAC_Online, "\x00\x00\x00\x00\x00", 5);/* TAC Online: data format (n5) DF12*/
+
+		if (isVisa(TerminalApps->TermApp[i].AID, TerminalApps->TermApp[i].AID_Length)) {
+			memcpy(TerminalApps->TermApp[i].TAC_Denial, "\x00\x10\x00\x00\x00", 5);/* TAC Online: data format (n5) DF13*/
+			memcpy(TerminalApps->TermApp[i].TAC_Online, "\xDC\x40\x04\xF8\x00", 5);/* TAC Refuse: data format (n5) DF12*/
+			memcpy(TerminalApps->TermApp[i].TAC_Default, "\xDC\x40\x00\xA8\x00", 5);/* TAC Default data format (n5) DF11*/ 
+			
+		} else {
+			memcpy(TerminalApps->TermApp[i].TAC_Default, "\x00\x00\x00\x00\x00", 5);/* TAC Default data format (n5) DF11*/ 
+			memcpy(TerminalApps->TermApp[i].TAC_Denial, "\x00\x00\x00\x00\x00", 5);/* TAC Refuse: data format (n5) DF12*/
+			memcpy(TerminalApps->TermApp[i].TAC_Online, "\x00\x00\x00\x00\x00", 5);/* TAC Online: data format (n5) DF13*/
+		}
+
 		memcpy(TerminalApps->TermApp[i].abTrnCurrencyCode, COUNTRYCODE, 2);/* Currency code tag: 5F2A */
 		//memcpy(TerminalApps->TermApp[i].abTerminalCountryCode, COUNTRYCODE, 2);/* Country code terminal tag: 9F1A */
 		TerminalApps->TermApp[i].abTrnCurrencyExp = 0x02;/* tag: 5F36 */
@@ -161,8 +184,15 @@ static void sdk_add_demo_aids(TERMINALAPPLIST *TerminalApps)
 	for(i=0; i<20; i++)
 	{
 		TerminalApps->TermApp[i].bMaxTargetPercentageInt = 0x00;/*Offset randomly selected maximum target percentage DF16*/
-		memcpy(TerminalApps->TermApp[i].abTFL_International, "\x00\x00\x3A\x98", 4);/* Terminal minimum 9F1B//*/
-		memcpy(TerminalApps->TermApp[i].abThresholdValueInt, "\x00\x00\x13\x88", 4);/*Offset randomly selected threshold DF15*/
+
+		if (isVisa(TerminalApps->TermApp[i].AID, TerminalApps->TermApp[i].AID_Length)) {
+			memcpy(TerminalApps->TermApp[i].abTFL_International, "\x00\x00\x00\x00", 4);/* Terminal minimum 9F1B//*/
+		} else {
+			memcpy(TerminalApps->TermApp[i].abTFL_International, "\x00\x00\x00\x00", 4);/* Terminal minimum 9F1B//*/
+		}
+
+		// memcpy(TerminalApps->TermApp[i].abTFL_International, "\x00\x00\x3A\x98", 4);/* Terminal minimum 9F1B//*/
+		// memcpy(TerminalApps->TermApp[i].abThresholdValueInt, "\x00\x00\x13\x88", 4);/*Offset randomly selected threshold DF15*/
 		if(memcmp(TerminalApps->TermApp[n].AID, "\xA0\x00\x00\x00\x04", 5)==0)
 			memcpy(TerminalApps->TermApp[i].abTerminalApplVersion, "0002", 2);/* "\x00\x96" Terminal application version 9F09 9F08 */
 		else
