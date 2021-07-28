@@ -1501,7 +1501,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	}
 
 
-	card_in->pin_input = 1;
+	card_in->pin_input = 0x02;
 	card_in->pin_max_len = 12;
 	card_in->key_pid = 1;		  //1 KF_MKSK 2 KF_DUKPT
 	card_in->pin_mksk_gid = 0;	//The key index of MKSK; -1 is not encrypt
