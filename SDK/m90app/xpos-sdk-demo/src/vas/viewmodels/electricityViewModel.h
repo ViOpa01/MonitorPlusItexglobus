@@ -3,7 +3,7 @@
 
 #include "vas.h"
 #include "vascomproxy.h"
-#include "../unistar-smartcard/CpuCard_Fun.h"
+#include "../../CpuCard_Fun.h"
 #include "../../unistarwrapper.h"
 
 

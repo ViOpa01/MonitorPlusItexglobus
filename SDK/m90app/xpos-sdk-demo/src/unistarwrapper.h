@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#include "unistar-smartcard/basefun.h"
-#include "unistar-smartcard/SmartCardCb.h"
-#include "unistar-smartcard/CpuCard_Fun.h"
+#include "basefun.h"
+#include "SmartCardCb.h"
+#include "CpuCard_Fun.h"
 
 
 int bindSmartCardApi(SmartCardInFunc* smartCardInFunc);
