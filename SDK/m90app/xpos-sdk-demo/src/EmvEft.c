@@ -99,7 +99,7 @@ static void TestSetTermConfig(TERMCONFIG *termconfig)
 	APP_TRACE("TestSetTermConfig");
 
 	memset(termconfig, 0x00, sizeof(TERMCONFIG));
-	memcpy(termconfig->TermCap, "\xE0\xF8\xC8", 3);					  /*Terminal performance '9F33'*/
+	memcpy(termconfig->TermCap, "\xE0\xD8\xC8", 3);					  /*Terminal performance '9F33'*/
 	memcpy(termconfig->AdditionalTermCap, "\xFF\x80\xF0\x00\x01", 5); /*Terminal additional performance*/
 	memcpy(termconfig->IFDSerialNum, "48397677", 8);					  /*IFD serial number '9F1E'*/
 	memcpy(termconfig->TermCountryCode, COUNTRYCODE, 2);			  /*Terminal country code '9F1A'*/
@@ -1501,7 +1501,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	}
 
 
-	card_in->pin_input = 0x02;
+	card_in->pin_input = 0x03;
 	card_in->pin_max_len = 12;
 	card_in->key_pid = 1;		  //1 KF_MKSK 2 KF_DUKPT
 	card_in->pin_mksk_gid = 0;	//The key index of MKSK; -1 is not encrypt

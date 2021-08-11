@@ -42,7 +42,7 @@ VasResult Cashin::beginVas()
         return result;
     }
 
-    const std::string beneficiaryAccount = getBeneficiaryAccount("Transfer", "Beneficairy Account");
+    const std::string beneficiaryAccount = getBeneficiaryAccount("Transfer", "Beneficiary Account");
     if (beneficiaryAccount.empty()) {
         result.error = USER_CANCELLATION;
         return result;

@@ -126,15 +126,11 @@ int itexIsMerchant()
     MerchantData mParam = {'\0'};
     readMerchantData(&mParam);
 
-    std::string merchantName = mParam.name;
-
-    if (!strncmp(merchantName.c_str(), "ITEX INTEGRATED", 15)) {
-        return 1;
-    } else if (!strncmp(merchantName.c_str(), "ITEX INTERGRATED", 16)) {
-        return 1;
+    if (strcmp(mParam.app_type, "MERCHANT") == 0 || strcmp(mParam.app_type, "CONVERTED") == 0) {
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 int switchMerchantToVas(void* merchant)
