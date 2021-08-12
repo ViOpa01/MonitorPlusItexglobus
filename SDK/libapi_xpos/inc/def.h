@@ -867,7 +867,7 @@ typedef struct
 {
 	byte szAID_4F[16+1];			/**<AID	*/
 	int nAIDLen;							
-	byte szLable_50[16+1];         /**< Ó¦ÓÃ±êÇ©50(ICC), ans, 1-16 bytes*/
+	byte szLable_50[16+1];         /**<Tag 50(ICC)app lable, ans, 1-16 bytes*/
 	int nLableLen;						
 	byte szPreName_9F12[16+1];		/**< app name */
 	int nPreNameLen;					

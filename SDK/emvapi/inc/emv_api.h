@@ -56,7 +56,7 @@ typedef struct __st_read_card_in{
 	char other_amt[32];//Cash back Amount 9F03
 	int card_mode;//READ_CARD_MODE_MAG , READ_CARD_MODE_IC , READ_CARD_MODE_RF
 	int card_timeover;//Time over of  card reading page,normally 60000;
-	int pin_input;  //For DIP and TAP cards. 0x01: enter the PIN interface according to the emv_read_card internal; 0x02:forces the PIN interface  of online transactions; 
+	int pin_input;  //0x01: enter the PIN interface according to the emv_read_card internal; 0x02:forces the PIN interface  of online transactions; 0x03:force pin; 0x00: will not require pin processing in emv_read_card
 	int mag_mode;	//For magnetic stripe cards. 0x01: The application determines whether to enter the PIN interface according to the service_code; 0x00:require a PIN from emv_read_card internal
 	int pin_min_len;//min length of pin 
 	int pin_max_len;//max length of PIN,range 4-12
@@ -291,6 +291,11 @@ Output : card_out£ºint * select choic
 return: Transaction Result return value:EMVAPI_RET_XX
 *************************************************************************************/
 LIB_EXPORT void EMV_SetSelectAppCallback(int (*SelecAppDisplay)(AID_STRU *stICCAID,int,int *));
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:lbx
+Functions:Good Partner-Portugal requirement
+*************************************************************************************/
 LIB_EXPORT void EMV_SetAfterSelect(int (*AfterSelect)(unsigned char *szAID,int nAIDlen,st_DDC_out*rep));
 
 /*************************************************************************************
@@ -430,17 +435,81 @@ return: FAIL = -1,
 		SUCC =  0 
 *************************************************************************************/
 LIB_EXPORT void EMVAPI_vSetOtherParamTlv(char *pOtherParam,int iLength);
-
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:Check whether the IC card is in place
+Input : null
+		
+Output : Nothing
+return: FAIL = -1,
+		SUCC =  0 
+*************************************************************************************/
 LIB_EXPORT int emvapi_check_ic();
-
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:read mag card
+Input : null
+		
+Output : trackinfo
+return: FAIL = -1,
+		SUCC =  0 
+*************************************************************************************/
 LIB_EXPORT int emvapi_check_magtek(struct magtek_track_info *trackinfo);
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:Check whether the contactless card is in place
+Input : null
+		
+Output : Nothing
+return: FAIL = -1,
+		SUCC =  0 
+*************************************************************************************/
 LIB_EXPORT int emvapi_check_rf();
-
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:Set input pin interface
+Input : st_input_pin 
+		
+Output : Nothing
+return: FAIL = -1,
+		SUCC =  0 
+*************************************************************************************/
 LIB_EXPORT int EMV_SetPinInputMsg(st_input_pin st_msg);
-
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:Set read card interface
+Input : st_read_card_show 
+		
+Output : Nothing
+return: FAIL = -1,
+		SUCC =  0 
+*************************************************************************************/
 LIB_EXPORT int EMV_SetReadCardShow(st_read_card_show st_msg);
-
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:set track info
+Input : track_set_info
+		
+Output : null
+return: FAIL = -1,
+		SUCC =  0 
+*************************************************************************************/
 LIB_EXPORT void set_mag_track_info(card_magtek_track_info track_set_info);
-LIB_EXPORT void EMVAPI_SetAidFileName(int iAidFileNameSign);
 
+/*************************************************************************************
+Copyright: Fujian MoreFun Electronic Technology Co., Ltd.
+Author:linbx
+Functions:set track info
+Input : flag  1: contactless transcation can select aid list
+		
+Output : null
+return: FAIL = -1,
+		SUCC =  0 
+*************************************************************************************/
 LIB_EXPORT void set_rf_aidlist_flag(int flag);
