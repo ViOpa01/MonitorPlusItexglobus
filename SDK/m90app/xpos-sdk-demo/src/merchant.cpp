@@ -338,7 +338,7 @@ int readMerchantData(MerchantData* merchant)
 {
 
     cJSON *json, *nextTag;
-    char buffer[1024] = {'\0'};
+    char buffer[1024 * 2] = {'\0'};
     int ret = -1;
 
     if(ret = getRecord((void *)buffer, MERCHANT_DETAIL_FILE, sizeof(buffer), 0))
@@ -515,6 +515,36 @@ int readMerchantData(MerchantData* merchant)
         strncpy(merchant->app_type, nextTag->valuestring, sizeof(merchant->app_type) - 1);
     }
 
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "sim_operator_name");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        strncpy(merchant->gprsSettings.operatorName, nextTag->valuestring, sizeof(merchant->gprsSettings.operatorName) - 1);
+    }
+
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "sim_apn");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        strncpy(merchant->gprsSettings.apn, nextTag->valuestring, sizeof(merchant->gprsSettings.apn) - 1);
+    }
+
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "sim_user");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        strncpy(merchant->gprsSettings.username, nextTag->valuestring, sizeof(merchant->gprsSettings.username) - 1);
+    }
+
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "sim_pwd");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        strncpy(merchant->gprsSettings.password, nextTag->valuestring, sizeof(merchant->gprsSettings.password) - 1);
+    }
+
+    nextTag = cJSON_GetObjectItemCaseSensitive(json, "sim_timeout");    // String
+    if(cJSON_IsString(nextTag) && !cJSON_IsNull(nextTag))
+    {
+        merchant->gprsSettings.timeout = nextTag->valueint;
+    }
+
     cJSON_Delete(json);
 
     return 0;
@@ -568,6 +598,12 @@ int saveMerchantData(const MerchantData* merchant)
     cJSON_AddItemToObject(requestJson, "callhome_port", cJSON_CreateNumber(merchant->callhome_port));
     cJSON_AddItemToObject(requestJson, "callhome_time", cJSON_CreateNumber(merchant->callhome_time));
     cJSON_AddItemToObject(requestJson, "app_type", cJSON_CreateString(merchant->app_type));
+
+    cJSON_AddItemToObject(requestJson, "sim_operator_name", cJSON_CreateString(merchant->gprsSettings.operatorName));
+    cJSON_AddItemToObject(requestJson, "sim_apn", cJSON_CreateString(merchant->gprsSettings.apn));
+    cJSON_AddItemToObject(requestJson, "sim_user", cJSON_CreateString(merchant->gprsSettings.username));
+    cJSON_AddItemToObject(requestJson, "sim_pwd", cJSON_CreateString(merchant->gprsSettings.password));
+    cJSON_AddItemToObject(requestJson, "sim_timeout", cJSON_CreateNumber(merchant->gprsSettings.timeout));
 
     requestJsonStr = cJSON_PrintUnformatted(requestJson);
     memcpy(jsonData, requestJsonStr, sizeof(jsonData));

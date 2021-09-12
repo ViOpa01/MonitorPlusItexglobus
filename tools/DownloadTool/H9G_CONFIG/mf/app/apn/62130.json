@@ -1,10 +1,20 @@
 {
     "apns": [
         {
-            "name": "mtn",
+            "name": "MTN",
             "type": "public",
             "mccmnc": "62130",
             "apn": "web.gprs.mtnnigeria.net",
+            "bank": "",
+            "username": "web",
+            "password": "web"
+        },
+        
+        {
+            "name": "ITEX MTN",
+            "type": "private",
+            "mccmnc": "62130",
+            "apn": "itex.net",
             "bank": "",
             "username": "web",
             "password": "web"

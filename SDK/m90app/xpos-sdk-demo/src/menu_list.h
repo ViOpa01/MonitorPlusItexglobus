@@ -71,4 +71,9 @@
 #define UI_NET_SELECT       "Net Select"
 #define UI_WIFI_SETTINGS    "Wifi Settings"
 #define UI_WIFI_MENU        "WIFI Menu"
+#define UI_APN_MENU         "APN MENU"
+#define UI_APN_MANUAL_MENU  "Manual APN"
+#define UI_APN_SELECT_MENU  "Select APN"
+#define UI_VIEW_APN_MENU    "View SIM Config"
+
 

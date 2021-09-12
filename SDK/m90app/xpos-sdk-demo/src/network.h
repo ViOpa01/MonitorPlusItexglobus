@@ -73,6 +73,8 @@ typedef struct {
  */
 
 short netLink(Network * gprsSettings);
+int manualSimProfile(Network *profile) ;
+int selectSimConfig();
 
 short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp);
 enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam);

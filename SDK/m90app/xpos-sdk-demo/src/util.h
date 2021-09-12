@@ -63,6 +63,7 @@ void hmac_sha256(
 
 int stringToHex(char* output, const size_t outputSize, const char* input, const int length);
 int pad(char* inOutString, char symbol, short paddedLength, short padRight);
+void strToUpper(char* str);
 
 #ifdef __cplusplus
 }

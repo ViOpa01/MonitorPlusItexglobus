@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <sys/time.h>
 
 #include "util.h"
@@ -670,4 +671,14 @@ int pad(char* inOutString, char symbol, short paddedLength, short padRight)
     }
 
     return 0;
+}
+
+void strToUpper(char* str)
+{
+    while (*str) {
+        if(islower(*str)) {
+            *str = toupper(*str);
+        }
+        str++;
+    }
 }

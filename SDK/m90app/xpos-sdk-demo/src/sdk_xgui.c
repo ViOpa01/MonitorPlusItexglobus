@@ -132,6 +132,13 @@ static const st_gui_menu_item_def _menu_def[] = {
 
 	{UI_NETWORK, UI_NET_SELECT, ""},
 	{UI_NETWORK, UI_WIFI_SETTINGS, UI_WIFI_MENU},
+	{UI_NETWORK, UI_APN_MENU, ""},
+
+	{UI_APN_MENU, UI_APN_MANUAL_MENU, ""},
+	{UI_APN_MENU, UI_APN_SELECT_MENU, ""},
+	{UI_APN_MENU, UI_VIEW_APN_MENU,   ""},
+
+
 
 	{UI_REPRINT, UI_REPRINT_TODAY, ""},
 	{UI_REPRINT, UI_REPRINT_BY_DATE, ""},
@@ -570,6 +577,38 @@ static short operatorHandler(const char *pid)
 			return -1;
 		}
 		aboutTerminal(mParam.tid);
+	} else if (strcmp(pid, UI_APN_MANUAL_MENU) == 0) {
+
+		MerchantData merchantData;
+		memset(&merchantData, 0x00, sizeof(MerchantData));
+		readMerchantData(&merchantData);
+
+		if (strcmp(pid, UI_APN_MANUAL_MENU) == 0 ) {
+			merchantData.gprsSettings.timeout = 3000;
+			if (manualSimProfile(&merchantData.gprsSettings) == 0) {
+				saveMerchantData(&merchantData);
+			}
+		} 
+	} else if (strcmp(pid, UI_VIEW_APN_MENU) == 0) {
+
+		char msg[256] = {'\0'};
+		char title[32] = {'\0'};
+		MerchantData merchantData;
+
+		memset(msg, 0x00, sizeof(msg));
+		memset(title, 0x00, sizeof(title));
+		memset(&merchantData, 0x00, sizeof(MerchantData));
+		readMerchantData(&merchantData);
+
+		sprintf(title, "%s", merchantData.gprsSettings.operatorName[0] ? merchantData.gprsSettings.operatorName : "UNKNWON");
+		sprintf(msg, "APN : %s\nUSER : %s\nPWD : %s", merchantData.gprsSettings.apn, merchantData.gprsSettings.username, merchantData.gprsSettings.password);
+
+		// printf("APN : %s\nUSER : %s\nPWD : %s\n", merchantData.gprsSettings.apn, merchantData.gprsSettings.username, merchantData.gprsSettings.password);
+		strToUpper(title);
+		gui_messagebox_show(title, msg , "", "Ok" , 0);
+	}
+	else if (strcmp(pid, UI_APN_SELECT_MENU) == 0) {
+		selectSimConfig();
 	}
 	else
 	{

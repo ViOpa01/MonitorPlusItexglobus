@@ -96,6 +96,7 @@
         "memory_resource": "cpp",
         "string_view": "cpp",
         "jsobject.h": "c",
-        "appinfo.h": "c"
+        "appinfo.h": "c",
+        "util.h": "c"
     }
 }
