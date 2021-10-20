@@ -52,6 +52,7 @@ VasResult WaecViewModel::lookup()
 {
     iisys::JSObject obj;
 
+    obj("version") = vasApplicationVersion();
     obj("channel") = vasChannel();
     obj("service") = apiServiceString(getService());
 
@@ -325,6 +326,7 @@ int WaecViewModel::getPaymentJson(iisys::JSObject& json) const
     json("phone") = userData.phoneNumber;
     json("customerName") = userData.firstName + " " + userData.lastName;
     json("productCode") = lookupResponse.productCode;
+    json("version") = vasApplicationVersion();
     json("paymentMethod") = apiPaymentMethodString(payMethod);
     json("channel") = vasChannel();
     json("service") = apiServiceString(service);

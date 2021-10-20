@@ -545,8 +545,8 @@ void printElectricity(std::map<std::string, std::string> &record)
 
 void printTv(std::map<std::string, std::string> &record)
 {
-    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_PHONE, "paymentMethod", "reference"};
-    const char* labels[] = {"WALLET", "TXN TID", "IUC", "NAME", "PHONE", "PAYMENT METHOD", "REF"};
+    const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_PHONE, "paymentMethod", "reference", "packageName", "packageMonth"};
+    const char* labels[] = {"WALLET", "TXN TID", "IUC", "NAME", "PHONE", "PAYMENT METHOD", "REF", "PACKAGE NAME", "PACKAGE MONTH"};
 
      for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
         if (record.find(keys[i]) != record.end()) {
@@ -1211,8 +1211,8 @@ void printVasFooter()
 
 std::string vasApiKey()
 {
-    // char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC"; //test
-    char key[] = "o83prs088n4943231342p7sq53o6502q";    //live
+    char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC"; //test
+    // char key[] = "o83prs088n4943231342p7sq53o6502q";    //live
     rot13(key);
     return std::string(key);
 }

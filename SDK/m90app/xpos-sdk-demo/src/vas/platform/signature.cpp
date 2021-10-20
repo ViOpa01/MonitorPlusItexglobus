@@ -280,8 +280,8 @@ std::string vasimpl::generateRequestAuthorization_v2(const std::string& requestB
     char signature[SHA256_DIGEST_LENGTH] = { 0 };
     char signaturehex[2 * SHA256_DIGEST_LENGTH + 1] = { 0 };
     size_t i;
-    // const char *key = "n6D6nbUURFbafb27kNxmbODqLSge9pXP";   // test
-    const char *key = "b83cef088a4943231342c7fd53b6502d";   // live
+    const char *key = "n6D6nbUURFbafb27kNxmbODqLSge9pXP";   // test
+    // const char *key = "b83cef088a4943231342c7fd53b6502d";   // live
 
     vasimpl::hmac_sha256((const unsigned char*)requestBody.c_str(), requestBody.length(), (const unsigned char*)key, (int)strlen(key), signature);
 
@@ -358,5 +358,5 @@ cleanup:
 std::string vasimpl::cbc128_decrypt(const unsigned char* ciphertext, const int ciphertext_len, const unsigned char* key, const unsigned char* iv)
 {
     return decrypt(ciphertext, ciphertext_len, key, iv, EVP_aes_128_cbc());
-    return "";
+    // return "";
 }

@@ -54,7 +54,7 @@ int apduSendToBcd(unsigned char *bcd, const size_t bcdSize, const APDU_SEND *apd
 static void bcdToAsc(char *asc, const unsigned char *bcd, const int size)
 {
     int i;
-    short pos;
+    short pos = 0;
 
     for (i = 0; i < size; i++)
     {

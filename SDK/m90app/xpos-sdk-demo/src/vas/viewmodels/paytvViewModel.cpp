@@ -1,27 +1,42 @@
+#include <algorithm>
+#include <ctype.h>
+#include <iostream>
+#include <math.h>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
-#include <algorithm>
-#include <ctype.h>
-#include <math.h>
-#include <iostream>
 
-#include "platform/platform.h"
 #include "payvice.h"
+#include "platform/platform.h"
 #include "virtualtid.h"
 
 #include "paytvViewModel.h"
 
-#include "vasdb.h"
 #include "nqr.h"
+#include "vasdb.h"
 
 PayTVViewModel::PayTVViewModel(const char* title, VasComProxy& proxy)
     : _title(title)
     , comProxy(proxy)
     , service(SERVICE_UNKNOWN)
+    , packageMonths(0)
 {
+}
+
+VasResult PayTVViewModel::packageLookup()
+{
+    VasResult response;
+    iisys::JSObject obj;
+
+    if (getPackageLookupJson(obj, service) < 0) {
+        return VasResult(VAS_ERROR, "Data Error");
+    }
+
+    response = comProxy.lookup("/api/v2/vas/cabletv/bouquets", &obj);
+
+    return packageLookupCheck(response);
 }
 
 VasResult PayTVViewModel::lookup()
@@ -32,17 +47,19 @@ VasResult PayTVViewModel::lookup()
     if (getLookupJson(obj, service) < 0) {
         return VasResult(VAS_ERROR, "Data Error");
     }
+    if (service == GOTV || service == DSTV) {
+        response = comProxy.lookup("/api/v2/vas/cabletv/validation", &obj);
+    } else if (service == STARTIMES) {
+        response = comProxy.lookup("/api/v1/vas/cabletv/validation", &obj);
+    }
 
-    response = comProxy.lookup("/api/v1/vas/cabletv/validation", &obj);
-    
-    
     return lookupCheck(response);
 }
 
 VasResult PayTVViewModel::initiate(const std::string& pin)
 {
     VasResult response;
-    
+
     if (payMethod != PAY_WITH_NQR) {
         response.error = NO_ERRORS;
         return response;
@@ -55,7 +72,7 @@ VasResult PayTVViewModel::initiate(const std::string& pin)
         response.message = "Data Error";
         return response;
     }
-    
+
     json("clientReference") = clientReference = getClientReference(retrievalReference);
     json("pin") = encryptedPin(Payvice(), pin.c_str());
 
@@ -132,7 +149,7 @@ VasResult PayTVViewModel::lookupCheck(const VasResult& lookupStatus)
     if (result.error != NO_ERRORS) {
         return result;
     }
- 
+
     const iisys::JSObject& responseData = response("data");
     if (!responseData.isObject()) {
         return result;
@@ -167,30 +184,85 @@ VasResult PayTVViewModel::lookupCheck(const VasResult& lookupStatus)
 
     if (bouquet.isString()) {
         lookupResponse.bouquet = bouquet.getString();
-    } 
+    }
 
     if (balance.isString()) {
         lookupResponse.balance = balance.getString();
-    } 
+    }
 
     lookupResponse.productCode = pCode.getString();
-    
+
     if (bundles.size() == 0) {
         result = VasResult(VAS_ERROR, "Bouquets empty");
         return result;
     }
 
     bouquets = bundles;
-    result = VasResult(NO_ERRORS); 
+    result = VasResult(NO_ERRORS);
     return result;
+}
+
+VasResult PayTVViewModel::packageLookupCheck(const VasResult& lookupStatus)
+{
+    iisys::JSObject response;
+    VasResult result;
+
+    if (lookupStatus.error != NO_ERRORS) {
+        result = VasResult(LOOKUP_ERROR, lookupStatus.message.c_str());
+        return result;
+    }
+
+    if (!response.load(lookupStatus.message)) {
+        result = VasResult(INVALID_JSON, "Invalid Response");
+        return result;
+    }
+
+    result = vasResponseCheck(response);
+
+    if (result.error != NO_ERRORS) {
+        return result;
+    }
+
+    const iisys::JSObject& responseData = response("data");
+    if (!responseData.isObject()) {
+        return result;
+    }
+
+    const iisys::JSObject& bundles = responseData("bouquets");
+
+    if (!bundles.isArray()) {
+        result = VasResult(VAS_ERROR, "Data Packages not found");
+        return result;
+    }
+
+    if (bundles.size() == 0) {
+        result = VasResult(VAS_ERROR, "Bouquets empty");
+        return result;
+    }
+
+    bouquets = bundles;
+    result = VasResult(NO_ERRORS);
+    return result;
+}
+
+VasResult PayTVViewModel::setPackageMonthAndAmount(int selectedIndex)
+{
+    if (bouquets.size() == 0) {
+        return VasResult(NO_ERRORS);
+    }
+
+    packageMonths = availablePackagePricingOptions[selectedIndex]("monthsPaidFor").getNumber();
+    amount = (unsigned long)lround(availablePackagePricingOptions[selectedIndex]("totalAmount").getNumber() * 100.0);
+
+    return VasResult(NO_ERRORS);
 }
 
 std::map<std::string, std::string> PayTVViewModel::storageMap(const VasResult& completionStatus)
 {
     std::map<std::string, std::string> record;
     const std::string amountStr = vasimpl::to_string(this->amount);
-    
-    record[VASDB_PRODUCT] = this->selectedPackage("name").getString(); 
+
+    record[VASDB_PRODUCT] = this->selectedPackage("name").getString();
     record[VASDB_BENEFICIARY_NAME] = lookupResponse.name;
 
     record[VASDB_CATEGORY] = _title;
@@ -218,21 +290,19 @@ std::map<std::string, std::string> PayTVViewModel::storageMap(const VasResult& c
     }
 
     record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
-    
-    record[VASDB_STATUS_MESSAGE] = completionStatus.message;
 
+    record[VASDB_STATUS_MESSAGE] = completionStatus.message;
+    if (service == DSTV || service == GOTV) {
+        std::string packageMonthsStr = vasimpl::to_string(packageMonths);
+        record[VASDB_SERVICE_DATA] = std::string("{\"packageMonth\": \"") + packageMonthsStr
+            + std::string("\", \"packageName\": \"") + selectedPackage("name").getString() + "\"}";
+    }
     return record;
 }
 
-const iisys::JSObject& PayTVViewModel::getBouquets() const
-{
-    return bouquets;
-}
+const iisys::JSObject& PayTVViewModel::getBouquets() const { return bouquets; }
 
-Service PayTVViewModel::getService() const
-{
-    return service;
-}
+Service PayTVViewModel::getService() const { return service; }
 
 int PayTVViewModel::getLookupJson(iisys::JSObject& json, Service service) const
 {
@@ -242,7 +312,7 @@ int PayTVViewModel::getLookupJson(iisys::JSObject& json, Service service) const
         json("account") = iuc;
     } else if (service == STARTIMES) {
         json("smartCardCode") = iuc;
-        if (this->startimestype == STARTIMES_TOPUP){
+        if (this->startimestype == STARTIMES_TOPUP) {
             json("amount") = majorDenomination(amount);
         }
     }
@@ -254,6 +324,18 @@ int PayTVViewModel::getLookupJson(iisys::JSObject& json, Service service) const
     return 0;
 }
 
+int PayTVViewModel::getPackageLookupJson(iisys::JSObject& json, Service service) const
+{
+    json.clear();
+
+    json("type") = apiServiceType(service);
+    json("version") = vasApplicationVersion();
+    json("service") = apiServiceString(service);
+    json("productCode") = lookupResponse.productCode;
+
+    return 0;
+}
+
 int PayTVViewModel::getPaymentJson(iisys::JSObject& json, Service service) const
 {
 
@@ -261,6 +343,8 @@ int PayTVViewModel::getPaymentJson(iisys::JSObject& json, Service service) const
         json("iuc") = iuc;
         json("code") = selectedPackage("code");
         json("unit") = lookupResponse.unit;
+        json("productMonths") = packageMonths;
+        json("totalAmount") = majorDenomination(amount);
     } else if (service == STARTIMES) {
         if (this->startimestype == STARTIMES_BUNDLE) {
             json("bouquet") = selectedPackage("name");
@@ -269,24 +353,24 @@ int PayTVViewModel::getPaymentJson(iisys::JSObject& json, Service service) const
             json("amount") = majorDenomination(amount);
         }
     }
-    
+
     json("productCode") = lookupResponse.productCode;
     json("channel") = vasChannel();
     json("version") = vasApplicationVersion();
     json("phone") = phoneNumber;
     json("service") = apiServiceString(service);
     json("paymentMethod") = apiPaymentMethodString(payMethod);
-    
+
     return 0;
 }
 
 const char* PayTVViewModel::apiServiceString(Service service) const
 {
-    switch (service) {   
+    switch (service) {
     case DSTV:
-    case GOTV :
+    case GOTV:
         return "multichoice";
-    case STARTIMES :
+    case STARTIMES:
         return "startimes";
     default:
         return "";
@@ -296,27 +380,24 @@ const char* PayTVViewModel::apiServiceString(Service service) const
 const char* PayTVViewModel::apiServiceType(Service service) const
 {
     switch (service) {
-        case DSTV:
-            return "DSTV";
-        case GOTV:
-            return "GOTV";  
-        case STARTIMES:
-            if (this->startimestype == STARTIMES_BUNDLE) {
-                return "default";
-            } else if (this->startimestype == STARTIMES_TOPUP) {
-                return "topup";
-            } else {
-                return "";
-            }
-        default:
+    case DSTV:
+        return "DSTV";
+    case GOTV:
+        return "GOTV";
+    case STARTIMES:
+        if (this->startimestype == STARTIMES_BUNDLE) {
+            return "default";
+        } else if (this->startimestype == STARTIMES_TOPUP) {
+            return "topup";
+        } else {
             return "";
+        }
+    default:
+        return "";
     }
 }
 
-unsigned long PayTVViewModel::getAmount() const
-{
-    return amount;
-}
+unsigned long PayTVViewModel::getAmount() const { return amount; }
 
 VasResult PayTVViewModel::setAmount(unsigned long amount)
 {
@@ -330,10 +411,7 @@ VasResult PayTVViewModel::setAmount(unsigned long amount)
     return result;
 }
 
-std::string PayTVViewModel::getIUC() const
-{
-    return iuc;
-}
+std::string PayTVViewModel::getIUC() const { return iuc; }
 
 VasResult PayTVViewModel::setIUC(const std::string& iuc)
 {
@@ -355,16 +433,16 @@ VasResult PayTVViewModel::setSelectedPackage(int selectedPackageIndex, const std
     if (getService() == STARTIMES && startimestype == STARTIMES_BUNDLE) {
         const iisys::JSObject& cycles = this->selectedPackage("cycles");
         this->cycle = cycle;
-        this->amount = (unsigned long) lround(cycles(cycle).getNumber() * 100.0);
+        this->amount = (unsigned long)lround(cycles(cycle).getNumber() * 100.0);
     } else {
-        this->amount = (unsigned long) lround(this->selectedPackage("amount").getNumber() * 100.0);
+        availablePackagePricingOptions = selectedPackage("availablePricingOptions");
     }
 
     return result;
 }
 
 VasResult PayTVViewModel::setStartimesType(StartimesType startimestype)
-{   
+{
     VasResult result;
 
     if (startimestype != UNKNOWN_TYPE) {
@@ -375,28 +453,23 @@ VasResult PayTVViewModel::setStartimesType(StartimesType startimestype)
     return result;
 }
 
-PayTVViewModel::StartimesType PayTVViewModel::getStartimesTypes() const
-{
-    return startimestype;
-}
+PayTVViewModel::StartimesType PayTVViewModel::getStartimesTypes() const { return startimestype; }
 
-PaymentMethod PayTVViewModel::getPaymentMethod() const
-{
-    return payMethod;
-}
+PaymentMethod PayTVViewModel::getPaymentMethod() const { return payMethod; }
 
-const std::string& PayTVViewModel::getRetrievalReference() const
-{
-    return retrievalReference;
-}
+const std::string& PayTVViewModel::getRetrievalReference() const { return retrievalReference; }
 
 const char* PayTVViewModel::paymentPath()
 {
     if (getPaymentMethod() == PAY_WITH_NQR) {
         return nqrStatusCheckUrl();
-    } else {
+    } else if (service == GOTV || service == DSTV) {
+        return "/api/v2/vas/cabletv/subscription";
+    } else if (service == STARTIMES) {
         return "/api/v1/vas/cabletv/subscription";
     }
+
+    return "";
 }
 
 VasResult PayTVViewModel::processPaymentResponse(const iisys::JSObject& json, Service service)
@@ -440,7 +513,7 @@ VasResult PayTVViewModel::setPaymentMethod(PaymentMethod payMethod)
     if (payMethod == PAY_WITH_CARD || payMethod == PAY_WITH_CASH || payMethod == PAY_WITH_NQR) {
         result.error = NO_ERRORS;
         this->payMethod = payMethod;
-    }   
+    }
 
     return result;
 }
@@ -465,13 +538,12 @@ VasResult PayTVViewModel::setService(Service service)
 
 const char* PayTVViewModel::serviceTypeString(StartimesType type)
 {
-	switch (type) {
-	case STARTIMES_BUNDLE:
-		return "default";
-	case STARTIMES_TOPUP:
-		return "topup";
+    switch (type) {
+    case STARTIMES_BUNDLE:
+        return "default";
+    case STARTIMES_TOPUP:
+        return "topup";
     default:
-	    return "";
+        return "";
     }
 }
-

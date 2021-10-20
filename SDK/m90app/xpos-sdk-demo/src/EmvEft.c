@@ -247,7 +247,7 @@ static void TestDownloadAID(TERMINALAPPLIST *TerminalApps)
 void bcdToAsc(char *asc, unsigned char *bcd, const int size)
 {
 	int i;
-	short pos;
+	short pos = 0;
 
 	for (i = 0; i < size; i++)
 	{
@@ -1497,6 +1497,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 	{
 		LOG_PRINTF("\nUnknow transaction type");
 		eft->vas.abortTrans = 1;
+		free(card_in);
 		return -1;
 	}
 
@@ -1523,6 +1524,7 @@ int performEft(Eft *eft, NetWorkParameters *netParam, void* merchantData, const 
 		eft->fromAccount = getAccountType();
 		if (eft->fromAccount == ACCOUNT_END) {
 			eft->vas.abortTrans = 1;
+		    free(card_in);
 			return -1;
 		}
 	}

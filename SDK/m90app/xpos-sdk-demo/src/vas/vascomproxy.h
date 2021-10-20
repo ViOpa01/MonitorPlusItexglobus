@@ -14,14 +14,14 @@
 #include "../Nibss8583.h"
 
 // LIVE REQUERY "http://197.253.19.76:8017"
-// Test REQUERY "http://197.253.19.76:8006"
-#define REQUERY_IP "197.253.19.76"
-#define REQUERY_PORT 8017
+// Test REQUERY "http://197.253.19.78:8006"
+#define REQUERY_IP "197.253.19.78"
+#define REQUERY_PORT 8006
 
-// Test VAS "http://197.253.19.76:1880"
+// Test VAS "http://197.253.19.78:1880"
 // Live VAS "http://197.253.19.76:8019"
-#define VAS_IP "197.253.19.76"
-#define VAS_PORT "8019"
+#define VAS_IP "197.253.19.78"
+#define VAS_PORT "1880"
 
    
 struct CardData {

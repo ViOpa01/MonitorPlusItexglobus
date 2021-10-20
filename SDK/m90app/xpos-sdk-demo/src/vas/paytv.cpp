@@ -1,15 +1,15 @@
 #include <algorithm>
+#include <ctype.h>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
-#include <ctype.h>
 
 #include "platform/platform.h"
 
-#include "vasdb.h"
 #include "nqr.h"
+#include "vasdb.h"
 
 #include "paytv.h"
 
@@ -18,9 +18,7 @@ PayTV::PayTV(const char* title, VasComProxy& proxy)
 {
 }
 
-PayTV::~PayTV()
-{
-}
+PayTV::~PayTV() { }
 
 VasResult PayTV::beginVas()
 {
@@ -38,19 +36,18 @@ VasResult PayTV::beginVas()
         if (service == STARTIMES) {
             PayTVViewModel::StartimesType type = getStartimesType("Startimes Type");
 
-            if(type == PayTVViewModel::UNKNOWN_TYPE) {
+            if (type == PayTVViewModel::UNKNOWN_TYPE) {
                 return VasResult(USER_CANCELLATION);
-            } else if(viewModel.setStartimesType(type).error != NO_ERRORS) {
+            } else if (viewModel.setStartimesType(type).error != NO_ERRORS) {
                 return VasResult(VAS_ERROR);
             } else if (type == PayTVViewModel::STARTIMES_TOPUP) {
                 unsigned long amount = getVasAmount(serviceToString(viewModel.getService()));
 
                 if (!amount) {
-                    return VasResult(USER_CANCELLATION);;
+                    return VasResult(USER_CANCELLATION);
                 } else if (viewModel.setAmount(amount).error != NO_ERRORS) {
                     return VasResult(VAS_ERROR);
                 }
-
             }
         }
 
@@ -58,12 +55,11 @@ VasResult PayTV::beginVas()
 
         if (iuc.empty()) {
             return VasResult(USER_CANCELLATION);
-        } else if (viewModel.setIUC(iuc).error != NO_ERRORS){
+        } else if (viewModel.setIUC(iuc).error != NO_ERRORS) {
             return VasResult(VAS_ERROR);
         }
-        
-        break;
 
+        break;
     }
 
     return VasResult(NO_ERRORS);
@@ -78,10 +74,10 @@ VasResult PayTV::lookup()
 
     response = viewModel.lookup();
 
-    if(response.error != NO_ERRORS) {
+    if (response.error != NO_ERRORS) {
         return response;
     }
-    
+
     return displayLookupInfo();
 }
 
@@ -90,16 +86,17 @@ VasResult PayTV::initiate()
     VasResult result;
 
     while (1) {
-        PaymentMethod payMethod = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_CASH));
+        PaymentMethod payMethod
+            = getPaymentMethod(static_cast<PaymentMethod>(PAY_WITH_CARD | PAY_WITH_NQR | PAY_WITH_CASH));
         if (payMethod == PAYMENT_METHOD_UNKNOWN) {
             result = VasResult(USER_CANCELLATION);
             return result;
-        } 
+        }
 
         result = viewModel.setPaymentMethod(payMethod);
         if (result.error != NO_ERRORS) {
             return result;
-        } 
+        }
 
         std::string phoneNumber = getPhoneNumber("Phone Number", "");
         if (phoneNumber.empty()) {
@@ -131,7 +128,7 @@ VasResult PayTV::initiateCardlessTransaction()
     if (result.error != NO_ERRORS) {
         return result;
     }
-        
+
     Demo_SplashScreen("Initiating Payment...", "www.payvice.com");
     result = viewModel.initiate(pin);
     if (result.error) {
@@ -151,7 +148,7 @@ VasResult PayTV::complete()
 
     if (viewModel.getPaymentMethod() == PAY_WITH_CASH) {
         response.error = getVasPin(pin);
-        if(response.error != NO_ERRORS) {
+        if (response.error != NO_ERRORS) {
             return response;
         }
     }
@@ -170,11 +167,7 @@ std::map<std::string, std::string> PayTV::storageMap(const VasResult& completion
     return record;
 }
 
-Service PayTV::vasServiceType()
-{
-    return DSTV;
-}
-
+Service PayTV::vasServiceType() { return DSTV; }
 
 VasResult PayTV::displayLookupInfo()
 {
@@ -195,30 +188,43 @@ VasResult PayTV::displayLookupInfo()
         confirmationMessage << "Balance: " << viewModel.lookupResponse.balance << std::endl;
     }
 
-    int cancelConfirmation = UI_ShowOkCancelMessage(30000, "Confirm Info", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
+    int cancelConfirmation
+        = UI_ShowOkCancelMessage(30000, "Confirm Info", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE);
     if (cancelConfirmation) {
         return VasResult(USER_CANCELLATION);
-    } else if (viewModel.getService() == STARTIMES && viewModel.getStartimesTypes() == PayTVViewModel::STARTIMES_TOPUP) {
+    } else if (viewModel.getService() == STARTIMES
+        && viewModel.getStartimesTypes() == PayTVViewModel::STARTIMES_TOPUP) {
         return VasResult(NO_ERRORS);
     }
 
+    if (viewModel.getService() == DSTV || viewModel.getService() == GOTV) {
+        Demo_SplashScreen("Package Lookup In Progress", "www.payvice.com");
+        VasResult response;
+
+        response = viewModel.packageLookup();
+        if (response.error != NO_ERRORS) {
+            return response;
+        }
+    }
+
     const iisys::JSObject& bouquets = viewModel.getBouquets();
-    
+
     if (bouquets.isNull() || !bouquets.isArray()) {
         return VasResult(VAS_ERROR, "Bouquets not found");
     }
 
-    const size_t size = bouquets.size();
+    size_t size = bouquets.size();
     std::vector<std::string> menuData;
-    std::string cycle;
     std::string amountStr;
+    std::string cycle;
     int index;
+    int monthIndex;
 
     while (1) {
-
         if (viewModel.getService() == DSTV || viewModel.getService() == GOTV) {
             for (size_t i = 0; i < size; ++i) {
-                menuData.push_back(bouquets[i]("name").getString() + vasimpl::menuendl() + bouquets[i]("amount").getString() + " Naira");
+                menuData.push_back(bouquets[i]("name").getString() + vasimpl::menuendl()
+                    + bouquets[i]("amount").getString() + " Naira/month");
             }
 
             index = UI_ShowSelection(60000, "Bouquets", menuData, 0);
@@ -226,7 +232,26 @@ VasResult PayTV::displayLookupInfo()
                 return VasResult(USER_CANCELLATION);
             }
 
-            amountStr = bouquets[index]("amount").getString();
+            menuData.clear();
+            for (size_t i = 0; i < size; ++i) {
+                menuData.push_back(bouquets[i]("name").getString() + vasimpl::menuendl()
+                    + bouquets[i]("amount").getString() + " Naira/month");
+            }
+
+            menuData.clear();
+            size = bouquets[index]("availablePricingOptions").size();
+            for (size_t i = 0; i < size; ++i) {
+                menuData.push_back(bouquets[index]("availablePricingOptions")[i]("monthsPaidFor").getString()
+                    + "Month(s)" + vasimpl::menuendl()
+                    + bouquets[index]("availablePricingOptions")[i]("totalAmount").getString() + " Naira");
+            }
+
+            monthIndex = UI_ShowSelection(60000, "Months Paid For", menuData, 0);
+            if (monthIndex < 0) {
+                return VasResult(USER_CANCELLATION);
+            }
+
+            amountStr = bouquets[index]("availablePricingOptions")[monthIndex]("totalAmount").getString();
 
         } else {
             while (1) {
@@ -258,12 +283,11 @@ VasResult PayTV::displayLookupInfo()
                 amountStr = vasimpl::to_string(cycles(cycle).getNumber());
                 break;
             }
-
         }
 
         confirmationMessage.str(std::string());
         confirmationMessage << "Bouquet:" << std::endl << bouquets[index]("name").getString() << std::endl;
-        confirmationMessage << "Amount: NGN "  << amountStr << std::endl;
+        confirmationMessage << "Amount: NGN " << amountStr << std::endl;
 
         if (UI_ShowOkCancelMessage(30000, "Confirm", confirmationMessage.str().c_str(), UI_DIALOG_TYPE_NONE) == 0) {
             break;
@@ -273,6 +297,9 @@ VasResult PayTV::displayLookupInfo()
     if (index < 0) {
         return VasResult(USER_CANCELLATION);
     } else if (viewModel.setSelectedPackage(index, cycle).error != NO_ERRORS) {
+        return VasResult(VAS_ERROR);
+    } else if ((viewModel.getService() == DSTV || viewModel.getService() == GOTV)
+        && viewModel.setPackageMonthAndAmount(monthIndex).error != NO_ERRORS) {
         return VasResult(VAS_ERROR);
     }
 
@@ -295,5 +322,3 @@ PayTVViewModel::StartimesType PayTV::getStartimesType(const char* title)
         return PayTVViewModel::UNKNOWN_TYPE;
     }
 }
-
-

@@ -809,7 +809,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 	while(Sys_TimerCheck(tick1) > 0){
 		int ret;
 		int num;
-		unsigned char buffer[4096 * 6];
+		unsigned char buffer[4096 * 16];
 		memset(buffer, 0x00, sizeof(buffer));
 
 		if(!netParam->async)
