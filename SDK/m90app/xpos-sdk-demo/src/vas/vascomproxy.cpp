@@ -204,17 +204,18 @@ Postman::sendVasCardRequest(const char* url, const iisys::JSObject* json, CardDa
     strncpy(cardData->trxContext.echoData, cardData->refcode.c_str(), sizeof(cardData->trxContext.echoData) - 1);
     strncpy(cardData->trxContext.rrn, cardData->reference.c_str(), strlen(cardData->reference.c_str()));
     strcpy(cardData->trxContext.paymentInformation, cardData->upWithdrawal.field60.c_str()); 
+    int ret  = doVasCardTransaction(&cardData->trxContext, cardData->amount);
     
-    if (doVasCardTransaction(&cardData->trxContext, cardData->amount) < 0) {
+    cardData->primaryIndex = cardData->trxContext.atPrimaryIndex;
+    cardData->transactionTid = cardData->trxContext.returnTid;
+    
+    if (ret < 0) {
 
         if (cardData->trxContext.vas.abortTrans) {
             result.error = INPUT_ABORT;
         }
         return result;  // We weren't able to initiate transaction
     }
-
-    cardData->primaryIndex = cardData->trxContext.atPrimaryIndex;
-    cardData->transactionTid = cardData->trxContext.returnTid;
 
     if (cardData->trxContext.vas.auxResponse[0]) {
         // Extra check to assert that card tranaction was successful?
@@ -280,8 +281,10 @@ VasResult Postman::requeryVas(const char* clientRef, const char* walletId, const
     NetWorkParameters netParam = {'\0'};
     iisys::JSObject json;
     const char* jsonBody;
+    MerchantData merchant;
+    readMerchantData(&merchant);
     
-    strncpy((char *)netParam.host, REQUERY_IP, sizeof(netParam.host) - 1);
+    strncpy((char *)netParam.host, merchant.vasUrl, sizeof(netParam.host) - 1);
     netParam.receiveTimeout = 60000;
 	strncpy(netParam.title, "Requery", 10);
     netParam.isHttp = 1;
@@ -321,7 +324,7 @@ VasResult Postman::requeryVas(const char* clientRef, const char* walletId, const
     } else {
 
         if (commStatus == CONNECTION_FAILED) {
-            result.message = "Connection Error";
+            result.message = "SIM out of Data\nOR Host is down.";
         } else if (commStatus == SENDING_FAILED) {
             result.message = "Send Error";
         } else if (commStatus == RECEIVING_FAILED) {
@@ -386,7 +389,7 @@ VasResult Postman::sendVasRequest(const char* url, const iisys::JSObject* json, 
     if(commStatus != SEND_RECEIVE_SUCCESSFUL){
 
         if (commStatus == CONNECTION_FAILED) {
-            result.message = "Connection Error";
+            result.message = "SIM out of Data\nOR Host is down.";
         } else if (commStatus == SENDING_FAILED) {
             result.message = "Send Error";
         } else if (commStatus == RECEIVING_FAILED) {
@@ -414,8 +417,10 @@ VasError Postman::manualRequery(iisys::JSObject& transaction, const std::string&
     Payvice payvice;
     NetWorkParameters netParam = {'\0'};
     iisys::JSObject json;
+    MerchantData merchant;
+    readMerchantData(&merchant);
     
-    strncpy((char *)netParam.host, REQUERY_IP, sizeof(netParam.host) - 1);
+    strncpy((char *)netParam.host, merchant.vasUrl, sizeof(netParam.host) - 1);
     netParam.receiveTimeout = 60000;
 	strncpy(netParam.title, "Requery", 10);
     netParam.isHttp = 1;
@@ -503,4 +508,16 @@ int vasPayloadGenerator(void* jsobject, void* data, const void *eft)
 
     return 0;
 
+}
+
+Postman getVasPostMan()
+{
+#ifdef VAS_TEST
+    Postman postman(VAS_URL);
+#else
+    MerchantData merchant = { '\0' };
+    readMerchantData(&merchant);
+    Postman postman(merchant.vasUrl);
+#endif
+    return postman;
 }

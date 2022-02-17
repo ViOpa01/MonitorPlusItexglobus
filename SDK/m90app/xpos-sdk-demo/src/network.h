@@ -30,7 +30,7 @@ enum CommsStatus {
 typedef struct NetWorkParameters
 {
     unsigned char packet[4096 * 3];
-    unsigned char response[4096 * 16];
+    unsigned char response[0x10000];
     int packetSize;  
     int responseSize;
     unsigned char host[64];
@@ -42,7 +42,6 @@ typedef struct NetWorkParameters
     int socketIndex;
     //char apn[50];
     char title[35];
-    //int netLinkTimeout;
     int receiveTimeout;
 
     char serverCert[256];
@@ -65,15 +64,7 @@ typedef struct {
 } Network;
 
 
-/**
- * Function: netLink
- * usage: netLink(&netparam);
- * --------------------------
- *
- */
-
-short netLink(Network * gprsSettings);
-int manualSimProfile(Network *profile) ;
+int manualSimProfile(void) ;
 int selectSimConfig();
 
 short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp);

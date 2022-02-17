@@ -66,6 +66,27 @@ VasResult Electricity::beginVas()
         return result;
     }
 
+    std::string phoneNumber = getPhoneNumber("Phone Number", "");
+    if (phoneNumber.empty()) {
+        result = VasResult(USER_CANCELLATION);
+        return result;
+    } else if (viewModel.setPhoneNumber(phoneNumber).error != NO_ERRORS) {
+        result.error = VAS_ERROR;
+        return result;
+    }
+
+    if (vasServiceType() == IKEJA) {
+        std::string agentPhoneNumber = getPhoneNumber("Agent Phone Number", "");
+        if (agentPhoneNumber.empty()) {
+            result = VasResult(USER_CANCELLATION);
+            return result;
+        } else if (viewModel.setAgentPhoneNumber(agentPhoneNumber).error
+            != NO_ERRORS) {
+            result.error = VAS_ERROR;
+            return result;
+        }
+    }
+
     result = VasResult(NO_ERRORS);
 
     return result;
@@ -135,14 +156,6 @@ VasResult Electricity::initiate()
             result.error = USER_CANCELLATION;
             return result;
         } else if (viewModel.setPaymentMethod(payMethod).error != NO_ERRORS) {
-            result.error = VAS_ERROR;
-            return result;
-        }
-
-        std::string phoneNumber = getPhoneNumber("Phone Number", "");
-        if (phoneNumber.empty()) {
-            continue;
-        } else if (viewModel.setPhoneNumber(phoneNumber).error != NO_ERRORS) {
             result.error = VAS_ERROR;
             return result;
         }

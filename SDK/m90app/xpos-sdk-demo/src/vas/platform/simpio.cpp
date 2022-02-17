@@ -146,7 +146,7 @@ int getText(std::string& val, int display, int timeout, const char* title, const
     return result;
 }
 
-int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE type)
+static int UI_ShowTwoButtonMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE type, char* proceedText, char* declineText)
 {
     int result = 0;
     char msg[128 + 1] = {'\0'};
@@ -155,7 +155,7 @@ int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_
     strncpy(msg, text, sizeof(msg) - 1);
 
     gui_clear_dc();
-	result = gui_messagebox_show((char *)title, (char *)msg, "Cancel", "Ok", 0);
+	result = gui_messagebox_show((char *)title, (char *)msg, declineText, proceedText, 0);
 
     switch (result) {
     case 1:
@@ -169,6 +169,16 @@ int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_
     }
 
     return CANCEL;
+}
+
+int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE type)
+{
+    return UI_ShowTwoButtonMessage(timeout, title, text, type, "Ok", "Cancel");
+}
+
+int UI_ShowYesNolMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE type)
+{
+    return UI_ShowTwoButtonMessage(timeout, title, text, type, "Yes", "No");
 }
 
 int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const char* button, UI_DIALOG_TYPE type)

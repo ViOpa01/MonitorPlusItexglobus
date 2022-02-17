@@ -42,6 +42,11 @@ VasResult Jamb::beginVas()
             return VasResult(USER_CANCELLATION);
         }
 
+        const std::string phoneNumber = getPhoneNumber("Phone Number", "");
+        if (phoneNumber.empty()) {
+            return VasResult(USER_CANCELLATION);
+        }
+    
         const std::string confirmationCode = getNumeric(0, 60000, "Confirmation Code", "Enter code", UI_DIALOG_TYPE_NONE);
         if (confirmationCode.empty()) {
             continue;
@@ -56,6 +61,9 @@ VasResult Jamb::beginVas()
 
         if (viewModel.setEmail(email).error != NO_ERRORS) {
             UI_ShowButtonMessage(10000, "Error", "Error setting mail", "", UI_DIALOG_TYPE_WARNING);
+            return VasResult(VAS_ERROR);
+        } else if (viewModel.setPhoneNumber(phoneNumber).error != NO_ERRORS){
+            UI_ShowButtonMessage(10000, "Error", "Error setting phone number", "", UI_DIALOG_TYPE_WARNING);
             return VasResult(VAS_ERROR);
         } else if (viewModel.setConfirmationCode(confirmationCode).error != NO_ERRORS){
             UI_ShowButtonMessage(10000, "Error", "Error setting confirmation code", "", UI_DIALOG_TYPE_WARNING);

@@ -197,6 +197,13 @@ VasResult PayTV::displayLookupInfo()
         return VasResult(NO_ERRORS);
     }
 
+    if ((viewModel.getService() == DSTV || viewModel.getService() == GOTV)
+        && UI_ShowYesNolMessage(30000, "Confirm", "Renew current plan?", UI_DIALOG_TYPE_NONE) == 0) {
+        viewModel.setShouldRenew(true);
+        return VasResult(NO_ERRORS);
+    }
+    printf("Got here!!(0)\n");
+
     if (viewModel.getService() == DSTV || viewModel.getService() == GOTV) {
         Demo_SplashScreen("Package Lookup In Progress", "www.payvice.com");
         VasResult response;
@@ -206,12 +213,14 @@ VasResult PayTV::displayLookupInfo()
             return response;
         }
     }
+    printf("Got here!!(1)\n");
 
     const iisys::JSObject& bouquets = viewModel.getBouquets();
 
     if (bouquets.isNull() || !bouquets.isArray()) {
         return VasResult(VAS_ERROR, "Bouquets not found");
     }
+    printf("Got here!!(2)\n");
 
     size_t size = bouquets.size();
     std::vector<std::string> menuData;
@@ -230,12 +239,6 @@ VasResult PayTV::displayLookupInfo()
             index = UI_ShowSelection(60000, "Bouquets", menuData, 0);
             if (index < 0) {
                 return VasResult(USER_CANCELLATION);
-            }
-
-            menuData.clear();
-            for (size_t i = 0; i < size; ++i) {
-                menuData.push_back(bouquets[i]("name").getString() + vasimpl::menuendl()
-                    + bouquets[i]("amount").getString() + " Naira/month");
             }
 
             menuData.clear();
@@ -284,7 +287,7 @@ VasResult PayTV::displayLookupInfo()
                 break;
             }
         }
-
+        
         confirmationMessage.str(std::string());
         confirmationMessage << "Bouquet:" << std::endl << bouquets[index]("name").getString() << std::endl;
         confirmationMessage << "Amount: NGN " << amountStr << std::endl;
@@ -293,6 +296,7 @@ VasResult PayTV::displayLookupInfo()
             break;
         }
     }
+    printf("Got here!!(3)\n");
 
     if (index < 0) {
         return VasResult(USER_CANCELLATION);
@@ -302,6 +306,7 @@ VasResult PayTV::displayLookupInfo()
         && viewModel.setPackageMonthAndAmount(monthIndex).error != NO_ERRORS) {
         return VasResult(VAS_ERROR);
     }
+    printf("Got here!!(4)\n");
 
     return VasResult(NO_ERRORS);
 }

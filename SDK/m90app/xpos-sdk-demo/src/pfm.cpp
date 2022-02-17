@@ -50,7 +50,7 @@ iisys::JSObject getState()
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simID, "%s", getSimId());
-    getImsi(imsi);
+	getImsi(imsi, sizeof(imsi));
     getMcc(mcc);
     getMnc(mnc);
     imsiToNetProfile(&netProfile, imsi);

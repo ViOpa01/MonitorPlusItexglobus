@@ -20,10 +20,7 @@
 void app_main()
 {
 	int checkTms = 0;
-	pthread_t thread;
 	MerchantData merchantData;
-
-	memset(&merchantData, 0x00, sizeof(MerchantData));
 
 	//xgui_default_msg_func_add((void*)sdk_power_proc_page);	// Default message processing
 	Sys_Init(0,0,"itex");	// Directory that contains you file
@@ -31,9 +28,9 @@ void app_main()
 
 	//mf_buzzer_control(0);
 	gprsInit(); //net link will have enough time to initialize in the background, we can also add little delay.	
-	checkToPrepOnDownload();
 	autoHandshake();
 
+	memset(&merchantData, 0x00, sizeof(MerchantData));
 	readMerchantData(&merchantData);
 	checkTms = merchantData.is_prepped ? 0 : 1;
 	printf("checkTms val : %d\n", checkTms);
@@ -41,10 +38,8 @@ void app_main()
 	Sys_tms_AppBusy(checkTms);
 	EMV_iKernelInit();//Init EMV
 
-
     // pthread_create(&thread, NULL, processCallHomeAsync, NULL);
 	sdk_main_page(); 
-
 }
 
 #ifndef WIN32

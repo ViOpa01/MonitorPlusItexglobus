@@ -7,6 +7,7 @@
 #include "util.h"
 #include "network.h"
 #include "atc_pub.h"
+#include "log.h"
 
 #include "libapi_xpos/inc/libapi_util.h"
 #include "libapi_xpos/inc/libapi_system.h"
@@ -312,9 +313,9 @@ void getFormattedDateTime(char* dateTime, size_t len)
     snprintf(dateTime, len, "%s %s", date, time);
 }
 
-void getImsi(char buff[20])
+void getImsi(char buff[], size_t len)
 {
-    ap_get_imsi(buff, 20);
+    ap_get_imsi(buff, len);
 }
 
 void getMcc(char buff[4])
@@ -331,6 +332,16 @@ void getMnc(char buff[3])
     ap_get_imsi(imsi, 20);
 
     strncpy(buff, &imsi[3], 2);
+}
+
+void getMccMnc(char buff[], size_t len)
+{
+    char imsi[20] = {'\0'};
+    ap_get_imsi(imsi, 20);
+
+    if (len < 5) return;
+    strncpy(buff, imsi, 5);
+	printf("[INFO] MCC MNC : %s : %s\n", buff, __FUNCTION__);
 }
 
 const char* getSimId()
@@ -681,4 +692,24 @@ void strToUpper(char* str)
         }
         str++;
     }
+}
+
+short parseJsonString(char *buff, cJSON **parsed)
+{
+    const char *json = strchr(buff, '{');
+
+	if (!json) {
+		LOG_PRINTF("Error Passing json content");
+		return -1;
+	}
+
+    *parsed = cJSON_Parse(json);
+    printf("[INFO] JSON OBJ :::::%s:::::\n%s\n", __FUNCTION__, buff);
+
+    if (!*parsed) {
+        LOG_PRINTF("Invalid content");
+        return -1;
+    }
+
+    return 0;   
 }

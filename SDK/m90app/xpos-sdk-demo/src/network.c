@@ -16,7 +16,6 @@
 #include "libapi_xpos/inc/libapi_util.h"
 
 
-#define ITEX_TAMS_PUBLIC_IP "basehuge.itexapp.com"
 #define ITEX_TASM_PUBLIC_PORT "80"
 #define ITEX_TASM_SSL_PORT "443"
 
@@ -101,39 +100,36 @@ int imsiToNetProfile(Network* profile, const char* imsi)
     return -1;
 }
 
-static short parseSimProfileJson(char *buff, cJSON **parsed)
+static void logNetworkProfile(Network* profile)
 {
-
-    const char *json = strchr(buff, '{');
-	if (!json) {
-		LOG_PRINTF("Error Passing json content");
-		return -1;
-	}
-
-    *parsed = cJSON_Parse(json);
-
-    if (!(*parsed)) {
-        LOG_PRINTF("Invalid content");
-        return -1;
-    }
-
-    return 0;
-   
+    printf("[INFO] :::%s::: APN -> %s, Username -> %s, Pass -> %s, operator -> "
+           "%s, "
+           "timeout -> %d\n",
+        __FUNCTION__, profile->apn, profile->username, profile->password,
+        profile->operatorName, profile->timeout);
 }
 
-int linkSimProfile(Network *profile)
+static short netLink(Network * gprsSettings)
+{
+	logNetworkProfile(gprsSettings);
+	return comm_net_link_ex(gprsSettings->operatorName, gprsSettings->apn, gprsSettings->timeout, gprsSettings->username, gprsSettings->password, 0);
+}
+
+static int linkSimProfile(Network *profile)
 {
 	int result = -1;
 	int i = 0;
 	char title[] = "Waiting...";
+	const int MAX_TRIES = 3;
 
 	gui_clear_dc();
 	gui_text_out((gui_get_width() - gui_get_text_width("GPRS INIT")) / 2, 1, "GPRS INIT");
 	gui_text_out((gui_get_width() - gui_get_text_width(title)) / 2, gui_get_height() / 2, title);
+	profile->timeout = 30000;
 
-	for (i = 0; i < 3; i ++) {
+	for (i = 0; i < MAX_TRIES; i++) {
 		result = netLink(profile);
-		if (!result) {
+		if (result == 0) {
 			break;
 		}
 		Sys_Delay(500);
@@ -142,18 +138,18 @@ int linkSimProfile(Network *profile)
 	return result;
 }
 
-int manualSimProfile(Network *profile) 
+int manualSimProfile(void) 
 {
-
+	Network profile = {'\0'};
 	int result = 0;
 NAME :
 	gui_clear_dc();
-    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter NAME", GUI_LINE_TOP(2), profile->operatorName, 1, sizeof(profile->operatorName) - 1, 1, 1, 30000, (char*)"Enter NAME");
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter NAME", GUI_LINE_TOP(2), profile.operatorName, 1, sizeof(profile.operatorName) - 1, 1, 1, 30000, (char*)"Enter NAME");
 	if (result < 0) return result;
 
 APN :
     gui_clear_dc();
-    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter APN", GUI_LINE_TOP(2), profile->apn, 1, sizeof(profile->apn) - 1, 1, 1, 30000, (char*)"Enter APN");
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter APN", GUI_LINE_TOP(2), profile.apn, 1, sizeof(profile.apn) - 1, 1, 1, 30000, (char*)"Enter APN");
 	if (result == -2) {
 		goto NAME;
 	} else if (result == -1 || result == -3) {
@@ -161,14 +157,14 @@ APN :
 	}
 
 USERNAME :
-    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter USER", GUI_LINE_TOP(2), profile->username, 0, sizeof(profile->username) - 1, 1, 1, 30000, (char*)"Enter USER");
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter USER", GUI_LINE_TOP(2), profile.username, 0, sizeof(profile.username) - 1, 1, 1, 30000, (char*)"Enter USER");
 	if (result == -2) {
 		goto APN;
 	} else if (result == -1 || result == -3) {
 		return result;
 	}
 
-    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter PWD", GUI_LINE_TOP(2), profile->password, 0, sizeof(profile->password) - 1, 1, 1, 30000, (char*)"Enter PWD");
+    result = Util_InputTextEx(GUI_LINE_TOP(0), (char*)"Enter PWD", GUI_LINE_TOP(2), profile.password, 0, sizeof(profile.password) - 1, 1, 1, 30000, (char*)"Enter PWD");
 
 	if (result == -2) {
 		goto USERNAME;
@@ -177,101 +173,120 @@ USERNAME :
 	}
 
 	printf("manual configuration\n");
-	return linkSimProfile(profile);
+	return linkSimProfile(&profile);
 }
 
-int setSimProfile(Network *profile, const char *imsi)
+static short checkNetworkProfile(Network* profile)
 {
-	cJSON *json, *apns;
-	char filename[32] = {'\0'};
-	char mcc[6] = {'\0'};
-	char buffer[1024 * 2] = {'\0'};
+	logNetworkProfile(profile);
+    return profile->apn[0] || profile->username[0] || profile->password[0];
+}
+
+static int setSimProfileFromApnList(cJSON* apns)
+{
+	Network profile;
 	int ret = -1;
-	size_t size = 0;
-	int i = 0;
+	size_t i = 0;
 
-	if (strlen(imsi) < 5) {
-		gui_messagebox_show("GPRS INIT" , "Can't Configure Sim", "" , "Exit" , 0);
-		return -1;
-	}
-
-	strncpy(mcc, imsi, 5);
-	sprintf(filename, "../apn/%s.json", mcc);
-
-	ret = UFile_Check(filename, FILE_PRIVATE);
-    printf("ret : %d -> Ufile_Check %s\n", ret, filename);
-
-    if(ret != 0) {
-		ret =  manualSimProfile(profile);
-		return -1;
-	} else if (getRecord((void *)buffer, filename, sizeof(buffer), 0)) {
-		ret =  manualSimProfile(profile);
-		return -1;
-	}
-
-	if (parseSimProfileJson(buffer, &json)) {
-		gui_messagebox_show("ERROR" , "Parsing Error!", "", "", 3000);
-		goto clear_exit;
-	}
-
-	apns = cJSON_GetObjectItemCaseSensitive(json, "apns");
-    if(!cJSON_IsArray(apns) || cJSON_IsNull(apns))
-    {
-        gui_messagebox_show("APN", "apns object not found!", "", "", 3000);
-		ret = manualSimProfile(profile);
-		goto clear_exit;
-    }
-
-	size = cJSON_GetArraySize(apns);
+	size_t size = cJSON_GetArraySize(apns);
 	for (i = 0; i < size; i++) {
-
 		cJSON *el, *tag;
+		memset(&profile, '\0', sizeof(Network));
 
 		el = cJSON_GetArrayItem(apns, i);
 
 		tag = cJSON_GetObjectItemCaseSensitive(el, "apn");
 		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
-			ret = -1;
 			continue;
 		}
-		strcpy(profile->apn, tag->valuestring);
+		strcpy(profile.apn, tag->valuestring);
 
 		tag = cJSON_GetObjectItemCaseSensitive(el, "username");
 		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
-			ret = -1;
 			continue;
 		}
-		strcpy(profile->username, tag->valuestring);
+		strcpy(profile.username, tag->valuestring);
 
 		tag = cJSON_GetObjectItemCaseSensitive(el, "password");
 		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
-			ret = -1;
 			continue;
 		}
-		strcpy(profile->password, tag->valuestring);
+		strcpy(profile.password, tag->valuestring);
 
 		tag = cJSON_GetObjectItemCaseSensitive(el, "name");
 		if (!tag || cJSON_IsNull(tag) || !cJSON_IsString(tag)) {
-			ret = -1;
 			continue;
 		}
-		strcpy(profile->operatorName, tag->valuestring);
+		strcpy(profile.operatorName, tag->valuestring);
 
-		if (linkSimProfile(profile) == 0) {
+		if (linkSimProfile(&profile) == 0) {
 			ret = 0;
 			break;
 		}
-
 	}
-
-	if (ret == -1 || i == size) {
-		ret = manualSimProfile(profile);
-	}
-
-clear_exit :
-	if (!cJSON_IsNull(json)) cJSON_Delete(json);
 	return ret;
+}
 
+static short getSimStatus(char* mccMnc)
+{
+	if (!mccMnc[0]) {
+		gui_messagebox_show("GPRS INIT" , "SIM not present", "" , "Exit" , 0);
+		return -1;
+	}
+	return 0;
+}
+
+static short setSimProfileFromSavedApnForMccMnc(char* mccMnc)
+{
+	cJSON *json = NULL, *apns;
+	char buffer[1024 * 2] = {'\0'};
+	char filename[32] = {'\0'};
+	short ret = -1;
+
+	sprintf(filename, "../apn/%s.json", mccMnc);
+	ret = UFile_Check(filename, FILE_PRIVATE);
+    printf("ret : %d -> Ufile_Check %s\n", ret, filename);
+
+    if(ret != UFILE_SUCCESS || getRecord((void *)buffer, filename, sizeof(buffer), 0)) {
+		return ret;
+	}
+
+	if ((ret = parseJsonString(buffer, &json)) != 0) {
+		gui_messagebox_show("ERROR" , "Parsing Error!", "", "", 3000);
+		return ret;
+	}
+
+	apns = cJSON_GetObjectItemCaseSensitive(json, "apns");
+    if (cJSON_IsNull(apns) || !cJSON_IsArray(apns)) {
+        gui_messagebox_show("APN", "apns object not found!", "", "", 3000);
+	    cJSON_Delete(json);
+		return ret;
+    }
+	ret = setSimProfileFromApnList(apns);
+	cJSON_Delete(json);
+	return ret;
+}
+
+static short setSimProfileFromPreviousSettings(Network *profile)
+{
+	if (!checkNetworkProfile(profile)) {
+		return -1;
+	}
+	linkSimProfile(profile);
+	return 0;
+}
+
+static short setSimProfile(Network *profile, char* mccMnc)
+{
+	if (setSimProfileFromPreviousSettings(profile) == 0) {
+		return 0;
+	}
+
+	if (setSimProfileFromSavedApnForMccMnc(mccMnc) == 0) {
+		return 0;
+	}
+
+	return manualSimProfile();
 }
 
 int getSimConfigOption(const char **list, const int size)
@@ -281,7 +296,7 @@ int getSimConfigOption(const char **list, const int size)
 
 int selectSimConfig()
 {
-	cJSON *json, *apns;
+	cJSON *json = NULL, *apns;
 	cJSON *el, *tag;
 	MerchantData merchantData;
 	char apnList[][APN_LABEL_SIZE] = {0};
@@ -299,7 +314,7 @@ int selectSimConfig()
 	readMerchantData(&merchantData);
 	merchantData.gprsSettings.timeout = 30000;
 
-	getImsi(imsi);
+	getImsi(imsi, sizeof(imsi));
 
 	if (strlen(imsi) < 5) {
 		gui_messagebox_show("GPRS INIT" , "Invalid imsi" , "", "Exit" , 0);
@@ -317,7 +332,7 @@ int selectSimConfig()
 		return -1;
 	}
 
-	if (parseSimProfileJson(buffer, &json)) {
+	if (parseJsonString(buffer, &json)) {
 		gui_messagebox_show("ERROR" , "Parsing Error!", "", "", 3000);
 		goto clear_exit;
 	}
@@ -349,7 +364,7 @@ int selectSimConfig()
 	}
 
 	{
-		char *menu[size];
+		const char *menu[size];
 		int index = 0;
 		for (index = 0; index < size; index++) {
 			menu[index] = apnList[index];
@@ -435,7 +450,7 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 		// netParam->port = 5043;
 		// netParam->isSsl = 1;
 
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
+		strncpy(netParam->host, mParam.nibss_ip, sizeof(netParam->host));
 		netParam->port = mParam.nibss_ssl_port;
 		netParam->isSsl = 1;
 
@@ -444,8 +459,8 @@ short getNetParams(NetWorkParameters * netParam, NetType netType, int isHttp)
 	} else if(netType == NET_POSVAS_PLAIN || netType == NET_EPMS_PLAIN)
 	{
 		
-		strncpy(netParam->host, mParam.nibss_ip, strlen(mParam.nibss_ip));
-		if(!strcmp(mParam.nibss_platform, "POSVAS"))
+		strncpy(netParam->host, mParam.nibss_ip, sizeof(netParam->host));
+		if(!strcmp(mParam.platform_label, "POSVAS"))
 		{
 			netParam->port = 5004;		// To handle wrong IP coming for Plain POSVAS on TAMS;
 		} else {
@@ -697,15 +712,6 @@ static short tryConnection(NetWorkParameters *netParam, const int i)
 	return 0;
 }
 
-
-
-
-short netLink(Network * gprsSettings)
-{
-	printf("Linking: APN -> %s, Username -> %s, Pass -> %s, operator -> %s, timeout -> %d\n", gprsSettings->apn, gprsSettings->username, gprsSettings->password, gprsSettings->operatorName, gprsSettings->timeout);
-	return comm_net_link_ex(gprsSettings->operatorName, gprsSettings->apn, gprsSettings->timeout, gprsSettings->username, gprsSettings->password, 0);
-}
-
 void * preDial(void * netParams)
 {
 	int maxTry = 3;
@@ -737,7 +743,7 @@ static short connectToHost(NetWorkParameters *netParam)
 	if (nret != 0)
 	{
 		// Fail to link
-		networkErrorLogger(netParam->async, "NET LINK", "Link Failed!", 10, gui_messagebox_show);	
+		networkErrorLogger(netParam->async, "NET LINK ERROR", "SIM not present\nOR Out of Data", 10, gui_messagebox_show);	
 		return -1;
 	}
 	
@@ -759,7 +765,7 @@ static short connectToHost(NetWorkParameters *netParam)
 
 	if (i == nTime) {
 		// Fail to connect
-		networkErrorLogger(netParam->async, netParam->isSsl ? "HTTPS" : "HTTP", "Connection Failed!", 1000, gui_messagebox_show);	
+		networkErrorLogger(netParam->async, netParam->isSsl ? "HTTPS" : "HTTP", "SIM out of Data\nOR Host is down.", 1000, gui_messagebox_show);	
 		return -3;
 	}
 
@@ -801,20 +807,19 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 	int nret;
 	int curRecvLen = 0;
 	char msg[32];
-	char title[32];
 	unsigned int tick2 = Sys_TimerOpen(1000);
 	const int maxLen = sizeof(netParam->response);
 
 	printf( "------http_recv_buff------\r\n" );		
 	while(Sys_TimerCheck(tick1) > 0){
-		int ret;
-		int num;
-		unsigned char buffer[4096 * 16];
+		unsigned char buffer[0x10000];
 		memset(buffer, 0x00, sizeof(buffer));
 
 		if(!netParam->async)
 		{
 			if(strlen(netParam->title)>0){
+				int ret;
+				int num;
 				num = Sys_TimerCheck(tick1)/1000;
 				num = num < 0 ? 0 : num;
 
@@ -886,9 +891,7 @@ static int http_recv_buff(NetWorkParameters *netParam, unsigned int tick1, int t
 
 static short receivePacket(NetWorkParameters *netParam)
 {
-	int result = -1;
 	int bytes = 0;
-	int count = 0;
 	int timeover = netParam->receiveTimeout;
 	unsigned int tick = Sys_TimerOpen(timeover);
 	
@@ -1009,40 +1012,26 @@ enum CommsStatus sendAndRecvPacket(NetWorkParameters *netParam)
 	return SEND_RECEIVE_SUCCESSFUL;
 }
 
-/**
- * Function: gprsInit
- * Usage: if (!gprsInit()) .... success.
- * ------------------------------------
- *
- */
+static void getNetworkProfile(Network* profile)
+{
+	MerchantData merchantData = {'\0'};
+	readMerchantData(&merchantData);
+
+	memcpy(profile, &merchantData.gprsSettings, sizeof(Network));
+}
 
 short gprsInit(void)
 {
-    char imsi[20] = {'\0'};
-    Network profile;
-	MerchantData merchantData;
-	int result = -1;
-	
-    memset(&profile, 0x00, sizeof(Network));
-    getImsi(imsi);
-	printf("Imsi : %s : %s\n", imsi, __FUNCTION__);
-	
-	memset(&merchantData, 0x00, sizeof(MerchantData));
-	readMerchantData(&merchantData);
+	Network profile = {'\0'};
+	char mccMnc[6] = {'\0'};
 
-	merchantData.gprsSettings.timeout = 30000;
-
-	if (merchantData.gprsSettings.apn[0] || 
-		merchantData.gprsSettings.username[0] || 
-		merchantData.gprsSettings.password[0]) 
-	{
-		result = linkSimProfile(&merchantData.gprsSettings);
-	} else {
-		result = setSimProfile(&merchantData.gprsSettings, imsi);
+	getMccMnc(mccMnc, sizeof(mccMnc));
+	if (getSimStatus(mccMnc) != 0) {
+		return -1;
 	}
-	saveMerchantData(&merchantData);
 
-	return result;
+	getNetworkProfile(&profile);
+	return setSimProfile(&profile, mccMnc);
 }
 
 void resetCallHomeIpAndPort(NetWorkParameters *netParam, MerchantData *mParam) {

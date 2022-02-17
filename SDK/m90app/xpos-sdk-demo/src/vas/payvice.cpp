@@ -198,7 +198,7 @@ std::string Payvice::fetchVasToken()
     readMerchantData(&mParam);
 
 
-    strncpy((char *)netParam.host, VAS_IP, sizeof(netParam.host) - 1);
+    strncpy((char *)netParam.host, mParam.vasUrl, sizeof(netParam.host) - 1);
     netParam.receiveTimeout = 60000;
 	strncpy(netParam.title, "Request", 10);
     netParam.isHttp = 1;
@@ -207,21 +207,21 @@ std::string Payvice::fetchVasToken()
     netParam.endTag = "";
     std::string path = "/api/vas/authenticate/me";
     char requestBody[1024] = {'\0'};
-
-    // snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itexlive\", \"terminal\": \"%s\", \"channel\": \"%s\", \"version\": \"%s\"}", 
+#ifndef VAS_TEST
+    snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itexlive\", \"terminal\": \"%s\", \"channel\": \"%s\", \"version\": \"%s\"}", 
+#else
     snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itex\", \"terminal\": \"%s\", \"channel\": \"%s\", \"version\": \"%s\"}", 
+#endif
         object(Payvice::WALLETID).getString().c_str(), object(Payvice::USER).getString().c_str(), object(Payvice::PASS).getString().c_str(), mParam.tid, vasChannel(), vasApplicationVersion().c_str());
 
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", path.c_str());
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s\r\n", netParam.host);
 
-    if (requestBody) {
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Type: application/json\r\n");
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Length: %zu\r\n", strlen(requestBody));
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Type: application/json\r\n");
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Content-Length: %zu\r\n", strlen(requestBody));
 
-        netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "\r\n%s", requestBody);
+    netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "\r\n%s", requestBody);
 
-    }
 
     if (sendAndRecvPacket(&netParam) != SEND_RECEIVE_SUCCESSFUL) {
         return response;

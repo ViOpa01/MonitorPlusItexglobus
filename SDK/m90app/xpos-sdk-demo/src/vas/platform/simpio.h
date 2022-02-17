@@ -41,6 +41,7 @@ unsigned long getAmount(const char* title);
 
 int UI_ShowOkCancelMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE dialogType);
 int UI_ShowButtonMessage(int timeout, const char* title, const char* text, const char* button, UI_DIALOG_TYPE type);
+int UI_ShowYesNolMessage(int timeout, const char* title, const char* text, UI_DIALOG_TYPE type);
 int UI_ShowSelection(int timeout, const char* title, const std::vector<std::string>& elements, int preselect);
 void Demo_SplashScreen(const char *text, const char *text_additional);
 

@@ -22,6 +22,7 @@ struct JambViewModel {
     VasResult setPaymentMethod(PaymentMethod payMethod);
     VasResult setEmail(const std::string& email);
     VasResult setConfirmationCode(const std::string& code);
+    VasResult setPhoneNumber(const std::string& phoneNumber);
 
     Service getService() const;
     unsigned long getAmount() const;
@@ -44,6 +45,7 @@ private:
 
     std::string email;
     std::string confirmationCode;
+    std::string phoneNumber;
 
     PaymentMethod payMethod;
     CardData cardData;
@@ -58,7 +60,6 @@ private:
         std::string surname;
         std::string firstName;
         std::string middleName;
-        std::string phoneNumber;
         unsigned long amount;
     } lookupResponse;
 

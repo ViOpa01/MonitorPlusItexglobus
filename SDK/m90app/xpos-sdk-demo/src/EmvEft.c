@@ -978,7 +978,7 @@ short handleFailedComms(Eft *eft, const enum CommsStatus commsStatus, NetWorkPar
 	switch (commsStatus)
 	{
 	case CONNECTION_FAILED:
-		sprintf(eft->message, "%s", "Connection Failed!");
+		sprintf(eft->message, "%s", "SIM out of Data\nOR Host is down.");
 		return -1;
 
 	case SENDING_FAILED:

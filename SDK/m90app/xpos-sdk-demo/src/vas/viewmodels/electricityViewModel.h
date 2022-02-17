@@ -31,6 +31,7 @@ struct ElectricityViewModel {
     VasResult setAmount(unsigned long ammount);
     VasResult setPaymentMethod(PaymentMethod payMethod);
     VasResult setPhoneNumber(const std::string& phoneNumber);
+    VasResult setAgentPhoneNumber(const std::string& phoneNumber);
     VasResult setEnergyType(EnergyType energyType);
     VasResult setMeterNo(const std::string& meterNo);
 
@@ -66,6 +67,7 @@ private:
 
     std::string meterNo;
     std::string phoneNumber;
+    std::string agentPhoneNumber;
     PaymentMethod payMethod;
     EnergyType energyType;
 
@@ -91,6 +93,7 @@ private:
     unsigned long amount;
     VasResult lookupCheck(const VasResult& lookupStatus);
     const char* paymentPath();
+    const char* lookupPath();
     const char* getEnergyTypeString(EnergyType type) const;
 
     SmartCardInFunc smartCardInFunc;

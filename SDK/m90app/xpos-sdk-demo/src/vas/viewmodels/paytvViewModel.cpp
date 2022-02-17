@@ -22,6 +22,7 @@ PayTVViewModel::PayTVViewModel(const char* title, VasComProxy& proxy)
     , comProxy(proxy)
     , service(SERVICE_UNKNOWN)
     , packageMonths(0)
+    , shouldRenew(false)
 {
 }
 
@@ -162,6 +163,7 @@ VasResult PayTVViewModel::lookupCheck(const VasResult& lookupStatus)
     const iisys::JSObject& account = responseData("account");
     const iisys::JSObject& pCode = responseData("productCode");
     const iisys::JSObject& bundles = responseData("bouquets");
+    const iisys::JSObject& renewData = responseData("renew");
 
     if (!name.isString()) {
         return VasResult(KEY_NOT_FOUND, "Name not found");
@@ -170,6 +172,10 @@ VasResult PayTVViewModel::lookupCheck(const VasResult& lookupStatus)
     } else if (!bundles.isArray()) {
         result = VasResult(VAS_ERROR, "Data Packages not found");
         return result;
+    }
+    
+    if (renewData.isObject()) {
+        this->renewData = renewData;
     }
 
     lookupResponse.name = name.getString();
@@ -257,6 +263,14 @@ VasResult PayTVViewModel::setPackageMonthAndAmount(int selectedIndex)
     return VasResult(NO_ERRORS);
 }
 
+VasResult PayTVViewModel::setShouldRenew(bool shouldRenew)
+{
+    this->shouldRenew = shouldRenew;
+    packageMonths = 1;
+    amount = (unsigned long)lround(renewData("outstandingAmount").getNumber() * 100.0);
+    return VasResult(NO_ERRORS);
+}
+
 std::map<std::string, std::string> PayTVViewModel::storageMap(const VasResult& completionStatus)
 {
     std::map<std::string, std::string> record;
@@ -290,12 +304,12 @@ std::map<std::string, std::string> PayTVViewModel::storageMap(const VasResult& c
     }
 
     record[VASDB_STATUS] = VasDB::trxStatusString(VasDB::vasErrToTrxStatus(completionStatus.error));
-
     record[VASDB_STATUS_MESSAGE] = completionStatus.message;
     if (service == DSTV || service == GOTV) {
         std::string packageMonthsStr = vasimpl::to_string(packageMonths);
         record[VASDB_SERVICE_DATA] = std::string("{\"packageMonth\": \"") + packageMonthsStr
-            + std::string("\", \"packageName\": \"") + selectedPackage("name").getString() + "\"}";
+            + std::string("\", \"packageName\": \"")
+            + (shouldRenew ? renewData("currentPlan")("items")[0]("name").getString() : selectedPackage("name").getString()) + "\"}";
     }
     return record;
 }
@@ -341,7 +355,11 @@ int PayTVViewModel::getPaymentJson(iisys::JSObject& json, Service service) const
 
     if (service == DSTV || service == GOTV) {
         json("iuc") = iuc;
-        json("code") = selectedPackage("code");
+        if (shouldRenew) {
+            json("code") = std::string("RENEW");
+        } else {
+            json("code") = selectedPackage("code");
+        }
         json("unit") = lookupResponse.unit;
         json("productMonths") = packageMonths;
         json("totalAmount") = majorDenomination(amount);

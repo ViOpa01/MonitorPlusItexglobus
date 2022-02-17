@@ -105,7 +105,7 @@ void addCallHomeData(NetworkManagement *networkMangement)
     sprintf(cellId, "%d", getCellId());
     sprintf(lac, "%d", getLocationAreaCode());
     sprintf(simId, "%s", getSimId());
-    getImsi(imsi);
+	getImsi(imsi, sizeof(imsi));
     getMcc(mcc);
     getMnc(mnc);
     imsiToNetProfile(&netProfile, imsi);
@@ -769,22 +769,18 @@ short uiHandshake(void)
     char tid[9] = {'\0'};
     int maxRetry = 2;
     int i;
-    int ret;
 
     
-    if (!isDevMode(CURRENT_PLATFORM)) {
-         if(getMerchantData()) {
-            gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 1);
-            return -1; 
-        }
-    } 
-    else 
-    {
-        if (getTid(tid)) return -1;
+    if (!isDevMode(CURRENT_PLATFORM) && getMerchantData()) {
+        gui_messagebox_show("MERCHANT" , "Incomplete merchant data", "" , "" , 1);
+        return -1; 
+    } else if (isDevMode(CURRENT_PLATFORM) && getTid(tid)) {
+        return -1;
     }
 
-    if(readMerchantData(&mParam)) return -2;
-    
+    if (readMerchantData(&mParam))
+        return -2;
+
     if (isDevMode(CURRENT_PLATFORM)) {
         strncpy(mParam.tid, tid, sizeof(mParam.tid));
     }
@@ -901,38 +897,25 @@ short uiHandshake(void)
     return 0;
 }
 
-short checkToPrepOnDownload()
+static short shouldPrepOnDownload(void)
 {
     int ret = -1;
-    MerchantData merchant;
     char fileName[] = "toPrep.ini";    // empty file
 
-    memset(&merchant, 0x00, sizeof(MerchantData));
-    readMerchantData(&merchant);
     ret = UFile_Check(fileName, FILE_PRIVATE);
     printf("ret : %d -> Ufile_Check %s\n", ret, fileName);
 
-    if(ret) return 0;
-
-    merchant.is_prepped = 0;
-    saveMerchantData(&merchant);
-    // logoutAndResetVasDb();
-    uiHandshake();
-    return UFile_Remove(fileName, FILE_PRIVATE);
-    
+    if (ret) {
+        return 0;
+    }
+    while (UFile_Remove(fileName, FILE_PRIVATE) != UFILE_SUCCESS)
+        ;
+    return 1;
 }
 
-short autoHandshake(void)
+void autoHandshake(void)
 {
-	MerchantData merchantData;
-
-	memset(&merchantData, 0x00, sizeof(MerchantData));
-	readMerchantData(&merchantData);
-
-	if (merchantData.is_prepped) return 0;
-	return uiHandshake();
+    if (shouldPrepOnDownload()) {
+        uiHandshake();
+    }
 }
-
-
-
-

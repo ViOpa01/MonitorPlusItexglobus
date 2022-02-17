@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <openssl/sha.h>
 
+#include "cJSON.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -36,9 +38,10 @@ int bodyIndex(const char* response);
 // int getContentLength(void* userdata, const char* tag, const int tag_len, const char* value, const int val_len);
 short beautifyDateTime(char * dbDate, const int size, const char * yyyymmddhhmmss);
 void getFormattedDateTime(char* dateTime, size_t len);
-void getImsi(char buff[20]);
+void getImsi(char buff[], size_t len);
 void getMcc(char buff[4]);
 void getMnc(char buff[3]);
+void getMccMnc(char buff[], size_t len);
 int getSignalLevel();
 int getBatteryLevel();
 int getCellId();
@@ -64,6 +67,7 @@ void hmac_sha256(
 int stringToHex(char* output, const size_t outputSize, const char* input, const int length);
 int pad(char* inOutString, char symbol, short paddedLength, short padRight);
 void strToUpper(char* str);
+short parseJsonString(char *buff, cJSON **parsed);
 
 #ifdef __cplusplus
 }

@@ -585,7 +585,7 @@ static short operatorHandler(const char *pid)
 
 		if (strcmp(pid, UI_APN_MANUAL_MENU) == 0 ) {
 			merchantData.gprsSettings.timeout = 3000;
-			if (manualSimProfile(&merchantData.gprsSettings) == 0) {
+			if (manualSimProfile() == 0) {
 				saveMerchantData(&merchantData);
 			}
 		} 
@@ -856,7 +856,7 @@ void standby_pagepaint()
 	char sn[16] = {'\0'};
 
 
-	strcpy(msg, "DEVICE NOT READY");
+	strcpy(msg, "PRESS ADMIN TO PREP");
 	gui_text_out((gui_get_width() - gui_get_text_width(msg)) / 2, GUI_LINE_TOP(0), msg);
 
 	getTerminalSn(sn);

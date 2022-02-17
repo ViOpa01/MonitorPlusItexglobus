@@ -216,7 +216,7 @@ int requeryMiddleware(Eft* trxContext, const char* tid)
 
 int setupBaseHugeNetwork(NetWorkParameters* netParam, const char* path)
 {
-    char host[] = "basehuge.itexapp.com";
+    char host[] = ITEX_TAMS_PUBLIC_IP;
 
     strncpy((char*)netParam->host, host, strlen(host));
     netParam->receiveTimeout = 60000;

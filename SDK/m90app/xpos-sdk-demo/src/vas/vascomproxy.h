@@ -10,20 +10,27 @@
 
 #include "vas.h"
 #include "jsonwrapper/jsobject.h"
+#include "../merchant.h"
 
 #include "../Nibss8583.h"
 
 // LIVE REQUERY "http://197.253.19.76:8017"
-// Test REQUERY "http://197.253.19.78:8006"
-#define REQUERY_IP "197.253.19.78"
-#define REQUERY_PORT 8006
+// Test REQUERY "http://197.253.19.76:8006"
+// #define REQUERY_IP ""
 
-// Test VAS "http://197.253.19.78:1880"
+// Test VAS "http://197.253.19.76:1880"
 // Live VAS "http://197.253.19.76:8019"
-#define VAS_IP "197.253.19.78"
-#define VAS_PORT "1880"
+#define VAS_TEST
 
-   
+#ifdef VAS_TEST
+#define VAS_PORT "1880"
+#define VAS_URL "197.253.19.78"
+#define REQUERY_PORT 8006
+#else
+#define REQUERY_PORT 8017
+#define VAS_PORT "8019"
+#endif
+
 struct CardData {
     CardData(const unsigned long amt = 0, const std::string& rrn = "")
         : amount(amt)
@@ -63,7 +70,7 @@ struct VasComProxy {
 
 struct Postman : public VasComProxy {
 
-    Postman(const std::string& hostaddr = VAS_IP, const std::string& port = VAS_PORT);
+    Postman(const std::string& hostaddr = "", const std::string& port = VAS_PORT);
     virtual ~Postman();
 
     VasResult lookup(const char* url, const iisys::JSObject*);
@@ -93,4 +100,6 @@ private:
     std::string portValue;
 
 };
+
+Postman getVasPostMan();
 #endif

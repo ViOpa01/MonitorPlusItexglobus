@@ -18,7 +18,7 @@
 int fundPayviceWallet()
 {
     VasResult result;
-    Postman postman;
+    Postman postman = getVasPostMan();
     ViceBankingViewModel viewModel("", postman);
 
     Payvice payvice;
@@ -85,7 +85,7 @@ int fundPayviceWallet()
 int walletBalance()
 {
     VasResult result;
-    Postman postman;
+    Postman postman = getVasPostMan();
     iisys::JSObject json;
 
     Payvice payvice;
@@ -143,7 +143,7 @@ int walletBalance()
 int walletTransfer()
 {
     VasResult result;
-    Postman postman;
+    Postman postman = getVasPostMan();
     iisys::JSObject json;
 
     std::string pin;

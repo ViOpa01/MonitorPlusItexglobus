@@ -42,7 +42,7 @@ extern "C"
 #define CURRENT_PLATFORM NET_POSVAS_SSL
 
 short uiHandshake(void);
-short autoHandshake(void);
+void autoHandshake(void);
 short uiGetParameters(void);
 short uiCallHome(void);
 
@@ -57,7 +57,6 @@ short handleDe39(char * responseCode, char * responseDesc);
 
 void addCallHomeData(NetworkManagement *networkMangement);
 int sCallHomeAsync(NetworkManagement *networkMangement, NetWorkParameters *netParam);
-short checkToPrepOnDownload();
 
 
 

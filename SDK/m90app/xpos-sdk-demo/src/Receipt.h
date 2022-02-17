@@ -21,7 +21,7 @@ enum receiptCopy{
 
 void printDottedLine();
 void printReceiptLogo(const char filename[32]);
-void printReceiptHeader(const char *transDate);
+void printReceiptHeader(const char *);
 void printFooter();
 void printLine(const char *head, const char *val);
 short printReceipts(Eft * eft, const short isReprint);

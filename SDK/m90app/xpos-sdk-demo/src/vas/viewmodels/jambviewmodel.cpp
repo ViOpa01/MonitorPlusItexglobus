@@ -71,6 +71,7 @@ VasResult JambViewModel::lookup()
     }
 
     obj("confirmationCode") = getConfirmationCode();
+    obj("customerPhoneNumber") = phoneNumber;
     
     response = comProxy.lookup("/api/v1/jamb/candidate/validate", &obj);
 
@@ -158,6 +159,19 @@ VasResult JambViewModel::setEmail(const std::string& email)
     return result;
 }
 
+VasResult JambViewModel::setPhoneNumber(const std::string& phoneNumber)
+{
+    VasResult result;
+
+    if (phoneNumber.empty()) {
+        return result;
+    }
+
+    this->phoneNumber = phoneNumber;
+    result.error = NO_ERRORS;
+    return result;
+}
+
 VasResult JambViewModel::setConfirmationCode(const std::string& code)
 {
     VasResult result;
@@ -215,8 +229,6 @@ std::map<std::string, std::string> JambViewModel::storageMap(const VasResult& co
     std::string serviceStr(serviceToString(service));
     const std::string amountStr = vasimpl::to_string(lookupResponse.amount);
 
-    printf("storage map amount : %s\n", amountStr.c_str());
-
     record[VASDB_PRODUCT] = serviceStr; 
     record[VASDB_CATEGORY] = _title;
     record[VASDB_SERVICE] = serviceStr;
@@ -224,7 +236,7 @@ std::map<std::string, std::string> JambViewModel::storageMap(const VasResult& co
 
     record[VASDB_BENEFICIARY] = getConfirmationCode();
     record[VASDB_BENEFICIARY_NAME] = lookupResponse.firstName + " " + lookupResponse.middleName + " " + lookupResponse.surname;
-    record[VASDB_BENEFICIARY_PHONE] = lookupResponse.phoneNumber;
+    record[VASDB_BENEFICIARY_PHONE] = phoneNumber;
     record[VASDB_PAYMENT_METHOD] = paymentString(payMethod);
 
     record[VASDB_REF] = paymentResponse.reference;
@@ -275,7 +287,7 @@ VasResult JambViewModel::processPaymentResponse(const iisys::JSObject& json)
         const iisys::JSObject& firstName   = detail("FirstName");
         const iisys::JSObject& middleName  = detail("MiddleName");
         const iisys::JSObject& amount      = detail("Amount");
-        const iisys::JSObject& phoneNumber = detail("GSMNo");
+        const iisys::JSObject& phoneNumberObj = detail("GSMNo");
 
         if (pin.isString()) {
             paymentResponse.pin = pin.getString();
@@ -293,14 +305,9 @@ VasResult JambViewModel::processPaymentResponse(const iisys::JSObject& json)
             lookupResponse.middleName = middleName.getString();
         }
 
-        if (lookupResponse.phoneNumber.empty() && phoneNumber.isString()) {
-            lookupResponse.phoneNumber = phoneNumber.getString();
+        if (phoneNumber.empty() && phoneNumberObj.isString()) {
+            phoneNumber = phoneNumberObj.getString();
         }
-
-        if (lookupResponse.amount == 0 && amount.isNumber()) {
-            lookupResponse.amount = (unsigned long) lround(amount.getNumber() * 100.0);
-        }
-
     }
 
     if (payMethod == PAY_WITH_CARD && responseData("reversal").isBool() && responseData("reversal").getBool() == true) {
@@ -321,6 +328,7 @@ VasResult JambViewModel::extractFirstStageInfo(const iisys::JSObject& data)
 
     const iisys::JSObject& type                 = jambdata("type");
     const iisys::JSObject& product              = jambdata("product");
+    const iisys::JSObject& sellingPrice         = jambdata("sellingPrice");
     
     if (!type.isString() || !product.isString()) {
         return VasResult(TYPE_MISMATCH);
@@ -329,6 +337,9 @@ VasResult JambViewModel::extractFirstStageInfo(const iisys::JSObject& data)
     lookupResponse.type = type.getString();
     lookupResponse.product = product.getString();
     lookupResponse.productCode = productCode.getString();
+    if (lookupResponse.amount == 0 && sellingPrice.isString()) {
+        lookupResponse.amount = (unsigned long) lround(sellingPrice.getNumber() * 100.0);
+    }
 
     return VasResult(NO_ERRORS);
 }
@@ -345,17 +356,15 @@ VasResult JambViewModel::extractSecondStageInfo(const iisys::JSObject& data)
     const iisys::JSObject& firstName          = detail("FirstName");
     const iisys::JSObject& middleName         = detail("MiddleName");
     const iisys::JSObject& phoneNo            = detail("GSMNo");
-    const iisys::JSObject& amount             = detail("Amount");
 
-    if (!surname.isString() || !firstName.isString() || !middleName.isString() || !phoneNo.isString() || !amount.isNumber()) {
+    if (!surname.isString() || !firstName.isString() || !middleName.isString() || !phoneNo.isString()) {
         return VasResult(TYPE_MISMATCH);
     }
 
     lookupResponse.surname = surname.getString();
     lookupResponse.firstName = firstName.getString();
     lookupResponse.middleName = middleName.getString();
-    lookupResponse.phoneNumber = phoneNo.getString();
-    lookupResponse.amount = (unsigned long) lround(amount.getNumber() * 100.0);
+    phoneNumber = phoneNo.getString();
 
     return VasResult(NO_ERRORS);
 }
@@ -364,7 +373,7 @@ int JambViewModel::getPaymentJson(iisys::JSObject& json) const
 {
     json("productCode") = lookupResponse.productCode;
     json("paymentMethod") = apiPaymentMethodString(payMethod);
-    json("customerPhoneNumber") = lookupResponse.phoneNumber;
+    json("customerPhoneNumber") = phoneNumber;
     json("confirmationCode") = getConfirmationCode();
     json("email") = this->email;
     json("channel") = vasChannel();
@@ -388,7 +397,6 @@ const char* JambViewModel::apiServiceString(Service service)
 VasResult JambViewModel::requery(VasComProxy& comProxy, const std::string& phoneNumber, const std::string& confirmationCode, const Service service)
 {
     VasResult result;
-    JambViewModel viewModel("", comProxy);
 
     if (service != JAMB_UTME_PIN && service != JAMB_DE_PIN) {
         return result;
@@ -398,6 +406,7 @@ VasResult JambViewModel::requery(VasComProxy& comProxy, const std::string& phone
 
     json("service") = apiServiceString(service);
     json("channel") = vasChannel();
+    json("version") = vasApplicationVersion();
     json("confirmationCode") = confirmationCode;
     json("customerPhoneNumber") = phoneNumber;
 

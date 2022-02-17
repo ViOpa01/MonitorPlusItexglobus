@@ -69,7 +69,7 @@ const char * VasDB::trxStatusString(TrxStatus status)
     case CARDAPPROVED:
         return "Card Approved";
     case STATUS_UNKNOWN:
-        return "Status Unknown";
+        return "Connection Timeout";
     default:
         return "";
     }

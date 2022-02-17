@@ -26,6 +26,7 @@
 #include "../EmvDB.h"
 #include "../merchant.h"
 #include "../Receipt.h"
+#include "../nibss.h"
 
 extern "C" {
 #include "../util.h"
@@ -420,8 +421,8 @@ int printVas(std::map<std::string, std::string>& record)
                 const std::string product = productObj.isString() ? productObj.getString() : "";
                 const std::string description = descriptionObj.isString() ? descriptionObj.getString() : "";
 
-                for (int i = 0; i < pins.size(); ++i) {
-                    std::map<std::string, std::string> pinrecord = pinObjToMap(pins[i]);
+                for (int index = 0; index < pins.size(); ++index) {
+                    std::map<std::string, std::string> pinrecord = pinObjToMap(pins[index]);
                     pinrecord[VASDB_SERVICE] = record[VASDB_SERVICE];
                     pinrecord["currencySymbol"] = record["currencySymbol"];
                     pinrecord["merchantName"] = record["merchantName"];
@@ -432,7 +433,7 @@ int printVas(std::map<std::string, std::string>& record)
                     pinrecord["batchNo"] = batchNo;
                     pinrecord["product"] = product;
                     pinrecord["description"] = description;
-                    printStatus = printVasUssdPin(pinrecord, VAS_USSD);
+                    printVasUssdPin(pinrecord, VAS_USSD);
                 }
             }
             printStatus = printVasReceipt(record, VAS_USSD);
@@ -619,6 +620,7 @@ static void printAsteric(size_t len)
 int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T type)
 {
     MerchantData mParam = {'\0'};
+    MerchantParameters parameter = {'\0'};
     int ret = 0;
     char buff[32] = {'\0'};
     char logoFileName[64] = {'\0'};
@@ -630,6 +632,7 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
     }
 
     readMerchantData(&mParam);
+    getParameters(&parameter);
 
     while(1) {
         ret = UPrint_Init();
@@ -716,6 +719,8 @@ int printVasReceipt(std::map<std::string, std::string> &record, const VAS_Menu_T
                 }
             } 
         }
+		printLine("MID", parameter.cardAcceptiorIdentificationCode);
+        printLine("DATE TIME", record[VASDB_DATE].c_str());
 
         memset(buff, '\0', sizeof(buff));
         sprintf(buff, "NGN %s", record[VASDB_AMOUNT].c_str());
@@ -1201,18 +1206,25 @@ void printVasFooter()
 	sprintf(buff, "%s %s, %s", APP_NAME, APP_VER, POWERED_BY);
     UPrint_StrBold(buff, 1, 4, 1);
 	// UPrint_StrBold(POWERED_BY, 1, 4, 1); 09062774420 09070314-511/443
-    UPrint_StrBold("09062774420 09070314-511/443", 1, 4, 1);
+    // UPrint_StrBold("09062774420 09070314-511/443", 1, 4, 1);
+    UPrint_StrBold("09070314511 090703144-19/20", 1, 4, 1);
+    // 09070314511, 09070314420, 09070314419
 	// UPrint_StrBold("0906 277 4420, 0907 031 4511", 1, 4, 1);
 	// UPrint_StrBold("0907 031 4443", 1, 4, 1);
-	UPrint_StrBold("vassupport@iisysgroup.com", 1, 4, 1);
-	UPrint_StrBold("agencybanking@iisysgroup.com", 1, 4, 1);
+	UPrint_StrBold("support@iisysgroup.com", 1, 4, 1);
+	UPrint_StrBold("customercare@iisysgroup.com", 1, 4, 1);
+	// UPrint_StrBold("vassupport@iisysgroup.com", 1, 4, 1);
+	// UPrint_StrBold("agencybanking@iisysgroup.com", 1, 4, 1);
 	UPrint_Feed(108);
 }
 
 std::string vasApiKey()
 {
-    char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC"; //test
-    // char key[] = "o83prs088n4943231342p7sq53o6502q";    //live
+#ifdef VAS_TEST
+    char key[] = "a6Q6aoHHESonso27xAkzoBQdYFtr9cKC";
+#else
+    char key[] = "o83prs088n4943231342p7sq53o6502q";
+#endif
     rot13(key);
     return std::string(key);
 }

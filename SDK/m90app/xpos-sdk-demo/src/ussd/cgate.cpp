@@ -38,7 +38,7 @@ std::string fetchCoralCode(USSDService service, float amount, const char* ref = 
     readMerchantData(&mParam);
     getParameters(&parameter);
 
-    strncpy((char *)netParam.host, "basehuge.itexapp.com", sizeof(netParam.host) - 1);
+    strncpy((char *)netParam.host, ITEX_TAMS_PUBLIC_IP, sizeof(netParam.host) - 1);
     netParam.receiveTimeout = 60000;
 	strncpy(netParam.title, "Request", 10);
     netParam.isHttp = 1;

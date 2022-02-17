@@ -88,7 +88,7 @@ VasResult ElectricityViewModel::lookup()
         return VasResult(VAS_ERROR, "Data Error");
     }
 
-    response = comProxy.lookup("/api/v1/vas/electricity/validation", &obj);
+    response = comProxy.lookup(lookupPath(), &obj);
 
     return lookupCheck(response);;
 }
@@ -269,6 +269,18 @@ VasResult ElectricityViewModel::setPhoneNumber(const std::string& phoneNumber)
     return result;
 }
 
+VasResult ElectricityViewModel::setAgentPhoneNumber(const std::string& phoneNumber)
+{
+    VasResult result;
+
+    if (!phoneNumber.empty()) {
+        result.error = NO_ERRORS;
+        agentPhoneNumber = phoneNumber;
+    }
+
+    return result;
+}
+
 VasResult ElectricityViewModel::setEnergyType(EnergyType energyType)
 {   
     VasResult result;
@@ -323,6 +335,10 @@ int ElectricityViewModel::getLookupJson(iisys::JSObject& json, Service service) 
     json("amount") = majorDenomination(amount);
     json("channel") = vasChannel();
     json("version") = vasApplicationVersion();
+    if (service == IKEJA) {
+        json("customerPhone") = phoneNumber;
+        json("agentPhone") = agentPhoneNumber;
+    }
 
     return 0;
 }
@@ -454,8 +470,19 @@ const char* ElectricityViewModel::paymentPath()
 {
     if (getPaymentMethod() == PAY_WITH_NQR) {
         return nqrStatusCheckUrl();
+    } else if (service == IKEJA) {
+        return "/api/v2/vas/electricity/payment";
     } else {
         return "/api/v1/vas/electricity/payment";
+    }
+}
+
+const char* ElectricityViewModel::lookupPath()
+{
+    if (service == IKEJA) {
+        return "/api/v2/vas/electricity/validation";
+    } else {
+        return "/api/v1/vas/electricity/validation";
     }
 }
 

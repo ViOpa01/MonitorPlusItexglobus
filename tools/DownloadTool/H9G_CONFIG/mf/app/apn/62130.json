@@ -9,12 +9,29 @@
             "username": "web",
             "password": "web"
         },
-        
         {
             "name": "ITEX MTN",
             "type": "private",
             "mccmnc": "62130",
             "apn": "itex.net",
+            "bank": "",
+            "username": "web",
+            "password": "web"
+        },
+        {
+            "name": "ZENITH MTN",
+            "type": "private",
+            "mccmnc": "62130",
+            "apn": "zenith.net",
+            "bank": "",
+            "username": "",
+            "password": ""
+        },
+        {
+            "name": "FIDELITY MTN",
+            "type": "private",
+            "mccmnc": "62130",
+            "apn": "fidelity.net",
             "bank": "",
             "username": "web",
             "password": "web"

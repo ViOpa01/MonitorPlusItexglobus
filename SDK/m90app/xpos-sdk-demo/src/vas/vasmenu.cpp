@@ -116,7 +116,7 @@ int doVasUssd(VasFlow& flow, const char* title, VasComProxy& comProxy)
 int doVasTransaction(VAS_Menu_T menu)
 {
     VasFlow flow;
-    Postman postman;
+    Postman postman = getVasPostMan();
     const char* title = vasMenuString(menu);
 
     switch (menu) {
@@ -168,7 +168,7 @@ int doVasTransaction(VAS_Menu_T menu)
 int doCashIn()
 {
     VasFlow flow;
-    Postman postman;
+    Postman postman = getVasPostMan();
     const char* title = vasMenuString(CASHIN);
 
     Cashin cashin(title, postman);
@@ -178,7 +178,7 @@ int doCashIn()
 int doCashOut()
 {
     VasFlow flow;
-    Postman postman;
+    Postman postman = getVasPostMan();
     const char* title = vasMenuString(CASHOUT);
 
     Cashout cashout(title, postman);

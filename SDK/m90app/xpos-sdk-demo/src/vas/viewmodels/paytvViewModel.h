@@ -6,11 +6,7 @@
 
 struct PayTVViewModel {
 
-    typedef enum{
-        UNKNOWN_TYPE,
-        STARTIMES_BUNDLE,
-        STARTIMES_TOPUP
-    } StartimesType;
+    typedef enum { UNKNOWN_TYPE, STARTIMES_BUNDLE, STARTIMES_TOPUP } StartimesType;
 
     PayTVViewModel(const char* title, VasComProxy& proxy);
 
@@ -18,23 +14,24 @@ struct PayTVViewModel {
     VasResult packageLookup();
     VasResult initiate(const std::string& pin);
     VasResult complete(const std::string& pin);
-    std::map<std::string, std::string>storageMap(const VasResult& completionStatus);
+    std::map<std::string, std::string> storageMap(const VasResult& completionStatus);
 
     const char* apiServiceString(Service service) const;
     const char* apiServiceType(Service service) const;
-    
+
     VasResult setAmount(unsigned long amount);
     VasResult setPhoneNumber(const std::string& phoneNumber);
     VasResult setPaymentMethod(PaymentMethod payMethod);
     VasResult setService(Service service);
     VasResult setStartimesType(StartimesType startimestype);
     VasResult setIUC(const std::string& iuc);
+    VasResult setShouldRenew(bool shouldRenew);
 
     VasResult setSelectedPackage(int selectedPackageIndex, const std::string& cycle = "");
     VasResult setPackageMonthAndAmount(int selectedIndex);
 
-    VasResult processPaymentResponse(const iisys::JSObject& json, Service service);    
-    
+    VasResult processPaymentResponse(const iisys::JSObject& json, Service service);
+
     unsigned long getAmount() const;
     std::string getIUC() const;
     const iisys::JSObject& getBouquets() const;
@@ -56,6 +53,7 @@ private:
     std::string _title;
     VasComProxy& comProxy;
     Service service;
+    bool shouldRenew;
 
     std::string phoneNumber;
     std::string iuc;
@@ -71,6 +69,7 @@ private:
     iisys::JSObject selectedPackage;
     std::string cycle;
     iisys::JSObject bouquets;
+    iisys::JSObject renewData;
     iisys::JSObject availablePackagePricingOptions;
 
     struct {

@@ -58,21 +58,17 @@ void printFooter()
 	UPrint_Feed(108);
 }
 
-void printReceiptHeader(const char *transDate)
+void printReceiptHeader(const char *)
 {
-    MerchantParameters parameter = {'\0'};
 	MerchantData mParam = {'\0'};
 
 	// char buff[64] = {'\0'};
 
-    getParameters(&parameter);
 	readMerchantData(&mParam);
 
     UPrint_SetFont(8, 2, 2);
 	UPrint_StrBold(mParam.name, 1, 0, 1);
     UPrint_StrBold(mParam.address, 1, 0, 1);
-    printLine("MID", parameter.cardAcceptiorIdentificationCode);
-    printLine("DATE TIME", transDate);
     printDottedLine();
 }
 
@@ -600,11 +596,12 @@ static void processBalance(char *buff)
 static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 {
     char filename[32] = {'\0'};
-	int ret = 0;
 	char maskedPan[25] = {'\0'};
     MerchantData mParam = {'\0'};
+    MerchantParameters parameter = {'\0'};
 	
     readMerchantData(&mParam);
+    getParameters(&parameter);
 	short isApproved = isApprovedResponse(eft->responseCode);
 	displayPaymentStatus(eft->responseCode);
 
@@ -617,7 +614,7 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 
 	while(1) {
 
-		ret = UPrint_Init();
+		int ret = UPrint_Init();
 
 		if (ret == UPRN_OUTOF_PAPER)
 		{
@@ -638,8 +635,8 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 		printReceiptLogo(filename);	// Print Logo
 		printReceiptHeader(eft->dateAndTime);      // Print Receipt header
 
-		UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
 		UPrint_StrBold(getReceiptCopyLabel(copy), 1, 4, 1);
+		UPrint_StrBold(transTypeToString(eft->transType), 1, 4, 1);
 
 		UPrint_SetFont(7, 2, 2);
 
@@ -675,6 +672,8 @@ static int printEftReceipt(enum receiptCopy copy, Eft *eft)
 		if (*eft->cardHolderName) {
 			printLine("CARD NAME", eft->cardHolderName);
 		}
+		printLine("MID", parameter.cardAcceptiorIdentificationCode);
+        printLine("DATE TIME", eft->dateAndTime);
 
 		if(eft->transType == EFT_BALANCE && isApproved)
 		{

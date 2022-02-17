@@ -712,7 +712,11 @@ int printRequery(const iisys::JSObject& transaction)
     if (!tid.isNull()) {
         record["terminalId"] = tid.getString();
     }
-    record["receipt_copy"] += "- Requery Reprint -";
+    if (record[VASDB_CATEGORY] == vasMenuString(ENERGY)) {
+        record["receipt_copy"] += "- Customer Copy -";
+    } else {
+        record["receipt_copy"] += "- Requery Reprint -";
+    }
     printVas(record);
 
     return 0;

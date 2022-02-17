@@ -65,7 +65,7 @@ const char * USSDB::trxStatusString(TrxStatus status)
     case DECLINED:
         return "Declined";
     case STATUS_UNKNOWN:
-        return "Status Unknown";
+        return "Connection Timeout";
     default:
         return "";
     }

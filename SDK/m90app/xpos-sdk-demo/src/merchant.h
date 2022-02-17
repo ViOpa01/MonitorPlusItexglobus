@@ -4,6 +4,8 @@
 #include "Nibss8583.h"
 
 #define MERCHANT_DETAIL_FILE    "merchant.json"
+#define ITEX_TAMS_PUBLIC_IP "basehuge.itexapp.com"
+// #define ITEX_TAMS_PUBLIC_IP "baseflat.itexapp.com"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +21,7 @@ typedef struct MerchantData
     int status;
     char stamp_label[12];
     char notificationIdentifier[32];
+    char vasUrl[32];
     int stamp_duty_threshold;
     int stamp_duty;
     int nibss_platform;    // 1 : EPMS, 2 : POSVAS

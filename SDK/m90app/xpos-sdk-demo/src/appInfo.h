@@ -3,11 +3,11 @@
 
 // Declaring app information
 #define APP_NAME "TAMSLITE"
-#define APP_VER "0.0.13"
+#define APP_VER "0.0.14"
 #define TERMINAL_MANUFACTURER "Morefun"
 #define APP_MODEL "H9"
 #define POWERED_BY "POWERED BY ITEX"
 #define PTAD_PHONE "070-2255-4839"
 #define PTAD_WEBSITE "www.iisysgroup.com"
 
-#endif APP_INFO__H
+#endif // APP_INFO__H
