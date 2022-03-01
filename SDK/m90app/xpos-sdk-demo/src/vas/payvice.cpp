@@ -208,11 +208,14 @@ std::string Payvice::fetchVasToken()
     std::string path = "/api/vas/authenticate/me";
     char requestBody[1024] = {'\0'};
 #ifndef VAS_TEST
+    strncpy((char *)netParam.host, mParam.vasUrl, sizeof(netParam.host) - 1);
     snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itexlive\", \"terminal\": \"%s\", \"channel\": \"%s\", \"version\": \"%s\"}", 
-#else
-    snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itex\", \"terminal\": \"%s\", \"channel\": \"%s\", \"version\": \"%s\"}", 
-#endif
         object(Payvice::WALLETID).getString().c_str(), object(Payvice::USER).getString().c_str(), object(Payvice::PASS).getString().c_str(), mParam.tid, vasChannel(), vasApplicationVersion().c_str());
+#else
+    strncpy((char *)netParam.host, VAS_URL, sizeof(netParam.host) - 1);
+    snprintf(requestBody, sizeof(requestBody), "{\"wallet\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"identifier\": \"itex\", \"terminal\": \"%s\", \"channel\": \"%s\", \"version\": \"%s\"}", 
+        object(Payvice::WALLETID).getString().c_str(), object(Payvice::USER).getString().c_str(), object(Payvice::PASS).getString().c_str(), mParam.tid, vasChannel(), vasApplicationVersion().c_str());
+#endif
 
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "POST %s HTTP/1.1\r\n", path.c_str());
     netParam.packetSize += sprintf((char *)(&netParam.packet[netParam.packetSize]), "Host: %s\r\n", netParam.host);
@@ -257,7 +260,7 @@ int Payvice::extractVasToken(const std::string& response, const time_t now)
 
     object(Payvice::TOKEN) = token;
     object(Payvice::TOKEN_EXP) = now + atoi(expiration.getString().c_str()) * 60 * 60;
-    printf("============TOKEN EXPIRED TIME : %d(s), NOW : %d ============\n",  object(Payvice::TOKEN_EXP).getInt(), now);
+    printf("============TOKEN EXPIRED TIME : %ld(s), NOW : %ld ============\n",  object(Payvice::TOKEN_EXP).getInt(), now);
 
     return 0;
 }
