@@ -10,6 +10,7 @@
 #include "cgate.h"
 #include "mcash.h"
 #include "payWithPhone.h"
+#include "tribease.h"
 
 #include "ussdadmin.h"
 #include "ussdservices.h"
@@ -34,6 +35,8 @@ const char* ussdTypeToString(USSD_T provider)
         return "PayCode";
     case NQR:
         return "NQR";
+    case TRIBEASE:
+        return "Tribease";
     default:
         return "USSD Type Unknown";
     }
@@ -43,7 +46,7 @@ int ussdTransactionsMenu()
 {
     static int once_flag = USSDB::init();
     std::vector<std::string> menu;
-    USSD_T menuOptions[] = { CGATE, MCASH, PAYATTITUDE, PAYCODE, NQR };
+    USSD_T menuOptions[] = { CGATE, MCASH, PAYATTITUDE, PAYCODE, NQR, TRIBEASE };
 
     (void)once_flag;
 
@@ -77,6 +80,9 @@ int ussdTransactionsMenu()
         case NQR:
             //do some NQR stuffs
             NQRMenu();
+            break;
+        case TRIBEASE:
+            tribease();
             break;
         default:
             break;

@@ -2,6 +2,7 @@
 #define USSD_ADMIN
 
 #include <map>
+#include <vector>
 
 
 int ussdAdmin();

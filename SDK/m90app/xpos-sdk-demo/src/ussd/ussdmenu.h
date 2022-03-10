@@ -10,7 +10,8 @@ typedef enum {
     MCASH,
     PAYATTITUDE,
     PAYCODE,
-    NQR
+    NQR,
+    TRIBEASE,
 } USSD_T;
 
 typedef enum {

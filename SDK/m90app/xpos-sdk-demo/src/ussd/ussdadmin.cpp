@@ -75,6 +75,19 @@ void printCGate(std::map<std::string, std::string> &record)
         }
     } 
 }
+
+void printTribease(std::map<std::string, std::string> &record)
+{
+    const char* keys[] = {USSD_PHONE, USSD_CUSTOMER_NAME, USSD_REF, USSD_AUDIT_REF, USSD_PAYMENT_REF};
+    const char* labels[] = {"MOBILE", "NAME", "TRANS. REF","CLIENT REF", "PAYMENT REF"};
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
+        if (record.find(keys[i]) != record.end()) {
+            printLine(labels[i], record[keys[i]].c_str());
+        }
+    } 
+}
+
 static void printAsteric(size_t len)
 {
     char line[32] = {'\0'};
@@ -142,6 +155,9 @@ int generateReceipt(std::map<std::string, std::string> &record, const USSDServic
         } else if(service == MCASH_PURCHASE) {
             printMcash(record);
             printLine("PAYMENT METHOD", "MCASH");
+        } else if(service == TRIBEASE_PURCHASE || service == TRIBEASE_TOKEN) {
+            printTribease(record);
+            printLine("PAYMENT METHOD", "TRIBEASE");
         }
 
         memset(buff, '\0', sizeof(buff));
@@ -293,6 +309,10 @@ int printUSSDReceipt(std::map<std::string, std::string>& record)
             printStatus = generateReceipt(record, MCASH_PURCHASE);
         } else if (record[USSD_SERVICE] == ussdServiceToString(PAYATTITUDE_PURCHASE)) {
             printStatus = generateReceipt(record, PAYATTITUDE_PURCHASE);
+        } else if (record[USSD_SERVICE] == ussdServiceToString(TRIBEASE_PURCHASE)) {
+            printStatus = generateReceipt(record, TRIBEASE_PURCHASE);
+        } else if (record[USSD_SERVICE] == ussdServiceToString(TRIBEASE_TOKEN)) {
+            printStatus = generateReceipt(record, TRIBEASE_TOKEN);
         } 
     }
 

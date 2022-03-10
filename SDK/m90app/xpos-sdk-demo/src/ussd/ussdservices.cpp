@@ -11,6 +11,10 @@ const char* ussdServiceToString(USSDService service)
         return "mCash Purchasse";
     case PAYATTITUDE_PURCHASE:
         return "PayAttitude";
+    case TRIBEASE_PURCHASE:
+        return "Tribease Purchase";
+    case TRIBEASE_TOKEN:
+        return "Tribease Token";
     default:
         return "Unknown";
     }
