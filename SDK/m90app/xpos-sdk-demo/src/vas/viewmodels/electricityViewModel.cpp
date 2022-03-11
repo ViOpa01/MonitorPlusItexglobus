@@ -53,6 +53,7 @@ VasResult ElectricityViewModel::lookupCheck(const VasResult& lookupStatus)
 	const iisys::JSObject& pCode = responseData("productCode");
 	const iisys::JSObject& arrears = responseData("customerArrears");
     
+    
 
     if (!name.isString()) {
         result = VasResult(KEY_NOT_FOUND, "Name not found");
@@ -218,6 +219,8 @@ std::map<std::string, std::string> ElectricityViewModel::storageMap(const VasRes
 
     record[VASDB_STATUS_MESSAGE] = completionStatus.message;
     record[VASDB_SERVICE_DATA] = paymentResponse.serviceData;
+
+    
 
 
     return record;
@@ -412,7 +415,7 @@ VasResult ElectricityViewModel::processPaymentResponse(const iisys::JSObject& js
 {
     const char* keys[] = {"account_type", "type", "tran_id", "client_id", "sgc", "msno", "krn", "ti", "tt", "unit"
 		, "sgcti", "meterNo", "tariffCode", "rate", "units", "region", "unit_value", "unit_cost", "vat", "agent"
-		, "arrears", "receipt_no", "invoiceNumber", "tariff", "lastTxDate", "collector", "csp", NULL };
+		, "arrears", "receipt_no", "invoiceNumber", "tariff", "lastTxDate", "collector", "csp", "amount", NULL };
 
     VasResult response = vasResponseCheck(json);
 
@@ -438,6 +441,16 @@ VasResult ElectricityViewModel::processPaymentResponse(const iisys::JSObject& js
             data(keys[i]) = temp;
         }
     }
+
+    //To be printed
+    
+    iisys::JSObject ret_amount = responseData("amount");
+    long ret_amount_long = (unsigned long)ret_amount.getNumber()*100;
+    long charge_amount =  amount - ret_amount_long;
+
+    data("amount") = charge_amount; 
+    
+    
 
     this->addToken(data, responseData);
 

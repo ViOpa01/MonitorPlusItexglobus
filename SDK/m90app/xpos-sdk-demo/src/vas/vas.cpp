@@ -494,11 +494,11 @@ void printElectricity(std::map<std::string, std::string> &record)
     const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_ADDR, VASDB_BENEFICIARY_PHONE
         , "account_type", "type", "tran_id", "client_id", "sgc", "msno", "krn", "ti", "tt", "unit", "sgcti", "accountNo", "tariffCode"
         , "rate", "units", "region", "token", "token1", "token2", "token3", "unit_value", "unit_cost", "vat", "agent", "arrears", "receipt_no", "invoiceNumber"
-        , "tariff", "lastTxDate", "collector", "csp"};
+        , "tariff", "lastTxDate", "collector", "csp", "bank_charges"};
     const char* labels[] = {"WALLET", "TXN TID", "METER NO", "NAME ", "ADDRESS ", "PHONE"
         , "ACCOUNT TYPE", "TYPE", "TRAN ID", "CLIENT ID", "SGC", "MSNO", "KRN", "TI", "TT", "UNIT", "SGCTI", "ACCOUNT NO", "TARIFF CODE"
         , "RATE", "UNITS", "REGION", "TOKEN", "TOKEN1", "TOKEN2", "TOKEN3", "UNIT VALUE", "UNIT COST", "VAT", "AGENT", "ARREARS", "RECEIPT NO", "INVOICE NUMBER"
-        , "TARIFF", "LAST TXN DATE", "COLLECTOR", "CSP"};
+        , "TARIFF", "LAST TXN DATE", "COLLECTOR", "CSP", "BANK CHARGES"};
 
 
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {

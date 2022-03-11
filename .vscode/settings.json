@@ -97,6 +97,7 @@
         "string_view": "cpp",
         "jsobject.h": "c",
         "appinfo.h": "c",
-        "util.h": "c"
+        "util.h": "c",
+        "__hash_table": "cpp"
     }
 }

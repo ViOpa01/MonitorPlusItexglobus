@@ -23,9 +23,9 @@
 #define VAS_TEST
 
 #ifdef VAS_TEST
-#define VAS_PORT "1880"
+#define VAS_PORT "6565" //"1880"
 #define VAS_URL "197.253.19.78"
-#define REQUERY_PORT 8006
+#define REQUERY_PORT 6565 //8006
 #else
 #define REQUERY_PORT 8017
 #define VAS_PORT "8019"
