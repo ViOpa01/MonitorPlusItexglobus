@@ -494,11 +494,11 @@ void printElectricity(std::map<std::string, std::string> &record)
     const char* keys[] = {"walletId", "virtualTid", VASDB_BENEFICIARY, VASDB_BENEFICIARY_NAME, VASDB_BENEFICIARY_ADDR, VASDB_BENEFICIARY_PHONE
         , "account_type", "type", "tran_id", "client_id", "sgc", "msno", "krn", "ti", "tt", "unit", "sgcti", "accountNo", "tariffCode"
         , "rate", "units", "region", "token", "token1", "token2", "token3", "unit_value", "unit_cost", "vat", "agent", "arrears", "receipt_no", "invoiceNumber"
-        , "tariff", "lastTxDate", "collector", "csp", "bank_charges"};
+        , "tariff", "lastTxDate", "collector",  "bank_charges", "csp"};
     const char* labels[] = {"WALLET", "TXN TID", "METER NO", "NAME ", "ADDRESS ", "PHONE"
         , "ACCOUNT TYPE", "TYPE", "TRAN ID", "CLIENT ID", "SGC", "MSNO", "KRN", "TI", "TT", "UNIT", "SGCTI", "ACCOUNT NO", "TARIFF CODE"
         , "RATE", "UNITS", "REGION", "TOKEN", "TOKEN1", "TOKEN2", "TOKEN3", "UNIT VALUE", "UNIT COST", "VAT", "AGENT", "ARREARS", "RECEIPT NO", "INVOICE NUMBER"
-        , "TARIFF", "LAST TXN DATE", "COLLECTOR", "CSP", "BANK CHARGES"};
+        , "TARIFF", "LAST TXN DATE", "COLLECTOR",  "BANK CHARGES", "CSP"};
 
 
     for (size_t i = 0; i < sizeof(keys) / sizeof(char*); ++i) {
@@ -535,13 +535,20 @@ void printElectricity(std::map<std::string, std::string> &record)
                 printTokenList("token3", "token3_desc", record);
 
             } else {
+            
                 char buff[25] = {'\0'};
                 strncpy(buff, record[keys[i]].c_str(), sizeof(buff) - 1);
                 printLine(labels[i], buff);
-            }
-            
+            }           
         }
-    } 
+    }
+            
+    #ifdef VAS_TEST
+    std::cout<<"CURRENT RECORD MAP\n";
+    for (std::map<std::string,std::string>::iterator it=record.begin(); it!=record.end(); ++it)
+    std::cout << it->first << " => " << it->second << '\n';
+    #endif
+
 }
 
 void printTv(std::map<std::string, std::string> &record)

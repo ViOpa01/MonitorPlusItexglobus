@@ -415,7 +415,7 @@ VasResult ElectricityViewModel::processPaymentResponse(const iisys::JSObject& js
 {
     const char* keys[] = {"account_type", "type", "tran_id", "client_id", "sgc", "msno", "krn", "ti", "tt", "unit"
 		, "sgcti", "meterNo", "tariffCode", "rate", "units", "region", "unit_value", "unit_cost", "vat", "agent"
-		, "arrears", "receipt_no", "invoiceNumber", "tariff", "lastTxDate", "collector", "csp", "amount", NULL };
+		, "arrears", "receipt_no", "invoiceNumber", "tariff", "lastTxDate", "collector", "bank_charges", "csp", NULL };
 
     VasResult response = vasResponseCheck(json);
 
@@ -435,6 +435,23 @@ VasResult ElectricityViewModel::processPaymentResponse(const iisys::JSObject& js
         lookupResponse.address = addr.getString();
     }
 
+   
+
+    //Print Bank Charge if card is used to purchase Electricity
+    if(paymentString(payMethod)=="card") {
+    iisys::JSObject ret_amount = responseData("amount");
+    unsigned long charge_amount = (unsigned long)(ret_amount.getNumber()*100.0);
+
+    printf("\nAmount: %d | Charge Amount: %d | bank charges: %d \n",amount, charge_amount,(amount-charge_amount));
+    double charge_amount_double = (amount-charge_amount)/100.0;
+    char charge_amount_string[25];
+    sprintf(charge_amount_string,"%.2f",charge_amount_double);
+    data("bank_charges") = charge_amount_string;
+    }
+
+    ////////
+
+
     for (size_t i = 0; keys[i] != NULL; ++i) {
         temp = responseData(keys[i]);
         if (!temp.isNull() && !temp.getString().empty()) {
@@ -442,13 +459,6 @@ VasResult ElectricityViewModel::processPaymentResponse(const iisys::JSObject& js
         }
     }
 
-    //To be printed
-    
-    iisys::JSObject ret_amount = responseData("amount");
-    long ret_amount_long = (unsigned long)ret_amount.getNumber()*100;
-    long charge_amount =  amount - ret_amount_long;
-
-    data("amount") = charge_amount; 
     
     
 
